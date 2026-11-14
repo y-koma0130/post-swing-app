@@ -1,0 +1,16 @@
+# ローカル開発用。本番は Cloudflare Workers なのでこのイメージはデプロイしない
+# workerd（Workers のランタイム）が glibc を要求するため alpine ではなく bookworm を使う
+FROM node:24-bookworm-slim
+
+ENV PNPM_HOME=/pnpm \
+    PATH=/pnpm:$PATH \
+    CI=true
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates git \
+  && rm -rf /var/lib/apt/lists/* \
+  && corepack enable
+
+WORKDIR /app
+
+EXPOSE 5173

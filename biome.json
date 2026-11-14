@@ -1,0 +1,172 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/dist", "!**/.vinext", "!**/.cloudflare", "!**/.wrangler", "!**/*.md"]
+  },
+  "plugins": ["./biome-plugins/no-type-assertion.grit"],
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noTsIgnore": "error",
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["warn", "error"]
+          }
+        }
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "useImportType": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useConst": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "nursery": {
+        "useTailwindSortedClasses": {
+          "level": "error",
+          "fix": "safe"
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/app/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/server/*/**/infrastructure/**",
+                      "@/server/*/**/application/usecases/**",
+                      "@/server/mocks/**",
+                      "@/server/db/**"
+                    ],
+                    "message": "app/ からは server の presentation（実行）と dto・domain/values（型）だけを使ってください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/**/utils/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/server/*/**/infrastructure/**",
+                      "@/server/*/**/application/usecases/**",
+                      "@/server/mocks/**",
+                      "@/server/db/**"
+                    ],
+                    "message": "app/ からは server の presentation（実行）と dto・domain/values（型）だけを使ってください。"
+                  },
+                  {
+                    "group": ["react", "react/**", "react-dom", "react-dom/**", "next", "next/**"],
+                    "message": "utils/ は React・Next.js に依存させない（ネイティブアプリで再利用するため）。React が必要なら hooks/ か components/ に置いてください。"
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "window": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "document": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "navigator": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "localStorage": "utils/ はブラウザに依存させない。",
+                  "sessionStorage": "utils/ はブラウザに依存させない。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/server/features/*/domain/**", "src/server/features/*/application/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "react",
+                      "react/**",
+                      "react-dom",
+                      "react-dom/**",
+                      "next",
+                      "next/**",
+                      "server-only",
+                      "cloudflare:*",
+                      "@/server/db/**",
+                      "@/server/mocks/**"
+                    ],
+                    "message": "domain・application は Next.js・React・Cloudflare・DB に依存させない（Web とアプリで同じユースケースを使うため）。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
