@@ -4,6 +4,7 @@
 
 - 計画: `docs/service-plan.md`、MOCの範囲: `docs/moc-scope.md`
 - 構成: `docs/architecture.md`、コーディングルール: `docs/coding-rules.md`（必ず従う）
+- 認証・セキュリティ: `docs/auth-and-security.md`（Better Auth＋D1。権限の確認はユースケースで必ず行う）
 
 ## 要点
 

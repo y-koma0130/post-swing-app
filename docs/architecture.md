@@ -78,6 +78,10 @@ MOC（段階0）では下表のどれも使わない（固定データのみ）�
 | エラー監視 | Sentry | 2〜 | |
 | CI/CD | GitHub Actions | 1〜 | 型チェック・lint・ビルド → `pnpm deploy`、D1 マイグレーション |
 
+### 認証
+
+Better Auth（外部サービスではなくライブラリ）を使い、ユーザー・セッションは D1 に持つ。生徒は LINE ログイン、コーチはメールの6桁コード、管理画面は Cloudflare Access。詳細とセキュリティ対策は [認証とセキュリティの方針](auth-and-security.md)。
+
 ### 要検証
 
 - **iPhone の動画形式**：iPhone の標準設定（高効率）は HEVC の `.mov`。コーチが Windows や Android の Chrome で再生できない可能性がある。ブラウザで H.264 MP4 に変換し、スイング部分だけ切り出して送る（WebCodecs）のが第一候補。容量も減る
@@ -107,7 +111,9 @@ src/
 │   │   ├── c/[coachSlug]/page.tsx    受付ページ
 │   │   └── t/[threadId]/page.tsx     閲覧ページ
 │   ├── (coach)/                      コーチ向け（タブレット・PC前提のレイアウト）
-│   │   └── coach/threads/[threadId]/page.tsx 添削画面
+│   │   └── coach/threads/[threadId]/
+│   │       ├── page.tsx              添削画面
+│   │       └── _components/          この画面だけで使う、feature を組み合わせた部品
 │   ├── features/                     機能ごとの UI
 │   │   └── <feature>/
 │   │       ├── components/
@@ -136,6 +142,7 @@ src/
     │       └── presentation/
     │           ├── queries.ts        Server Component から呼ぶ読み取り口
     │           └── actions.ts        Server Actions（書き込み口）
+    ├── auth/                         Better Auth の設定・ログイン中の利用者の取得（段階1）
     ├── db/                           D1 の接続・Drizzle スキーマ（段階1）
     ├── mocks/                        MOC 用の固定データ（段階1で削除）
     └── utils/                        機能をまたいで使う関数
@@ -149,8 +156,10 @@ src/
 | server | `thread` | スレッド・動画・添削カード・チャット |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `thread` | スレッド一覧 |
+| app | `video-player` | 添削画面の動画プレイヤー（スロー・コマ送り・端末の動画の読み込み） |
+| app | `annotation` | 動画への線引き（直線・矢印・円・フリーハンド、3色、元に戻す） |
 
-予定（MOC で追加）：app 側の `video-player`・`annotation`・`review-card`・`chat`。
+予定（MOC で追加）：app 側の `review-card`・`chat`。
 
 ### 依存の向き
 

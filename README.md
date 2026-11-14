@@ -10,6 +10,7 @@
 - [MOCでつくる機能](docs/moc-scope.md)
 - [インフラ構成とディレクトリ構成](docs/architecture.md)
 - [コーディングルール](docs/coding-rules.md)
+- [認証とセキュリティの方針](docs/auth-and-security.md)
 
 ## 技術
 

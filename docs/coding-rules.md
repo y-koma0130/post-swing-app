@@ -77,6 +77,7 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - 機能ごとの部品は `app/features/<feature>/{components,hooks,utils}/`
 - 機能をまたぐものは `app/components/`・`app/hooks/`・`app/utils/`
 - `features/` 同士の import はしない。共有したくなったら上の共通ディレクトリへ移す
+- 複数の feature を組み合わせる、その画面だけの部品（例：動画プレイヤーに線引きを重ねる）は、ルートの `_components/` に置く。`_` で始まるフォルダは URL にならない
 - データは server の `presentation` から取る。型は `dto` と `domain/values` から `import type` する
 - ページ・レイアウトは Server Component のまま。動画・キャンバス・入力など、ブラウザが必要な部品だけ `'use client'` にする
 - props の型は `type Props = { ... }` でコンポーネントの上に書く

@@ -25,6 +25,7 @@ export const annotationSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('circle'),
     center: normalizedPointSchema,
+    // 縦動画と横動画で同じ円になるよう、動画の幅を 1 とした値で持つ
     radius: z.number().positive().max(1),
     color: colorSchema,
   }),
