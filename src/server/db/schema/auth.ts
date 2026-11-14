@@ -69,3 +69,11 @@ export const verification = sqliteTable(
   },
   (t) => [index('verification_identifier_idx').on(t.identifier)]
 )
+
+/** Better Auth の回数制限の記録。Worker はメモリを共有しないので D1 に置く */
+export const rateLimit = sqliteTable('rate_limit', {
+  id: text().primaryKey(),
+  key: text().notNull().unique(),
+  count: integer().notNull(),
+  lastRequest: integer().notNull(),
+})

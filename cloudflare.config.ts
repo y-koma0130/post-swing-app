@@ -26,6 +26,12 @@ export default defineConfig({
       MEDIA: bindings.r2({ name: 'swingpost-media' }),
       NOTIFICATIONS: bindings.queue({ name: NOTIFICATION_QUEUE }),
       EMAIL: bindings.sendEmail(),
+      // 公開URL（ログインのコールバック、LINE・Stripe からの戻り先に使う）
+      APP_URL: bindings.secret(),
+      BETTER_AUTH_SECRET: bindings.secret(),
+      EMAIL_FROM: bindings.secret(),
+      LINE_LOGIN_CHANNEL_ID: bindings.secret(),
+      LINE_LOGIN_CHANNEL_SECRET: bindings.secret(),
     },
   }),
 })

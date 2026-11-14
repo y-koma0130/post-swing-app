@@ -1,0 +1,12 @@
+# ローカル開発用の秘密情報。`.dev.vars` にコピーして値を入れる（.dev.vars はコミットしない）
+# 本番は Workers Secrets に同じ名前で入れる
+
+# 公開URL。ログインのコールバックや、LINE・Stripe からの戻り先に使う
+APP_URL=http://localhost:5173
+# `openssl rand -base64 32` などで作ったランダムな値
+BETTER_AUTH_SECRET=
+# 開発中はメールを送らずログに出すので、空でもよい
+EMAIL_FROM=SwingPost <noreply@example.com>
+# LINE ログインのチャネル。空なら LINE ログインを出さない（開発中はメールのコードで代用）
+LINE_LOGIN_CHANNEL_ID=
+LINE_LOGIN_CHANNEL_SECRET=
