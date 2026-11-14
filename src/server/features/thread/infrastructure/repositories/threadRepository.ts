@@ -1,5 +1,5 @@
 import 'server-only'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lt, lte, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { chatMessage, reply, reviewCard, thread, video } from '@/server/db/schema'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
@@ -187,4 +187,52 @@ export const findStoredCardImage: FindStoredCardImage = async (cardId) => {
     deleted: false,
     members: { coachUserId: row.coachUserId, studentUserId: row.studentUserId },
   }
+}
+
+export type FindExpiredOpenThreads = (now: Date) => Promise<Thread[]>
+export const findExpiredOpenThreads: FindExpiredOpenThreads = async (now) => {
+  const rows = await getDb()
+    .select({ id: thread.id })
+    .from(thread)
+    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, now)))
+    .all()
+  const threads = await Promise.all(rows.map((row) => findThread(row.id)))
+  return threads.filter((t): t is Thread => t !== null)
+}
+
+export type CloseThreads = (threadIds: string[], closedAt: Date) => Promise<void>
+export const closeThreads: CloseThreads = async (threadIds, closedAt) => {
+  await getDb()
+    .update(thread)
+    .set({ status: 'closed', closedAt, updatedAt: closedAt })
+    .where(inArray(thread.id, threadIds))
+}
+
+export type FindThreadsExpiringBetween = (
+  from: Date,
+  to: Date
+) => Promise<Array<{ id: string; studentUserId: string }>>
+export const findThreadsExpiringBetween: FindThreadsExpiringBetween = async (from, to) =>
+  getDb()
+    .select({ id: thread.id, studentUserId: thread.studentUserId })
+    .from(thread)
+    .where(and(ne(thread.status, 'closed'), gt(thread.expiresAt, from), lte(thread.expiresAt, to)))
+    .all()
+
+export type FindVideosToDelete = (
+  closedBefore: Date
+) => Promise<Array<{ id: string; r2Key: string }>>
+export const findVideosToDelete: FindVideosToDelete = async (closedBefore) =>
+  getDb()
+    .select({ id: video.id, r2Key: video.r2Key })
+    .from(video)
+    .innerJoin(thread, eq(thread.id, video.threadId))
+    .where(
+      and(eq(thread.status, 'closed'), lt(thread.closedAt, closedBefore), isNull(video.deletedAt))
+    )
+    .all()
+
+export type MarkVideosDeleted = (videoIds: string[], deletedAt: Date) => Promise<void>
+export const markVideosDeleted: MarkVideosDeleted = async (videoIds, deletedAt) => {
+  await getDb().update(video).set({ deletedAt }).where(inArray(video.id, videoIds))
 }

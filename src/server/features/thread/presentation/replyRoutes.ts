@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { findOwnDrillIds } from '@/server/features/drill/infrastructure/repositories/drillRepository'
 import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { parseJson } from '@/server/utils/parseJson'
 import { authorizeVideo } from '../application/usecases/authorizeVideo.usecase'
 import { type SendReplyError, sendReply } from '../application/usecases/sendReply.usecase'
 import { reviewCardSchema } from '../domain/values/ReviewCard'
@@ -15,14 +16,6 @@ import {
   findThread,
   saveReply,
 } from '../infrastructure/repositories/threadRepository'
-
-const parseJson = (text: string): unknown => {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return null
-  }
-}
 
 const REPLY_ERROR = {
   not_found: { status: 404, message: '動画が見つかりません' },

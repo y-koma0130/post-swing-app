@@ -35,6 +35,8 @@ type Dependencies = Readonly<{
   storeVideo: (r2Key: string, contentType: string) => Promise<void>
   /** 動画の記録を残し、スレッドをコーチの番にする */
   saveVideo: (video: NewVideo) => Promise<void>
+  /** コーチに「動画が届きました」と知らせる（キューに積むだけ） */
+  notifyVideoSubmitted: (input: { threadId: string; coachUserId: string }) => Promise<void>
   generateId: () => string
 }>
 
@@ -99,5 +101,6 @@ export const submitVideo: SubmitVideo = async (params, deps) => {
     uploadedAt: params.now,
     theme: theme?.success ? theme.data : null,
   })
+  await deps.notifyVideoSubmitted({ threadId: thread.id, coachUserId: thread.coachUserId })
   return ok({ videoId })
 }

@@ -51,3 +51,8 @@ export const respondWithMediaObject = async (
   headers.set('content-length', String(object.size))
   return new Response(object.body, { status: 200, headers })
 }
+
+export type DeleteMediaObject = (r2Key: string) => Promise<void>
+export const deleteMediaObject: DeleteMediaObject = async (r2Key) => {
+  await env.MEDIA.delete(r2Key)
+}

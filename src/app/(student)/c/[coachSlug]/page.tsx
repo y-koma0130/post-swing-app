@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
+import { ReviewSummary } from '@/app/features/coach-review/components/ReviewSummary'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
+import { getCoachReviewSummary } from '@/server/features/coach-review/presentation/queries'
 
 type Props = {
   params: Promise<{ coachSlug: string }>
@@ -10,7 +12,10 @@ type Props = {
 /** 受付ページ */
 const CoachLandingPage = async ({ params }: Props) => {
   const { coachSlug } = await params
-  const coach = await getCoachProfile(coachSlug)
+  const [coach, reviews] = await Promise.all([
+    getCoachProfile(coachSlug),
+    getCoachReviewSummary(coachSlug),
+  ])
   if (!coach) notFound()
 
   return (
@@ -26,6 +31,9 @@ const CoachLandingPage = async ({ params }: Props) => {
       </p>
       <div className="mt-8">
         <PlanList plans={coach.plans} />
+      </div>
+      <div className="mt-10">
+        <ReviewSummary summary={reviews} />
       </div>
       {coach.acceptingApplications ? (
         <ButtonLink href={`/c/${coach.slug}/apply`} className="mt-8 w-full">

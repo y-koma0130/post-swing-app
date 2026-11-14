@@ -1,7 +1,15 @@
 import 'server-only'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { coachProfile, drill, reply, reviewCard, thread, user } from '@/server/db/schema'
+import {
+  coachProfile,
+  coachReview,
+  drill,
+  reply,
+  reviewCard,
+  thread,
+  user,
+} from '@/server/db/schema'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
 import { checkVideoSubmission } from '../../domain/services/checkVideoSubmission.service'
@@ -21,6 +29,15 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   }
   const db = getDb()
   const videoIds = t.videos.map((v) => v.id)
+  const reviewRow = await db
+    .select({
+      rating: coachReview.rating,
+      comment: coachReview.comment,
+      coachReply: coachReview.coachReply,
+    })
+    .from(coachReview)
+    .where(eq(coachReview.threadId, threadId))
+    .get()
   const [people, replies, cards] = await Promise.all([
     db
       .select({
@@ -69,6 +86,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     maxVideos: THREAD_RULES.maxVideosByPlan[t.planKind],
     maxVideoBytes: VIDEO_RULES.maxBytes,
     videoSubmissionBlocker: checkVideoSubmission(t, new Date()),
+    review: reviewRow ?? null,
     videos: t.videos.map((v) => {
       const r = replies.find((x) => x.videoId === v.id)
       return {

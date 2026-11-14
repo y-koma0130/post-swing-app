@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, count, eq, ne } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
 import type { NewThread } from '../../application/usecases/recordPayment.usecase'
@@ -165,4 +165,60 @@ export const findPortalCustomer: FindPortalCustomer = async (purchaseId, student
     .where(and(eq(purchase.id, purchaseId), eq(purchase.studentUserId, studentUserId)))
     .get()
   return row?.customerId ?? null
+}
+
+export type FindCoachesWithOpenSlots = () => Promise<
+  Array<{ coachUserId: string; openSlots: number }>
+>
+/** まだ知らせていないキャンセル待ちがいるコーチと、受付枠の空きの数 */
+export const findCoachesWithOpenSlots: FindCoachesWithOpenSlots = async () => {
+  const db = getDb()
+  const coaches = await db
+    .selectDistinct({
+      coachUserId: waitlistEntry.coachUserId,
+      capacity: coachProfile.monthlyCapacity,
+    })
+    .from(waitlistEntry)
+    .innerJoin(coachProfile, eq(coachProfile.userId, waitlistEntry.coachUserId))
+    .where(isNull(waitlistEntry.notifiedAt))
+    .all()
+  return Promise.all(
+    coaches.map(async (c) => ({
+      coachUserId: c.coachUserId,
+      openSlots: Math.max(c.capacity - (await countActiveThreads(c.coachUserId)), 0),
+    }))
+  )
+}
+
+export type FindWaitingStudents = (coachUserId: string, limit: number) => Promise<string[]>
+export const findWaitingStudents: FindWaitingStudents = async (coachUserId, limit) => {
+  const rows = await getDb()
+    .select({ studentUserId: waitlistEntry.studentUserId })
+    .from(waitlistEntry)
+    .where(and(eq(waitlistEntry.coachUserId, coachUserId), isNull(waitlistEntry.notifiedAt)))
+    .orderBy(asc(waitlistEntry.createdAt))
+    .limit(limit)
+    .all()
+  return rows.map((r) => r.studentUserId)
+}
+
+export type MarkWaitlistNotified = (
+  coachUserId: string,
+  studentUserIds: string[],
+  at: Date
+) => Promise<void>
+export const markWaitlistNotified: MarkWaitlistNotified = async (
+  coachUserId,
+  studentUserIds,
+  at
+) => {
+  await getDb()
+    .update(waitlistEntry)
+    .set({ notifiedAt: at })
+    .where(
+      and(
+        eq(waitlistEntry.coachUserId, coachUserId),
+        inArray(waitlistEntry.studentUserId, studentUserIds)
+      )
+    )
 }

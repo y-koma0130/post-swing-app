@@ -30,3 +30,11 @@ export const REPLY_RULES = {
 export const CHAT_RULES = {
   maxLength: 1000,
 } as const
+
+/** 毎日の処理のルール */
+export const MAINTENANCE_RULES = {
+  /** 期限の何日前に知らせるか */
+  remindDaysBefore: 3,
+  /** スレッドの終了から何日で動画を消すか（暫定。利用規約で決める） */
+  videoRetentionDays: 90,
+} as const

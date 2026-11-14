@@ -32,23 +32,29 @@ const params = {
 const setup = (t: Thread | null = thread) => {
   const storeVideo = vi.fn<Deps['storeVideo']>(async () => undefined)
   const saveVideo = vi.fn<Deps['saveVideo']>(async () => undefined)
+  const notifyVideoSubmitted = vi.fn<Deps['notifyVideoSubmitted']>(async () => undefined)
   const deps: Deps = {
     findThread: async () => t,
     storeVideo,
     saveVideo,
+    notifyVideoSubmitted,
     generateId: () => 'video-1',
   }
-  return { deps, storeVideo, saveVideo }
+  return { deps, storeVideo, saveVideo, notifyVideoSubmitted }
 }
 
 describe('submitVideo', () => {
   it('最初の動画はテーマと一緒に保存する', async () => {
-    const { deps, storeVideo, saveVideo } = setup()
+    const { deps, storeVideo, saveVideo, notifyVideoSubmitted } = setup()
     expect(await submitVideo(params, deps)).toEqual({ ok: true, value: { videoId: 'video-1' } })
     expect(storeVideo).toHaveBeenCalledWith('videos/thread-1/video-1', 'video/quicktime')
     expect(saveVideo.mock.calls[0]?.[0]).toMatchObject({
       theme: 'トップで右ひざが流れる',
       note: 'ドライバーです',
+    })
+    expect(notifyVideoSubmitted).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      coachUserId: 'coach-1',
     })
   })
 

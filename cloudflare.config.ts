@@ -32,6 +32,9 @@ export default defineConfig({
       EMAIL_FROM: bindings.secret(),
       LINE_LOGIN_CHANNEL_ID: bindings.secret(),
       LINE_LOGIN_CHANNEL_SECRET: bindings.secret(),
+      // LINE 公式アカウント（Messaging API）。通知の送信と、友だち追加の記録に使う
+      LINE_MESSAGING_CHANNEL_SECRET: bindings.secret(),
+      LINE_MESSAGING_ACCESS_TOKEN: bindings.secret(),
       // Stripe（本番は live、それ以外は test のキー）
       STRIPE_SECRET_KEY: bindings.secret(),
       STRIPE_WEBHOOK_SECRET: bindings.secret(),

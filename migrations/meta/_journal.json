@@ -36,6 +36,13 @@
       "when": 1794648914385,
       "tag": "0004_video_review_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794649888735,
+      "tag": "0005_notification_review",
+      "breakpoints": true
     }
   ]
 }

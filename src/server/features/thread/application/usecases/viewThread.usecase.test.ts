@@ -16,6 +16,7 @@ const detail: ThreadDetailDto = {
   maxVideos: 3,
   maxVideoBytes: 100,
   videoSubmissionBlocker: null,
+  review: null,
   videos: [],
 }
 const members = { coachUserId: 'coach-1', studentUserId: 'student-1' }

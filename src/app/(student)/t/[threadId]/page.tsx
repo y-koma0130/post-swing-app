@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
+import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoUploadForm } from '@/app/features/video-upload/components/VideoUploadForm'
@@ -63,6 +64,21 @@ const ThreadViewPage = async ({ params }: Props) => {
           </div>
         </section>
       ))}
+
+      {thread.status === 'closed' && (
+        <section className="space-y-3">
+          <h2 className="font-bold">{thread.coachName} さんのレビュー</h2>
+          {thread.review ? (
+            <p className="text-sm text-gray-600">
+              ★{thread.review.rating} を送りました。ありがとうございました。
+            </p>
+          ) : (
+            <Card>
+              <CoachReviewForm threadId={thread.id} />
+            </Card>
+          )}
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="font-bold">

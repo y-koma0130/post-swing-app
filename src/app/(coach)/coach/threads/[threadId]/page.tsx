@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { Card } from '@/app/components/ui/Card'
+import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
@@ -30,6 +32,21 @@ const ReviewPage = async ({ params }: Props) => {
           {thread.status === 'closed' && '・終了'}
         </p>
       </header>
+      {thread.review && (
+        <Card className="space-y-2">
+          <p className="font-bold">
+            レビュー <span className="text-mint">{'★'.repeat(thread.review.rating)}</span>
+          </p>
+          {thread.review.comment && (
+            <p className="text-sm whitespace-pre-wrap text-gray-700">{thread.review.comment}</p>
+          )}
+          {thread.review.coachReply ? (
+            <p className="text-sm text-gray-500">返信：{thread.review.coachReply}</p>
+          ) : (
+            <CoachReviewReplyForm threadId={thread.id} />
+          )}
+        </Card>
+      )}
       <ReviewWorkspace
         threadId={thread.id}
         closed={thread.status === 'closed'}

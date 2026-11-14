@@ -23,6 +23,12 @@ export type ThreadDetailDto = {
   maxVideoBytes: number
   /** 生徒がいま動画を送れない理由。送れるなら null */
   videoSubmissionBlocker: VideoSubmissionBlocker | null
+  /** 終わったスレッドへの生徒のレビュー */
+  review: {
+    rating: number
+    comment: string
+    coachReply: string | null
+  } | null
   videos: Array<{
     id: string
     uploadedAt: Date
