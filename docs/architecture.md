@@ -48,54 +48,55 @@ Web（Next.js）── Server Component / Server Actions ───────�
 
 ## 必要なインフラ
 
-MOC（段階0）では下表のどれも使わない（固定データのみ）。段階1・2で順に足す。
+段階2までの実装はすべて1つの Worker に入っている（`src/worker.ts` が vinext の fetch を包み、queue・scheduled を足す）。
 
 ### Cloudflare
 
-| 用途 | サービス | 段階 | 備考 |
-|---|---|---|---|
-| アプリ本体 | Workers ＋ Static Assets | 0〜 | vinext のビルド結果をそのまま載せる |
-| DB | D1 | 1〜 | コーチ・生徒・スレッド・カード・チャット・決済記録。Drizzle でマイグレーション |
-| 動画・画像 | R2 | 1〜 | 元動画、カード画像、アイコン。ブラウザから署名付きURLで直接PUT（Worker を経由しない） |
-| 非同期処理 | Queues | 2〜 | LINE通知の送信と再送、動画アップロード後の後処理 |
-| 定期処理 | Cron Triggers | 2〜 | スレッドの期限切れ処理、古い動画の削除、期限前のリマインド |
-| メール | Email Service（`send_email`） | 1〜 | コーチのログイン用マジックリンク。届きにくければ Resend に切り替え |
-| ボット対策 | Turnstile | 2〜 | 申し込みフォーム |
-| 秘密情報 | Workers Secrets | 1〜 | Stripe・LINE のキー、R2 の S3 互換キー |
-| ログ | Workers Logs | 1〜 | 段階2で Sentry を追加 |
-| ドメイン | DNS（Cloudflare） | 2〜 | swingpost.jp などは未確認（計画書 13章） |
+| 用途 | サービス | 備考 |
+|---|---|---|
+| アプリ本体 | Workers ＋ Static Assets | vinext のビルド結果をそのまま載せる |
+| DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
+| 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
+| 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
+| 定期処理 | Cron Triggers（毎日4:00 JST） | 期限切れの終了、期限前のお知らせ、古い動画の削除、キャンセル待ちへの連絡 |
+| メール | Email Service（`send_email`） | コーチのログインコードとお知らせ。届きにくければ Resend に切り替え |
+| 秘密情報 | Workers Secrets | 一覧は `.dev.vars.example` |
+| ログ | Workers Logs | Sentry は未導入 |
+| 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する |
+| ドメイン | DNS（Cloudflare） | 未確認（計画書 13章） |
 
-環境は `preview`（検証用）と `production` の2つ。D1・R2 も環境ごとに分ける。
+環境は `staging` と `production`。Worker・D1・R2・キューは環境ごとに分ける（`cloudflare.config.ts` が mode で名前を変える）。
 料金は Workers Paid（月5ドル）が前提。Queues は有料プランでしか使えない。
 
 ### 外部サービス
 
-| 用途 | サービス | 段階 | 備考 |
-|---|---|---|---|
-| 決済 | Stripe Connect（Express）＋ Billing | 1は決済リンク、2〜本実装 | Webhook は Route Handler で受ける |
-| 生徒ログイン | LINE ログイン | 2〜 | 段階1はスレッドURLのトークンで代用 |
-| 通知 | LINE Messaging API（共通公式アカウント） | 2〜 | **プッシュ通知は通数で課金される**。無料枠は月200通で、超えると有料プラン。原価に入れる |
-| エラー監視 | Sentry | 2〜 | |
-| CI/CD | GitHub Actions | 1〜 | 型チェック・lint・ビルド → `pnpm deploy`、D1 マイグレーション |
+| 用途 | サービス | 備考 |
+|---|---|---|
+| 決済 | Stripe Connect（Express）＋ Billing | destination charge で手数料10%。月額はサブスクリプション。Webhook は `/api/webhooks/stripe` |
+| 生徒ログイン | LINE ログイン | Better Auth の LINE プロバイダー |
+| 通知 | LINE Messaging API（共通公式アカウント） | **プッシュ通知は通数で課金される**。無料枠は月200通で、超えると有料プラン。原価に入れる。友だち追加は `/api/webhooks/line` で記録 |
+| CI/CD | GitHub Actions | `ci.yml`（check・build）、`deploy.yml`（手動。マイグレーション → デプロイ） |
+| エラー監視 | Sentry | 未導入 |
 
 ### 認証
 
 Better Auth（外部サービスではなくライブラリ）を使い、ユーザー・セッションは D1 に持つ。生徒は LINE ログイン、コーチはメールの6桁コード、管理画面は Cloudflare Access。詳細とセキュリティ対策は [認証とセキュリティの方針](auth-and-security.md)。
 
-### 要検証
+### 要検証・未対応
 
-- **iPhone の動画形式**：iPhone の標準設定（高効率）は HEVC の `.mov`。コーチが Windows や Android の Chrome で再生できない可能性がある。ブラウザで H.264 MP4 に変換し、スイング部分だけ切り出して送る（WebCodecs）のが第一候補。容量も減る
-- **Queues・Cron の受け口**：vinext の Worker の入口（`vinext/server/fetch-handler`）は fetch だけを扱う。queue・scheduled の処理を同じ Worker に足せるか、別の Worker に分けるかを段階2の前に確認する
-- **動画のサイズ**：Worker が受け取れるリクエストの上限があるため、アップロードはブラウザから R2 へ直接行う
+- **iPhone の動画形式**：iPhone の標準設定（高効率）は HEVC の `.mov`。コーチが Windows や Android の Chrome で再生できない可能性がある。ブラウザで H.264 MP4 に変換し、スイング部分だけ切り出して送る（WebCodecs）のが第一候補。容量も100MB 以内に収まりやすくなる
+- **iPhone Safari のコマ送りと指での線引き**：実機で未確認
+- **外部サービスのつなぎ込み**：Stripe・LINE・Email Service を実際のアカウントで通した確認はまだ
+- **未導入**：Sentry、申し込みの Turnstile、チャット・アップロードの回数制限（コードの送信だけ制限済み）、骨格推定による自動キャプチャ
 
 ### ローカル開発での扱い
 
-| 本番 | ローカル | 確認 |
-|---|---|---|
-| Workers・D1・R2・Queues・Cron | Vite 開発サーバー内の workerd・Miniflare が再現（データは `.wrangler/state`） | D1・R2 はコンテナ内で動作確認済み |
-| Stripe | テストモード＋ Stripe CLI の `stripe listen`（コンテナで追加可） | 段階1で追加 |
-| LINE | テスト用チャネル。もしくは `infrastructure/external-services` をモックに差し替え | 段階2で追加 |
-| メール | Miniflare はメールを送らずログに出す | 段階1で確認 |
+| 本番 | ローカル |
+|---|---|
+| Workers・D1・R2・Queues・Cron | Vite 開発サーバー内の workerd・Miniflare が再現（データはコンテナのボリューム）。マイグレーションは開発サーバーが自動で流す。Cron は `/cdn-cgi/local/scheduled` で手で動かす |
+| Stripe | テストモード＋ `stripe listen`。キーがなくても `/api/dev/purchase` でスレッドを作れる |
+| LINE・メール | 送らずにログに出す |
+| ログイン | コードはログに出る。生徒もメールのコードでログインできる |
 
 コンテナでの開発手順は [README](../README.md) を参照。
 
@@ -105,20 +106,18 @@ Better Auth（外部サービスではなくライブラリ）を使い、ユー
 
 ```
 src/
+├── worker.ts                         Worker の入口（fetch は vinext、queue・scheduled を足す）
 ├── app/                              フロントエンド（Next.js App Router）
 │   ├── layout.tsx, page.tsx
-│   ├── (student)/                    生徒向け（スマホ前提のレイアウト）
-│   │   ├── c/[coachSlug]/page.tsx    受付ページ
-│   │   └── t/[threadId]/page.tsx     閲覧ページ
-│   ├── (coach)/                      コーチ向け（タブレット・PC前提のレイアウト）
+│   ├── (student)/                    生徒向け（スマホ前提）：受付・申し込み・マイページ・閲覧
+│   ├── (coach)/                      コーチ向け（タブレット・PC前提）：ホーム・添削・ドリル・設定
 │   │   └── coach/threads/[threadId]/
 │   │       ├── page.tsx              添削画面
 │   │       └── _components/          この画面だけで使う、feature を組み合わせた部品
-│   ├── features/                     機能ごとの UI
-│   │   └── <feature>/
-│   │       ├── components/
-│   │       ├── hooks/
-│   │       └── utils/
+│   ├── admin/                        管理画面（Cloudflare Access の奥）
+│   ├── legal/                        利用規約・プライバシーポリシー・特商法の表記
+│   ├── api/                          Route Handler（認証、Webhook、動画のアップロード・配信）
+│   ├── features/<feature>/           機能ごとの UI（components・hooks・utils）
 │   ├── components/                   機能をまたいで使う UI（ui/ は見た目だけの部品）
 │   ├── hooks/                        機能をまたいで使う hooks
 │   └── utils/                        機能をまたいで使う関数
@@ -128,38 +127,40 @@ src/
     │   └── <feature>/
     │       ├── domain/
     │       │   ├── values/           値オブジェクト・エンティティ（zod スキーマ＋ brand）
-    │       │   ├── aggregates/       集約とファクトリ関数
     │       │   ├── services/         ドメインサービス（*.service.ts）
-    │       │   ├── rules.ts          ルールの定数
-    │       │   └── errors.ts         ドメインのエラー
+    │       │   └── rules.ts          ルールの定数
     │       ├── application/
-    │       │   ├── usecases/         ユースケース（*.usecase.ts）
+    │       │   ├── usecases/         ユースケース（*.usecase.ts）とテスト
     │       │   └── dto/              画面に返す形（*.dto.ts）
     │       ├── infrastructure/
-    │       │   ├── repositories/     集約の保存・取得（D1）
+    │       │   ├── repositories/     D1 の読み書き
     │       │   ├── query-services/   読み取り専用。DTO を直接返す
-    │       │   └── external-services/ Stripe・LINE・R2 など
+    │       │   └── external-services/ Stripe・LINE・R2・キューなど
     │       └── presentation/
     │           ├── queries.ts        Server Component から呼ぶ読み取り口
-    │           └── actions.ts        Server Actions（書き込み口）
-    ├── auth/                         Better Auth の設定・ログイン中の利用者の取得（段階1）
-    ├── db/                           D1 の接続・Drizzle スキーマ（段階1）
-    ├── mocks/                        MOC 用の固定データ（段階1で削除）
-    └── utils/                        機能をまたいで使う関数
+    │           ├── actions.ts        Server Actions（書き込み口）
+    │           └── *Routes.ts など   Route Handler・Webhook・queue・scheduled の受け口
+    ├── auth/                         Better Auth の設定・ログイン中の利用者の取得
+    ├── db/                           D1 の接続・Drizzle スキーマ・開発用のマイグレーション
+    └── utils/                        機能をまたいで使う関数（Result 型、Stripe クライアントなど）
 ```
 
 いまある feature：
 
 | 場所 | feature | 内容 |
 |---|---|---|
-| server | `coach` | コーチ・プラン・受付枠 |
-| server | `thread` | スレッド・動画・添削カード・チャット |
+| server | `coach` | コーチ・プラン・受付枠・招待・売上の口座（Stripe Connect） |
+| server | `purchase` | 申し込み・決済（Checkout・Webhook）・キャンセル待ち |
+| server | `thread` | スレッド・動画・添削カード・チャット・毎日の処理 |
+| server | `drill` | ドリル |
+| server | `coach-review` | コーチへのレビュー |
+| server | `notification` | 通知（キュー・LINE・メール） |
 | app | `coach-profile` | 受付ページの部品 |
-| app | `thread` | スレッド一覧 |
-| app | `video-player` | 添削画面の動画プレイヤー（スロー・コマ送り・端末の動画の読み込み） |
-| app | `annotation` | 動画への線引き（直線・矢印・円・フリーハンド、3色、元に戻す） |
-
-予定（MOC で追加）：app 側の `review-card`・`chat`。
+| app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |
+| app | `apply` | プランの選択・キャンセル待ち |
+| app | `thread`・`video-upload` | スレッド一覧・動画の送信 |
+| app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
+| app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
 
 ### 依存の向き
 
@@ -172,6 +173,6 @@ presentation ──▶ application ──▶ domain
        └──────▶ infrastructure ──▶ domain
 ```
 
-- `app/` から `infrastructure`・`usecases`・`mocks`・`db` は import できない（Biome で禁止）
+- `app/` から `infrastructure`・`usecases`・`db` は import できない（Biome で禁止）
 - ユースケースは infrastructure を直接 import せず、関数を `dependencies` 引数で受け取る。組み立ては presentation で行う
 - 書き方の詳細は [コーディングルール](coding-rules.md)

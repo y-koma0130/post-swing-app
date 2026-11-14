@@ -85,6 +85,31 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
 }
 
 /**
+ * 署名を確かめてイベントを取り出す
+ * 自分のアカウントのイベントと Connect（コーチの口座）のイベントは、Stripe では別のエンドポイント設定になり
+ * 署名のシークレットも別になる。同じ URL で受けるので、両方のシークレットで試す
+ */
+const verifyEvent = async (body: string, signature: string): Promise<Stripe.Event | null> => {
+  const secrets = [env.STRIPE_WEBHOOK_SECRET, env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(
+    (secret) => secret !== undefined && secret !== ''
+  )
+  for (const secret of secrets) {
+    try {
+      return await getStripe().webhooks.constructEventAsync(
+        body,
+        signature,
+        secret,
+        undefined,
+        stripeCryptoProvider
+      )
+    } catch {
+      // 次のシークレットで試す
+    }
+  }
+  return null
+}
+
+/**
  * Stripe の Webhook を受ける
  *
  * - 署名を確かめてから処理する
@@ -96,16 +121,8 @@ export const handleStripeWebhook = async (request: Request): Promise<Response> =
   if (!signature) {
     return new Response('署名がありません', { status: 400 })
   }
-  let event: Stripe.Event
-  try {
-    event = await getStripe().webhooks.constructEventAsync(
-      await request.text(),
-      signature,
-      env.STRIPE_WEBHOOK_SECRET,
-      undefined,
-      stripeCryptoProvider
-    )
-  } catch {
+  const event = await verifyEvent(await request.text(), signature)
+  if (!event) {
     return new Response('署名が正しくありません', { status: 400 })
   }
 

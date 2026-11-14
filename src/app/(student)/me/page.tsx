@@ -2,8 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { LineFriendPrompt } from '@/app/features/notification/components/LineFriendPrompt'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { formatYen } from '@/app/utils/format'
+import { getLineFriendPrompt } from '@/server/features/notification/presentation/queries'
 import { openBillingPortalAction } from '@/server/features/purchase/presentation/actions'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
 import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
@@ -18,13 +20,18 @@ const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月�
 
 /** 生徒のマイページ */
 const MyPage = async ({ searchParams }: Props) => {
-  const [purchases, threads] = await Promise.all([getMyPurchases(), getMyThreadSummaries()])
+  const [purchases, threads, linePrompt] = await Promise.all([
+    getMyPurchases(),
+    getMyThreadSummaries(),
+    getLineFriendPrompt(),
+  ])
   if (!purchases || !threads) redirect('/login?next=/me')
   const { checkout } = await searchParams
 
   return (
     <main className="space-y-6 px-6 py-10">
       <h1 className="text-xl font-bold">マイページ</h1>
+      {linePrompt && <LineFriendPrompt addFriendUrl={linePrompt.addFriendUrl} />}
       {checkout === 'success' && (
         <p className="bg-mint-soft text-ink rounded-xl p-4 text-sm">
           お支払いが完了しました。スレッドの準備ができたら、ここから動画を送れます。

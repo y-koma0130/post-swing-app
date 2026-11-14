@@ -19,3 +19,7 @@ STRIPE_WEBHOOK_SECRET=
 # LINE 公式アカウント（Messaging API）のチャネル。空なら通知は送らずにログに出す
 LINE_MESSAGING_CHANNEL_SECRET=
 LINE_MESSAGING_ACCESS_TOKEN=
+# 公式アカウントの友だち追加URL（https://line.me/R/ti/p/@…）。空なら案内を出さない
+LINE_ADD_FRIEND_URL=
+# Stripe の Connect のイベント用エンドポイントの署名シークレット（本番・ステージングで別に作る。stripe listen では空でよい）
+STRIPE_CONNECT_WEBHOOK_SECRET=

@@ -57,6 +57,8 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - ユースケースは `*.usecase.ts`。`(params, dependencies)` を受け取る
 - 依存する関数は `type Dependencies = Readonly<{ ... }>` で受け取り、**infrastructure の実装を直接 import しない**（型だけ import する）。テストでは差し替える
 - 画面に返す形は `dto/*.dto.ts` の型で定義する。ブランド型は外して素の型にする
+- ユースケースごとに `*.usecase.test.ts` を置き、権限（他人は `not_found`）とドメインのルールを Vitest で確かめる。依存は `vi.fn` で差し替える
+- 戻り値は `Result`（`src/server/utils/result.ts`）。失敗は例外ではなく値で返す
 
 ### infrastructure
 
@@ -82,6 +84,7 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - ページ・レイアウトは Server Component のまま。動画・キャンバス・入力など、ブラウザが必要な部品だけ `'use client'` にする
 - props の型は `type Props = { ... }` でコンポーネントの上に書く
 - 書き込みは Server Actions（server の `presentation/actions.ts`）を呼ぶ。tRPC は使わない
+- 例外：ファイルを送るもの（動画・カード画像）は Route Handler（`app/api/`）で受け、処理は server の presentation に置く。大きな本文をそのまま R2 へ流すため
 
 ## ネイティブアプリへの備え
 
