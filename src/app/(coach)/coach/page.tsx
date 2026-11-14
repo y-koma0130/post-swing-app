@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
-import { listThreadSummaries } from '@/server/features/thread/presentation/queries'
+import { getCoachThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 /** コーチのホーム */
 const CoachHomePage = async () => {
@@ -21,8 +21,8 @@ const CoachHomePage = async () => {
       </main>
     )
   }
-  const { settings } = current
-  const threads = await listThreadSummaries(settings.slug)
+  const { settings, actor } = current
+  const threads = await getCoachThreadSummaries(actor.userId)
 
   return (
     <main className="space-y-6">
@@ -38,7 +38,13 @@ const CoachHomePage = async () => {
         </Card>
       )}
       <h1 className="text-xl font-bold">スレッド</h1>
-      <ThreadList threads={threads} />
+      {threads.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          まだスレッドはありません。受付ページを生徒に案内しましょう（/c/{settings.slug}）。
+        </p>
+      ) : (
+        <ThreadList threads={threads} viewer="coach" />
+      )}
     </main>
   )
 }

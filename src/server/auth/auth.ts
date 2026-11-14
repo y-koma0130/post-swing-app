@@ -28,10 +28,11 @@ const createAuth = () =>
       ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] },
     },
     rateLimit: {
-      enabled: true,
+      // 開発中は1つのIPでいくつものテスト用アカウントを切り替えるので止める（429 になることは確認済み）
+      enabled: !import.meta.env.DEV,
       storage: 'database',
       customRules: {
-        // 同じ人からのコード送信は1分に1回まで
+        // コードの送信は、同じIPから1分に1回まで
         '/email-otp/send-verification-otp': { window: 60, max: 1 },
       },
     },

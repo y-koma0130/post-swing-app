@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { formatYen } from '@/app/utils/format'
 import { openBillingPortalAction } from '@/server/features/purchase/presentation/actions'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
+import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 export const metadata: Metadata = { title: 'マイページ' }
 
@@ -16,8 +18,8 @@ const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月�
 
 /** 生徒のマイページ */
 const MyPage = async ({ searchParams }: Props) => {
-  const purchases = await getMyPurchases()
-  if (!purchases) redirect('/login?next=/me')
+  const [purchases, threads] = await Promise.all([getMyPurchases(), getMyThreadSummaries()])
+  if (!purchases || !threads) redirect('/login?next=/me')
   const { checkout } = await searchParams
 
   return (
@@ -28,6 +30,14 @@ const MyPage = async ({ searchParams }: Props) => {
           お支払いが完了しました。スレッドの準備ができたら、ここから動画を送れます。
         </p>
       )}
+      <section className="space-y-3">
+        <h2 className="font-bold">スレッド</h2>
+        {threads.length === 0 ? (
+          <p className="text-sm text-gray-500">まだスレッドはありません。</p>
+        ) : (
+          <ThreadList threads={threads} viewer="student" />
+        )}
+      </section>
       <section className="space-y-3">
         <h2 className="font-bold">申し込み</h2>
         {purchases.length === 0 ? (

@@ -12,7 +12,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "jsx": "preserve",
-    "incremental": true,
     "types": ["vinext/types", "vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"]

@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { coachSlugSchema } from '@/server/features/coach/domain/values/CoachSlug'
-import { THREAD_RULES } from '../rules'
+import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { chatMessageSchema } from './ChatMessage'
 import { swingVideoSchema } from './SwingVideo'
 import { threadIdSchema } from './ThreadId'
@@ -8,19 +7,31 @@ import { threadStatusSchema } from './ThreadStatus'
 
 /**
  * スレッド（1つのテーマを「送る→直す→撮り直す」で見る単位）
+ *
+ * ドメインルール:
+ * - 期間は開始から30日
+ * - 動画はお試し1本、それ以外は3本まで
+ * - テーマは最初の動画を送るときに生徒が書く
  */
 export const threadSchema = z.object({
   id: threadIdSchema,
-  coachSlug: coachSlugSchema,
-  studentName: z.string().min(1).max(50),
-  theme: z.string().min(1).max(100),
+  coachUserId: z.string().min(1),
+  studentUserId: z.string().min(1),
+  planKind: planKindSchema,
+  theme: z.string().max(100),
   status: threadStatusSchema,
   startedAt: z.coerce.date(),
   expiresAt: z.coerce.date(),
-  videos: z
-    .array(swingVideoSchema)
-    .max(THREAD_RULES.maxVideosPerThread, `動画は${THREAD_RULES.maxVideosPerThread}本までです`),
+  closedAt: z.coerce.date().nullable(),
+  videos: z.array(swingVideoSchema),
   messages: z.array(chatMessageSchema),
 })
 
 export type Thread = z.infer<typeof threadSchema>
+
+/** テーマ（生徒が書く） */
+export const threadThemeSchema = z
+  .string()
+  .trim()
+  .min(1, '直したいところを書いてください')
+  .max(100, '100文字までです')
