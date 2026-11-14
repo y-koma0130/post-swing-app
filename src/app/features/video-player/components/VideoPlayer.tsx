@@ -1,6 +1,6 @@
 'use client'
 
-import { type CSSProperties, type ReactNode, useEffect } from 'react'
+import { type CSSProperties, type ReactNode, useCallback, useEffect } from 'react'
 import { useVideoPlayer, type VideoSize } from '../hooks/useVideoPlayer'
 import { formatFps, formatTimecode, PLAYBACK_RATES } from '../utils/frame'
 
@@ -10,6 +10,8 @@ type Props = {
   src: string
   /** 動画にぴったり重ねて表示するもの（線引きなど）。動画の元の大きさを受け取る */
   renderOverlay?: RenderOverlay | undefined
+  /** 動画の要素を受け取る（コマを画像にするときなどに使う） */
+  onVideoElement?: ((video: HTMLVideoElement | null) => void) | undefined
 }
 
 /** 文字入力中やボタン上のキー操作は、プレイヤーのショートカットにしない */
@@ -40,9 +42,16 @@ const frameStyle = (size: VideoSize | null): CSSProperties => {
  *
  * キーボード：← → でコマ送り、スペースで再生・停止
  */
-export const VideoPlayer = ({ src, renderOverlay }: Props) => {
+export const VideoPlayer = ({ src, renderOverlay, onVideoElement }: Props) => {
   const { videoRef, state, togglePlay, stepFrames, seek, setRate } = useVideoPlayer()
   const disabled = state.probing || state.durationSec === 0
+  const setVideoElement = useCallback(
+    (video: HTMLVideoElement | null) => {
+      videoRef.current = video
+      onVideoElement?.(video)
+    },
+    [videoRef, onVideoElement]
+  )
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -65,7 +74,7 @@ export const VideoPlayer = ({ src, renderOverlay }: Props) => {
         {/* 重ねる層が動画の映っている範囲とぴったり重なるよう、箱の縦横比を動画に合わせる */}
         <div className="relative" style={frameStyle(state.videoSize)}>
           <video
-            ref={videoRef}
+            ref={setVideoElement}
             src={src}
             muted
             playsInline

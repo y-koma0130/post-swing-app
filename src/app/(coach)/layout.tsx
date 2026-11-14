@@ -23,6 +23,9 @@ const CoachLayout = async ({ children }: Props) => {
               <Link href="/coach" className="text-gray-700 hover:text-gray-900">
                 ホーム
               </Link>
+              <Link href="/coach/drills" className="text-gray-700 hover:text-gray-900">
+                ドリル
+              </Link>
               <Link href="/coach/settings" className="text-gray-700 hover:text-gray-900">
                 設定
               </Link>

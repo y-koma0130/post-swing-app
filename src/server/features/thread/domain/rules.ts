@@ -17,3 +17,16 @@ export const VIDEO_RULES = {
   /** iPhone（mov）・Android（mp4）・ブラウザで撮ったもの（webm） */
   allowedContentTypes: ['video/mp4', 'video/quicktime', 'video/webm'],
 } as const
+
+/** 返信のルール */
+export const REPLY_RULES = {
+  /** 1通の返信に入れられるカードの枚数 */
+  maxCards: 8,
+  /** カード画像（PNG）1枚の大きさの上限 */
+  maxImageBytes: 5 * 1024 * 1024,
+} as const
+
+/** チャットのルール */
+export const CHAT_RULES = {
+  maxLength: 1000,
+} as const

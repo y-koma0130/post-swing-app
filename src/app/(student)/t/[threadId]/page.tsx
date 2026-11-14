@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoUploadForm } from '@/app/features/video-upload/components/VideoUploadForm'
@@ -51,6 +52,15 @@ const ThreadViewPage = async ({ params }: Props) => {
           ) : (
             <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">添削を待っています。</p>
           )}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold">コーチとのチャット</h3>
+            <ChatPanel
+              threadId={thread.id}
+              video={video}
+              viewer="student"
+              closed={thread.status === 'closed'}
+            />
+          </div>
         </section>
       ))}
 
