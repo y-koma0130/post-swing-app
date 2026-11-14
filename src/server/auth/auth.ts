@@ -23,6 +23,10 @@ const createAuth = () =>
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
     account: { encryptOAuthTokens: true },
+    advanced: {
+      // Cloudflare が付ける接続元IP。回数制限を人ごとに数えるのに使う
+      ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] },
+    },
     rateLimit: {
       enabled: true,
       storage: 'database',

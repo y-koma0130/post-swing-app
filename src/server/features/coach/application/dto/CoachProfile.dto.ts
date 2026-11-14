@@ -10,6 +10,9 @@ export type CoachProfileDto = {
   bio: string
   instagram: string
   remainingCapacity: number
+  /** 申し込みを受けられるか（Stripe の口座ができていて、受付中のプランがある） */
+  acceptingApplications: boolean
+  /** 受付中のプランだけ */
   plans: Array<{
     kind: PlanKind
     name: string

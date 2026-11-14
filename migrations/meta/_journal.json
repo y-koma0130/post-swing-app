@@ -15,6 +15,13 @@
       "when": 1794647874049,
       "tag": "0001_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794648082345,
+      "tag": "0002_coach",
+      "breakpoints": true
     }
   ]
 }

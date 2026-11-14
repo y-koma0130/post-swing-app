@@ -10,3 +10,6 @@ EMAIL_FROM=SwingPost <noreply@example.com>
 # LINE ログインのチャネル。空なら LINE ログインを出さない（開発中はメールのコードで代用）
 LINE_LOGIN_CHANNEL_ID=
 LINE_LOGIN_CHANNEL_SECRET=
+# 管理画面（/admin）を守る Cloudflare Access。開発中は使わない（空でよい）
+ACCESS_TEAM_DOMAIN=
+ACCESS_AUD=

@@ -27,9 +27,15 @@ const CoachLandingPage = async ({ params }: Props) => {
       <div className="mt-8">
         <PlanList plans={coach.plans} />
       </div>
-      <ButtonLink href={`/c/${coach.slug}/apply`} className="mt-8 w-full">
-        動画を送って添削してもらう
-      </ButtonLink>
+      {coach.acceptingApplications ? (
+        <ButtonLink href={`/c/${coach.slug}/apply`} className="mt-8 w-full">
+          動画を送って添削してもらう
+        </ButtonLink>
+      ) : (
+        <p className="mt-8 rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+          ただいま申し込みの準備中です
+        </p>
+      )}
     </main>
   )
 }

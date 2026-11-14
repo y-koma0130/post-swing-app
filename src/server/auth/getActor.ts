@@ -1,14 +1,9 @@
 import 'server-only'
 import { headers } from 'next/headers'
+import type { Actor } from '@/server/utils/actor'
 import { getAuth } from './auth'
 
-/**
- * 操作している人。ユースケースにはこれだけを渡し、Cookie やトークンは知らせない
- */
-export type Actor = Readonly<{
-  userId: string
-  name: string
-}>
+export type { Actor }
 
 /** ログインしていなければ null */
 export const getActor = async (): Promise<Actor | null> => {

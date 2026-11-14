@@ -1,35 +1,13 @@
 import 'server-only'
 import { z } from 'zod'
-import { coachSchema } from '@/server/features/coach/domain/values/Coach'
 import { threadSchema } from '@/server/features/thread/domain/values/Thread'
 
 /**
  * MOC 用の固定データ。スキーマで parse して、ドメインのルールを満たすことを保証する
- * 段階1で D1 に置き換えたら削除する
+ * スレッドを D1 に移したら（M4）削除する
  */
 
 export const MOCK_COACH_SLUG = 'sample-pro'
-
-export const mockCoaches = z.array(coachSchema).parse([
-  {
-    slug: MOCK_COACH_SLUG,
-    name: '山田 太郎',
-    title: 'ティーチングプロ',
-    bio: 'インドアスクールで10年。トップの形とインパクトの再現性を、言葉と線で分かりやすく伝えます。',
-    instagram: '@sample_golf_lesson',
-    monthlyCapacity: 20,
-    plans: [
-      {
-        kind: 'trial',
-        name: 'お試し',
-        price: 550,
-        description: '動画1本のミニ添削（チャット3通）',
-      },
-      { kind: 'single', name: '1スレッド', price: 4980, description: '動画3本まで・30日間' },
-      { kind: 'monthly', name: '月額', price: 3980, description: '毎月1スレッド' },
-    ],
-  },
-])
 
 export const mockThreads = z.array(threadSchema).parse([
   {

@@ -19,10 +19,15 @@ const CoachLayout = async ({ children }: Props) => {
             SwingPost
           </Link>
           {actor && (
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">{actor.name}</span>
+            <nav className="flex items-center gap-5 text-sm">
+              <Link href="/coach" className="text-gray-700 hover:text-gray-900">
+                ホーム
+              </Link>
+              <Link href="/coach/settings" className="text-gray-700 hover:text-gray-900">
+                設定
+              </Link>
               <SignOutButton redirectTo="/coach/login" />
-            </div>
+            </nav>
           )}
         </div>
       </header>

@@ -28,6 +28,8 @@ docker compose up
 
 http://localhost:5173 で開く。ソースはマウントしているので、保存すると反映される。`node_modules` はコンテナ側のボリュームに持つ（macOS と Linux でバイナリが違うため）。
 
+ローカルの D1・R2 のデータはコンテナのボリューム（`cloudflare-state`）に入る。消して作り直すときは `docker compose down -v`（`node_modules` のボリュームも消える）。マイグレーションは開発サーバーが最初のリクエストで自動で流す。
+
 コンテナ内でコマンドを打つときは次のようにする。
 
 ```bash
