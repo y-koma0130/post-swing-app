@@ -13,10 +13,10 @@ export default {
     return vinext.fetch(request, env, ctx)
   },
   queue: async (batch) => {
-    console.log('[queue]', batch.queue, batch.messages.length)
+    console.info('[queue]', batch.queue, batch.messages.length)
     batch.ackAll()
   },
   scheduled: async (controller) => {
-    console.log('[scheduled]', controller.cron)
+    console.info('[scheduled]', controller.cron)
   },
 } satisfies ExportedHandler<Env>

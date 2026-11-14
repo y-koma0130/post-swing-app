@@ -6,7 +6,7 @@ import { env } from 'cloudflare:workers'
  */
 export const sendLoginCodeEmail = async ({ to, code }: { to: string; code: string }) => {
   if (import.meta.env.DEV) {
-    console.log(`[dev] ログインコード ${to}: ${code}`)
+    console.info(`[dev] ログインコード ${to}: ${code}`)
     return
   }
   await env.EMAIL.send({

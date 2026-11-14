@@ -43,7 +43,7 @@ const apply = async (db: D1Database): Promise<void> => {
       ...statements.map((s) => db.prepare(s)),
       db.prepare('INSERT INTO d1_migrations (name) VALUES (?)').bind(migration.name),
     ])
-    console.log(`[db] マイグレーションを適用しました: ${migration.name}`)
+    console.info(`[db] マイグレーションを適用しました: ${migration.name}`)
   }
 }
 

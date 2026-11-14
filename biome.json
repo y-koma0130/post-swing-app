@@ -38,7 +38,7 @@
         "noConsole": {
           "level": "warn",
           "options": {
-            "allow": ["warn", "error"]
+            "allow": ["info", "warn", "error"]
           }
         }
       },
@@ -47,6 +47,9 @@
         "useImportType": "error",
         "noUnusedTemplateLiteral": "error",
         "useConst": "error"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
       },
       "correctness": {
         "noUnusedVariables": "error",

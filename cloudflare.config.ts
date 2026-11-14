@@ -32,6 +32,9 @@ export default defineConfig({
       EMAIL_FROM: bindings.secret(),
       LINE_LOGIN_CHANNEL_ID: bindings.secret(),
       LINE_LOGIN_CHANNEL_SECRET: bindings.secret(),
+      // Stripe（本番は live、それ以外は test のキー）
+      STRIPE_SECRET_KEY: bindings.secret(),
+      STRIPE_WEBHOOK_SECRET: bindings.secret(),
       // 管理画面を守る Cloudflare Access（https://<チーム名>.cloudflareaccess.com と、アプリの AUD）
       ACCESS_TEAM_DOMAIN: bindings.secret(),
       ACCESS_AUD: bindings.secret(),

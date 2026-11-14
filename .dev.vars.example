@@ -13,3 +13,6 @@ LINE_LOGIN_CHANNEL_SECRET=
 # 管理画面（/admin）を守る Cloudflare Access。開発中は使わない（空でよい）
 ACCESS_TEAM_DOMAIN=
 ACCESS_AUD=
+# Stripe のテストモードのキー（sk_test_…）と、`stripe listen` が表示する Webhook の署名シークレット（whsec_…）
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=

@@ -157,3 +157,36 @@ export const savePlans: SavePlans = async (userId, plans) => {
   if (!first) return
   await db.batch([first, ...rest])
 }
+
+export type FindPayoutAccount = (
+  userId: string
+) => Promise<{ stripeAccountId: string | null; email: string } | null>
+export const findPayoutAccount: FindPayoutAccount = async (userId) => {
+  const row = await getDb()
+    .select({ stripeAccountId: coachProfile.stripeAccountId, email: user.email })
+    .from(coachProfile)
+    .innerJoin(user, eq(user.id, coachProfile.userId))
+    .where(eq(coachProfile.userId, userId))
+    .get()
+  return row ?? null
+}
+
+export type FindStripeAccountId = (userId: string) => Promise<string | null>
+export const findStripeAccountId: FindStripeAccountId = async (userId) =>
+  (await findPayoutAccount(userId))?.stripeAccountId ?? null
+
+export type SaveStripeAccountId = (userId: string, stripeAccountId: string) => Promise<void>
+export const saveStripeAccountId: SaveStripeAccountId = async (userId, stripeAccountId) => {
+  await getDb()
+    .update(coachProfile)
+    .set({ stripeAccountId, updatedAt: new Date() })
+    .where(eq(coachProfile.userId, userId))
+}
+
+export type SaveChargesEnabled = (stripeAccountId: string, chargesEnabled: boolean) => Promise<void>
+export const saveChargesEnabled: SaveChargesEnabled = async (stripeAccountId, chargesEnabled) => {
+  await getDb()
+    .update(coachProfile)
+    .set({ chargesEnabled, updatedAt: new Date() })
+    .where(eq(coachProfile.stripeAccountId, stripeAccountId))
+}

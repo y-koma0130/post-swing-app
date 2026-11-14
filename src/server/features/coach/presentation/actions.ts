@@ -2,25 +2,35 @@
 
 import 'server-only'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
+import { startPayoutOnboarding } from '../application/usecases/startPayoutOnboarding.usecase'
 import { updateCoachProfile } from '../application/usecases/updateCoachProfile.usecase'
 import { updatePlans } from '../application/usecases/updatePlans.usecase'
 import { coachProfileSchema } from '../domain/values/Coach'
 import { coachSlugSchema } from '../domain/values/CoachSlug'
 import { planKindSchema, planSchema } from '../domain/values/Plan'
 import {
+  createConnectAccount,
+  createDashboardLink,
+  createOnboardingLink,
+} from '../infrastructure/external-services/stripeConnect'
+import {
   findCoachSlug,
+  findPayoutAccount,
+  findStripeAccountId,
   findUserByEmail,
   isCoach,
   isSlugTaken,
   saveCoachProfile,
   saveInvitedCoach,
   savePlans,
+  saveStripeAccountId,
 } from '../infrastructure/repositories/coachRepository'
 
 /** zod のエラーから、最初のメッセージだけを画面に出す */
@@ -131,4 +141,33 @@ export const updatePlansAction = async (
   }
   revalidatePath('/coach/settings')
   return actionSuccess('プランを保存しました')
+}
+
+/** 売上を受け取る口座の設定（Stripe）へ進む */
+export const startPayoutOnboardingAction = async (): Promise<void> => {
+  const actor = await getActor()
+  if (!actor) {
+    redirect('/coach/login')
+  }
+  const result = await startPayoutOnboarding(
+    { actor },
+    { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
+  )
+  if (!result.ok) {
+    redirect('/coach')
+  }
+  redirect(result.value.url)
+}
+
+/** 売上・入金を確かめる Stripe の画面へ */
+export const openPayoutDashboardAction = async (): Promise<void> => {
+  const actor = await getActor()
+  if (!actor) {
+    redirect('/coach/login')
+  }
+  const accountId = await findStripeAccountId(actor.userId)
+  if (accountId === null) {
+    redirect('/coach/settings')
+  }
+  redirect(await createDashboardLink(accountId))
 }

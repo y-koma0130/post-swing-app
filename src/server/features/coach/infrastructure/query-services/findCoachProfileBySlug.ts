@@ -1,7 +1,7 @@
 import 'server-only'
-import { eq } from 'drizzle-orm'
+import { and, count, eq, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { coachProfile } from '@/server/db/schema'
+import { coachProfile, thread } from '@/server/db/schema'
 import type { CoachProfileDto } from '../../application/dto/CoachProfile.dto'
 import { PLAN_DISPLAY_ORDER } from '../../domain/rules'
 import { calcRemainingCapacity } from '../../domain/services/calcRemainingCapacity.service'
@@ -27,8 +27,13 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     return null
   }
 
-  // TODO(M3): スレッドの表を足したら、今月の進行中のスレッドを数える
-  const activeThreadCount = 0
+  // 受付枠は、終わっていないスレッドの数で埋まる
+  const active = await getDb()
+    .select({ n: count() })
+    .from(thread)
+    .where(and(eq(thread.coachUserId, coach.userId), ne(thread.status, 'closed')))
+    .get()
+  const activeThreadCount = active?.n ?? 0
 
   return {
     slug: coach.slug,

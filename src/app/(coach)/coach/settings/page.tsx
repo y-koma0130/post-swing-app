@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
+import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
 import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
 
@@ -16,6 +17,10 @@ const CoachSettingsPage = async () => {
   return (
     <main className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-xl font-bold">設定</h1>
+      <Card className="space-y-4">
+        <h2 className="font-bold">売上の受け取り</h2>
+        <PayoutSection settings={settings} />
+      </Card>
       <Card className="space-y-4">
         <h2 className="font-bold">プロフィール</h2>
         <CoachProfileForm settings={settings} />
