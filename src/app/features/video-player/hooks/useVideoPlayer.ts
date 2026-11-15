@@ -3,6 +3,7 @@ import {
   DEFAULT_FRAME_DURATION_SEC,
   estimateFrameDuration,
   type FrameSample,
+  frameDurationFromRate,
   type PlaybackRate,
   stepFrameTime,
 } from '../utils/frame'
@@ -16,7 +17,8 @@ const MAX_SAMPLES = 120
 const supportsVideoFrameCallback = (video: HTMLVideoElement): boolean =>
   'requestVideoFrameCallback' in video
 
-export type FrameRateSource = 'default' | 'estimated'
+/** known：送るときに測った値。estimated：再生して推定した値。default：仮の値 */
+export type FrameRateSource = 'known' | 'default' | 'estimated'
 
 export type VideoSize = { width: number; height: number }
 
@@ -33,25 +35,31 @@ export type VideoPlayerState = {
   probing: boolean
 }
 
-const INITIAL_STATE: VideoPlayerState = {
+const initialState = (frameRate: number | null): VideoPlayerState => ({
   currentTimeSec: 0,
   durationSec: 0,
   videoSize: null,
   paused: true,
   rate: 1,
-  frameDurationSec: DEFAULT_FRAME_DURATION_SEC,
-  frameRateSource: 'default',
+  frameDurationSec:
+    frameRate !== null && frameRate > 0
+      ? frameDurationFromRate(frameRate)
+      : DEFAULT_FRAME_DURATION_SEC,
+  frameRateSource: frameRate !== null && frameRate > 0 ? 'known' : 'default',
   probing: false,
-}
+})
 
 /**
  * `<video>` の再生・スロー・コマ送り
  *
+ * フレームレートが分かっていればそれを使い、分からなければ少し再生して推定する。
  * 動画を差し替えるときは、呼び出し側で key を変えて作り直す
  */
-export const useVideoPlayer = () => {
+export const useVideoPlayer = (knownFrameRate: number | null = null) => {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [state, setState] = useState<VideoPlayerState>(INITIAL_STATE)
+  const [state, setState] = useState<VideoPlayerState>(() => initialState(knownFrameRate))
+  // 推定が要るかは最初に決まる（動画を差し替えるときは key で作り直すため）
+  const needsEstimate = state.frameRateSource !== 'known'
 
   useEffect(() => {
     const video = videoRef.current
@@ -75,7 +83,7 @@ export const useVideoPlayer = () => {
     const onVideoFrame: VideoFrameRequestCallback = (_now, metadata) => {
       setState((s) => ({ ...s, currentTimeSec: metadata.mediaTime }))
 
-      if (!video.paused) {
+      if (!video.paused && needsEstimate) {
         samples = [
           ...samples.slice(-(MAX_SAMPLES - 1)),
           { mediaTime: metadata.mediaTime, presentedFrames: metadata.presentedFrames },
@@ -103,7 +111,7 @@ export const useVideoPlayer = () => {
             ? { width: video.videoWidth, height: video.videoHeight }
             : null,
       }))
-      if (!supportsFrameCallback) return
+      if (!supportsFrameCallback || !needsEstimate) return
 
       probing = true
       clearTimeout(probeTimer)
@@ -152,7 +160,7 @@ export const useVideoPlayer = () => {
       video.removeEventListener('timeupdate', onTimeUpdate)
       video.removeEventListener('seeked', onTimeUpdate)
     }
-  }, [])
+  }, [needsEstimate])
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current

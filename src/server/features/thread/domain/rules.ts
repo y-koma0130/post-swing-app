@@ -16,6 +16,9 @@ export const VIDEO_RULES = {
   maxBytes: 100 * 1024 * 1024,
   /** iPhone（mov）・Android（mp4）・ブラウザで撮ったもの（webm） */
   allowedContentTypes: ['video/mp4', 'video/quicktime', 'video/webm'],
+  /** 受け取るフレームレートの範囲。外れた値は記録しない（スマホのスロー撮影は 240fps まで） */
+  minFrameRate: 1,
+  maxFrameRate: 1000,
 } as const
 
 /** 返信のルール */

@@ -14,6 +14,7 @@ export type NewVideo = Readonly<{
   contentType: string
   sizeBytes: number
   note: string
+  frameRate: number | null
   uploadedAt: Date
   /** 最初の動画のときだけ、スレッドのテーマも保存する */
   theme: string | null
@@ -26,6 +27,8 @@ export type SubmitVideoParams = Readonly<{
   note: string
   contentType: string
   sizeBytes: number
+  /** 生徒のブラウザが測ったフレームレート（コマ送りに使う）。信用できない値は記録しない */
+  frameRate: number | null
   now: Date
 }>
 
@@ -55,6 +58,15 @@ export type SubmitVideo = (
 
 const isAllowedContentType = (contentType: string): boolean =>
   VIDEO_RULES.allowedContentTypes.some((allowed) => allowed === contentType)
+
+/** 範囲外・数でない値は null にする（送信は止めない。再生画面が推定で補う） */
+const acceptFrameRate = (frameRate: number | null): number | null =>
+  frameRate !== null &&
+  Number.isFinite(frameRate) &&
+  frameRate >= VIDEO_RULES.minFrameRate &&
+  frameRate <= VIDEO_RULES.maxFrameRate
+    ? frameRate
+    : null
 
 /**
  * 生徒が動画を送る
@@ -98,6 +110,7 @@ export const submitVideo: SubmitVideo = async (params, deps) => {
     contentType: params.contentType,
     sizeBytes: params.sizeBytes,
     note: params.note.trim(),
+    frameRate: acceptFrameRate(params.frameRate),
     uploadedAt: params.now,
     theme: theme?.success ? theme.data : null,
   })

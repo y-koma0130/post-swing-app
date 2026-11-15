@@ -8,6 +8,8 @@ export type RenderOverlay = (videoSize: VideoSize) => ReactNode
 
 type Props = {
   src: string
+  /** 送るときに測ったフレームレート。分からなければ null（少し再生して推定する） */
+  frameRate?: number | null | undefined
   /** 動画にぴったり重ねて表示するもの（線引きなど）。動画の元の大きさを受け取る */
   renderOverlay?: RenderOverlay | undefined
   /** 動画の要素を受け取る（コマを画像にするときなどに使う） */
@@ -42,8 +44,8 @@ const frameStyle = (size: VideoSize | null): CSSProperties => {
  *
  * キーボード：← → でコマ送り、スペースで再生・停止
  */
-export const VideoPlayer = ({ src, renderOverlay, onVideoElement }: Props) => {
-  const { videoRef, state, togglePlay, stepFrames, seek, setRate } = useVideoPlayer()
+export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoElement }: Props) => {
+  const { videoRef, state, togglePlay, stepFrames, seek, setRate } = useVideoPlayer(frameRate)
   const disabled = state.probing || state.durationSec === 0
   const setVideoElement = useCallback(
     (video: HTMLVideoElement | null) => {

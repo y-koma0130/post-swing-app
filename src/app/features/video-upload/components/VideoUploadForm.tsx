@@ -94,6 +94,8 @@ export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
       file: toSend,
       theme: String(form.get('theme') ?? ''),
       note: String(form.get('note') ?? ''),
+      // 変換に失敗して元のファイルを送るときも、フレームレートは同じ
+      frameRate: analysis.kind === 'ready' ? analysis.info.frameRate : null,
     })
     if (ok) router.refresh()
   }

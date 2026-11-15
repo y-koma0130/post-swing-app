@@ -11,6 +11,8 @@ type UploadInput = {
   file: File
   theme: string
   note: string
+  /** 変換したときに測ったフレームレート。再生画面のコマ送りに使う */
+  frameRate: number | null
 }
 
 const parseMessage = (responseText: string): string => {
@@ -34,13 +36,16 @@ export const useVideoUpload = () => {
   const [state, setState] = useState<UploadState>({ kind: 'idle' })
 
   const upload = useCallback(
-    ({ threadId, file, theme, note }: UploadInput) =>
+    ({ threadId, file, theme, note, frameRate }: UploadInput) =>
       new Promise<boolean>((resolve) => {
         const xhr = new XMLHttpRequest()
         xhr.open('POST', `/api/threads/${threadId}/videos`)
         xhr.setRequestHeader('content-type', file.type)
         xhr.setRequestHeader('x-thread-theme', encodeURIComponent(theme))
         xhr.setRequestHeader('x-video-note', encodeURIComponent(note))
+        if (frameRate !== null) {
+          xhr.setRequestHeader('x-video-frame-rate', String(frameRate))
+        }
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             setState({ kind: 'uploading', progress: event.loaded / event.total })

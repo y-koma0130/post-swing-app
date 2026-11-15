@@ -26,6 +26,7 @@ const params = {
   note: 'ドライバーです',
   contentType: 'video/quicktime',
   sizeBytes: 20 * 1024 * 1024,
+  frameRate: 119.88,
   now,
 }
 
@@ -56,6 +57,20 @@ describe('submitVideo', () => {
       threadId: 'thread-1',
       coachUserId: 'coach-1',
     })
+  })
+
+  it('ブラウザが測ったフレームレートを記録する', async () => {
+    const { deps, saveVideo } = setup()
+    await submitVideo(params, deps)
+    expect(saveVideo.mock.calls[0]?.[0].frameRate).toBe(119.88)
+  })
+
+  it('ありえないフレームレートは記録しないが、送信は止めない', async () => {
+    for (const frameRate of [0, -30, 5000, Number.NaN, null]) {
+      const { deps, saveVideo } = setup()
+      expect((await submitVideo({ ...params, frameRate }, deps)).ok).toBe(true)
+      expect(saveVideo.mock.calls[0]?.[0].frameRate).toBeNull()
+    }
   })
 
   it('2本目以降はテーマを変えない', async () => {

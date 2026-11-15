@@ -89,9 +89,18 @@ export const estimateFrameDuration: EstimateFrameDuration = (samples) => {
     return null
   }
 
-  const fps = 1 / low
+  return frameDurationFromRate(1 / low)
+}
+
+export type FrameDurationFromRate = (fps: number) => number
+
+/**
+ * フレームレートから1コマの長さ（秒）。よくある値の近くなら寄せる
+ * （iPhone は 29.97・59.94・119.88fps などで記録するが、コマ送りには影響しない誤差）
+ */
+export const frameDurationFromRate: FrameDurationFromRate = (fps) => {
   const snapped = COMMON_FPS.find((common) => Math.abs(fps - common) / common <= SNAP_TOLERANCE)
-  return snapped === undefined ? low : 1 / snapped
+  return 1 / (snapped ?? fps)
 }
 
 export type FormatTimecode = (timeSec: number) => string

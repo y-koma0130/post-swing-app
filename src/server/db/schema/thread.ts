@@ -51,6 +51,8 @@ export const video = sqliteTable(
     contentType: text().notNull(),
     sizeBytes: integer().notNull(),
     note: text().notNull(),
+    /** 送る前にブラウザで測ったフレームレート。分からない（変換せずに送った）ときは null */
+    frameRate: real(),
     uploadedAt: integer({ mode: 'timestamp_ms' }).notNull(),
     /** 保存期間を過ぎて R2 から消した日時 */
     deletedAt: integer({ mode: 'timestamp_ms' }),

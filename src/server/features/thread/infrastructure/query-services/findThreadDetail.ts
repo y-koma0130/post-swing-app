@@ -9,6 +9,7 @@ import {
   reviewCard,
   thread,
   user,
+  video,
 } from '@/server/db/schema'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
@@ -38,7 +39,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     .from(coachReview)
     .where(eq(coachReview.threadId, threadId))
     .get()
-  const [people, replies, cards] = await Promise.all([
+  const [people, replies, cards, frameRates] = await Promise.all([
     db
       .select({
         coachName: coachProfile.displayName,
@@ -68,6 +69,13 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
           .where(inArray(reply.videoId, videoIds))
           .orderBy(asc(reviewCard.sortOrder))
           .all(),
+    videoIds.length === 0
+      ? []
+      : db
+          .select({ id: video.id, frameRate: video.frameRate })
+          .from(video)
+          .where(inArray(video.id, videoIds))
+          .all(),
   ])
   if (!people) {
     return null
@@ -94,6 +102,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         uploadedAt: v.uploadedAt,
         note: v.note,
         url: `/api/videos/${v.id}`,
+        frameRate: frameRates.find((x) => x.id === v.id)?.frameRate ?? null,
         remainingStudentMessages: countRemainingStudentMessages(t, v.id),
         reply: r
           ? {

@@ -64,6 +64,7 @@ export const saveVideo: SaveVideo = async (v) => {
       contentType: v.contentType,
       sizeBytes: v.sizeBytes,
       note: v.note,
+      frameRate: v.frameRate,
       uploadedAt: v.uploadedAt,
     }),
     db

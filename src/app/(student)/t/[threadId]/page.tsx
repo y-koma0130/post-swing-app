@@ -46,7 +46,7 @@ const ThreadViewPage = async ({ params }: Props) => {
       {thread.videos.map((video, index) => (
         <section key={video.id} className="space-y-4">
           <h2 className="font-bold">{index + 1}本目</h2>
-          <VideoPlayer src={video.url} />
+          <VideoPlayer src={video.url} frameRate={video.frameRate} />
           {video.note && <p className="text-sm whitespace-pre-wrap text-gray-600">{video.note}</p>}
           {video.reply ? (
             <ReviewCardList cards={video.reply.cards} />

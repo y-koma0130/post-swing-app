@@ -35,6 +35,8 @@ export type ThreadDetailDto = {
     note: string
     /** 動画の配信URL（権限を確かめてから R2 から返す） */
     url: string
+    /** 送るときに測ったフレームレート。分からなければ null（再生画面が推定する） */
+    frameRate: number | null
     remainingStudentMessages: number
     reply: {
       sentAt: Date

@@ -135,6 +135,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
           <VideoPlayer
             key={current.url}
             src={current.url}
+            frameRate={current.frameRate}
             onVideoElement={onVideoElement}
             renderOverlay={
               current.reply
@@ -144,7 +145,9 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
                   )
             }
           />
-          {comparing && previous && <VideoPlayer key={previous.url} src={previous.url} />}
+          {comparing && previous && (
+            <VideoPlayer key={previous.url} src={previous.url} frameRate={previous.frameRate} />
+          )}
         </div>
         {current.note && (
           <p className="rounded-card bg-white p-4 text-sm whitespace-pre-wrap text-gray-700 shadow-sm">

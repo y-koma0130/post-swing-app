@@ -25,6 +25,13 @@ const SUBMIT_ERROR = {
   note_too_long: { status: 400, message: 'メモは1000文字までです' },
 } as const satisfies Record<SubmitVideoError, { status: number; message: string }>
 
+/** 数でなければ null。範囲の確認はユースケースで行う */
+const parseFrameRate = (value: string | null): number | null => {
+  if (value === null || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 const decodeHeader = (request: Request, name: string): string => {
   const value = request.headers.get(name)
   if (value === null) return ''
@@ -60,6 +67,7 @@ export const handleVideoUpload = async (request: Request, threadId: string): Pro
       note: decodeHeader(request, 'x-video-note'),
       contentType: (request.headers.get('content-type') ?? '').split(';')[0]?.trim() ?? '',
       sizeBytes,
+      frameRate: parseFrameRate(request.headers.get('x-video-frame-rate')),
       now: new Date(),
     },
     {

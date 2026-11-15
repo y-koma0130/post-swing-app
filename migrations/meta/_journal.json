@@ -43,6 +43,13 @@
       "when": 1794649888735,
       "tag": "0005_notification_review",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794786691849,
+      "tag": "0006_video_frame_rate",
+      "breakpoints": true
     }
   ]
 }
