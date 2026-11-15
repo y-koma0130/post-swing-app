@@ -72,7 +72,7 @@ Web（Next.js）── Server Component / Server Actions ───────�
 
 | 用途 | サービス | 備考 |
 |---|---|---|
-| 決済 | Stripe Connect（Express）＋ Billing | destination charge で手数料10%。月額はサブスクリプション。Webhook は `/api/webhooks/stripe` |
+| 決済 | Stripe Connect（Accounts v2、Express ダッシュボード）＋ Billing | destination charge（on_behalf_of なし）で手数料10%。コーチの口座は送金を受ける recipient の設定だけ。月額はサブスクリプション。Webhook は `/api/webhooks/stripe`。口座の状態は、設定から戻ったときと設定画面を開いたときに Stripe に問い合わせる |
 | 生徒ログイン | LINE ログイン | Better Auth の LINE プロバイダー |
 | 通知 | LINE Messaging API（共通公式アカウント） | **プッシュ通知は通数で課金される**。無料枠は月200通で、超えると有料プラン。原価に入れる。友だち追加は `/api/webhooks/line` で記録 |
 | CI/CD | GitHub Actions | `ci.yml`（check・build）、`deploy.yml`（手動。マイグレーション → デプロイ） |

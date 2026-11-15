@@ -1,5 +1,6 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
+import { toByteRange } from '@/server/utils/byteRange'
 
 /**
  * 動画・画像の置き場所（R2）。バケットは非公開のまま使い、配信は権限を確かめた Route Handler から行う
@@ -39,11 +40,7 @@ export const respondWithMediaObject = async (
   }
   const range = object.range
   if (range && request.headers.has('range')) {
-    const offset = 'offset' in range && range.offset !== undefined ? range.offset : 0
-    const length =
-      'length' in range && range.length !== undefined ? range.length : object.size - offset
-    const start = 'suffix' in range ? object.size - range.suffix : offset
-    const end = 'suffix' in range ? object.size - 1 : start + length - 1
+    const { start, end } = toByteRange(range, object.size)
     headers.set('content-range', `bytes ${start}-${end}/${object.size}`)
     headers.set('content-length', String(end - start + 1))
     return new Response(object.body, { status: 206, headers })

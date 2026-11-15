@@ -4,7 +4,10 @@ import { Card } from '@/app/components/ui/Card'
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
-import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
+import {
+  getCurrentCoach,
+  refreshCurrentCoachPayout,
+} from '@/server/features/coach/presentation/queries'
 
 export const metadata: Metadata = { title: '設定' }
 
@@ -12,7 +15,15 @@ const CoachSettingsPage = async () => {
   const current = await getCurrentCoach()
   if (current.kind === 'signed_out') redirect('/coach/login')
   if (current.kind === 'not_coach') redirect('/coach')
-  const { settings } = current
+  // 口座の設定が途中なら、Stripe に状態を問い合わせ直す（審査が後から終わることがあるため）
+  const payout =
+    current.settings.hasStripeAccount && !current.settings.chargesEnabled
+      ? await refreshCurrentCoachPayout()
+      : null
+  const settings =
+    payout?.ok === true
+      ? { ...current.settings, chargesEnabled: payout.value.chargesEnabled }
+      : current.settings
 
   return (
     <main className="mx-auto max-w-2xl space-y-8">
