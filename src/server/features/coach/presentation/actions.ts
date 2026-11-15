@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
@@ -65,6 +66,7 @@ export const inviteCoachAction = async (
     isSlugTaken,
     saveInvitedCoach,
     generateId: () => crypto.randomUUID(),
+    notifyCoachInvited: (input) => enqueueNotification({ kind: 'coach_invited', ...input }),
   })
   if (!result.ok) {
     return actionError(
@@ -74,7 +76,7 @@ export const inviteCoachAction = async (
     )
   }
   revalidatePath('/admin')
-  return actionSuccess(`${input.data.name} さんを招待しました。メールのコードでログインできます`)
+  return actionSuccess(`${input.data.name} さんを招待し、ログインの案内をメールで送りました`)
 }
 
 /** コーチが自分のプロフィールを保存する */

@@ -10,16 +10,19 @@ const params = {
 
 type Deps = Parameters<typeof inviteCoach>[1]
 
-const deps = (overrides: Partial<Omit<Deps, 'saveInvitedCoach'>> = {}) => {
+const deps = (overrides: Partial<Omit<Deps, 'saveInvitedCoach' | 'notifyCoachInvited'>> = {}) => {
   const saveInvitedCoach = vi.fn<Deps['saveInvitedCoach']>(async () => undefined)
+  const notifyCoachInvited = vi.fn<Deps['notifyCoachInvited']>(async () => undefined)
   return {
     saveInvitedCoach,
+    notifyCoachInvited,
     deps: {
       findUserByEmail: async () => null,
       isSlugTaken: async () => false,
       generateId: () => 'new-user-id',
       ...overrides,
       saveInvitedCoach,
+      notifyCoachInvited,
     } satisfies Deps,
   }
 }
@@ -35,25 +38,42 @@ describe('inviteCoach', () => {
     expect(user).toEqual({ email: params.email, isNew: true })
   })
 
+  it('招待したコーチに、ログインの案内を送る', async () => {
+    const { deps: d, notifyCoachInvited } = deps()
+    await inviteCoach(params, d)
+    expect(notifyCoachInvited).toHaveBeenCalledWith({ coachUserId: 'new-user-id' })
+  })
+
   it('生徒として登録済みの人は、その user をコーチにする', async () => {
-    const { deps: d, saveInvitedCoach } = deps({
+    const {
+      deps: d,
+      saveInvitedCoach,
+      notifyCoachInvited,
+    } = deps({
       findUserByEmail: async () => ({ id: 'student-id', isCoach: false }),
     })
     const result = await inviteCoach(params, d)
     expect(result).toEqual({ ok: true, value: { userId: 'student-id' } })
     expect(saveInvitedCoach.mock.calls[0]?.[1]).toEqual({ email: params.email, isNew: false })
+    expect(notifyCoachInvited).toHaveBeenCalledWith({ coachUserId: 'student-id' })
   })
 
-  it('すでにコーチなら招待しない', async () => {
-    const { deps: d, saveInvitedCoach } = deps({
+  it('すでにコーチなら招待せず、案内も送らない', async () => {
+    const {
+      deps: d,
+      saveInvitedCoach,
+      notifyCoachInvited,
+    } = deps({
       findUserByEmail: async () => ({ id: 'c', isCoach: true }),
     })
     expect(await inviteCoach(params, d)).toEqual({ ok: false, error: 'already_coach' })
     expect(saveInvitedCoach).not.toHaveBeenCalled()
+    expect(notifyCoachInvited).not.toHaveBeenCalled()
   })
 
   it('スラッグが使われていたら招待しない', async () => {
-    const { deps: d } = deps({ isSlugTaken: async () => true })
+    const { deps: d, notifyCoachInvited } = deps({ isSlugTaken: async () => true })
     expect(await inviteCoach(params, d)).toEqual({ ok: false, error: 'slug_taken' })
+    expect(notifyCoachInvited).not.toHaveBeenCalled()
   })
 })

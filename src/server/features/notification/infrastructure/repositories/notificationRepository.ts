@@ -25,8 +25,29 @@ const findThreadContext = async (threadId: string): Promise<Context | null> => {
   return row ?? null
 }
 
+/** 生徒がいない通知（コーチの招待）。生徒の欄は空にする */
+const findCoachOnlyContext = async (coachUserId: string): Promise<Context | null> => {
+  const coach = await getDb()
+    .select({ name: coachProfile.displayName, slug: coachProfile.slug })
+    .from(coachProfile)
+    .where(eq(coachProfile.userId, coachUserId))
+    .get()
+  if (!coach) return null
+  return {
+    coachName: coach.name,
+    coachSlug: coach.slug,
+    coachUserId,
+    studentName: '',
+    studentUserId: '',
+    expiresAt: null,
+  }
+}
+
 export type FindNotificationContext = (message: NotificationMessage) => Promise<Context | null>
 export const findNotificationContext: FindNotificationContext = async (message) => {
+  if (message.kind === 'coach_invited') {
+    return findCoachOnlyContext(message.coachUserId)
+  }
   if (message.kind !== 'waitlist_opened') {
     return findThreadContext(message.threadId)
   }

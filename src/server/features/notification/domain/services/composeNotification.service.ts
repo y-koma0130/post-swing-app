@@ -81,5 +81,23 @@ export const composeNotification: ComposeNotification = (message, ctx) => {
         subject: '受付に空きが出ました',
         text: `${ctx.coachName}さんの受付に空きが出ました。\n${ctx.appUrl}/c/${ctx.coachSlug}/apply`,
       }
+    case 'coach_invited':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: 'SwingPost にコーチとして招待されました',
+        text: [
+          `${ctx.coachName}さん`,
+          '',
+          'SwingPost（ゴルフのスイング動画添削サービス）にコーチとして招待されました。',
+          '次のページで、このメールアドレスを入力してログインしてください。届いた6桁のコードを入れるとログインできます。',
+          '',
+          `${ctx.appUrl}/coach/login`,
+          '',
+          'ログインしたら、設定画面でプロフィール・プラン・売上の受け取り口座を登録すると、受付ページを公開できます。',
+          '',
+          'このメールに心当たりがない場合は、そのまま削除してください。',
+        ].join('\n'),
+      }
   }
 }

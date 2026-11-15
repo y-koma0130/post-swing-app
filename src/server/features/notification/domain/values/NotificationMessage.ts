@@ -24,6 +24,8 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     coachUserId: z.string(),
     studentUserId: z.string(),
   }),
+  /** 招待されたコーチへ：ログインの案内（メール） */
+  z.object({ kind: z.literal('coach_invited'), coachUserId: z.string() }),
 ])
 
 export type NotificationMessage = z.infer<typeof notificationMessageSchema>

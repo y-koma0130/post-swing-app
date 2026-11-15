@@ -57,6 +57,16 @@ describe('deliverNotification', () => {
     )
   })
 
+  it('コーチを招待したら、ログイン画面の URL をメールで送る', async () => {
+    const { deps, sendEmail } = setup()
+    await deliverNotification({ kind: 'coach_invited', coachUserId: 'coach-1' }, deps)
+    expect(sendEmail.mock.calls[0]?.[0]).toMatchObject({
+      to: 'coach@example.com',
+      subject: 'SwingPost にコーチとして招待されました',
+    })
+    expect(sendEmail.mock.calls[0]?.[0].text).toContain('https://swingpost.example/coach/login')
+  })
+
   it('LINE の友だちでなければ送らない', async () => {
     const { deps, sendLinePush } = setup({
       findLineRecipient: async () => ({ lineUserId: 'U123', isFriend: false }),

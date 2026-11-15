@@ -15,6 +15,8 @@ type Dependencies = Readonly<{
   /** userId が既存なら user は作らず、コーチのプロフィールだけ足す */
   saveInvitedCoach: (coach: Coach, user: { email: string; isNew: boolean }) => Promise<void>
   generateId: () => string
+  /** 招待したコーチに、ログインの案内を送る */
+  notifyCoachInvited: (input: { coachUserId: string }) => Promise<void>
 }>
 
 export type InviteCoach = (
@@ -26,7 +28,8 @@ export type InviteCoach = (
  * コーチを招待する（管理者だけが使う）
  *
  * 招待されたメールアドレスだけが、メールのコードでログインできる。
- * すでに生徒として登録されている人は、その user にコーチのプロフィールを足す
+ * すでに生徒として登録されている人は、その user にコーチのプロフィールを足す。
+ * 招待したら、ログインの案内をメールで送る
  */
 export const inviteCoach: InviteCoach = async (params, deps) => {
   const existing = await deps.findUserByEmail(params.email)
@@ -53,5 +56,6 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
     },
     { email: params.email, isNew: existing === null }
   )
+  await deps.notifyCoachInvited({ coachUserId: userId })
   return ok({ userId })
 }
