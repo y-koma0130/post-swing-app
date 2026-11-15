@@ -42,3 +42,6 @@ next-env.d.ts
 .wrangler/
 .dev.vars*
 !.dev.vars.example
+
+# デプロイ先に入れる秘密情報（cf deploy --secrets-file で使う）
+.secrets.*

@@ -8,6 +8,11 @@ import { bindings, defineConfig, defineWorker, triggers } from 'cf/config'
  */
 const suffixFor = (mode: string | undefined): string => (mode === 'staging' ? '-staging' : '')
 
+/** 公開する URL。staging はサブドメインに分ける */
+const DOMAIN = 'swingpost.app'
+const hostnameFor = (mode: string | undefined): string =>
+  mode === 'staging' ? `staging.${DOMAIN}` : DOMAIN
+
 export default defineConfig({
   worker: defineWorker((ctx) => {
     const suffix = suffixFor(ctx.mode)
@@ -20,6 +25,8 @@ export default defineConfig({
       entrypoint: './src/worker.ts',
       compatibilityDate: '2026-11-14',
       compatibilityFlags: ['nodejs_compat'],
+      // 開発（mode が development）では使われない
+      domains: [hostnameFor(ctx.mode)],
       assets: {
         htmlHandling: 'none',
         notFoundHandling: 'none',
