@@ -9,9 +9,12 @@ type Props = {
   searchParams: Promise<{ next?: string }>
 }
 
-/** 同じサイト内のパスだけを戻り先にする（外部サイトへ飛ばされないように） */
+/**
+ * 同じサイト内のパスだけを戻り先にする（外部サイトへ飛ばされないように）。
+ * 指定がなければマイページへ（トップはコーチ向けの入口なので戻さない）
+ */
 const safeNext = (next: string | undefined): string =>
-  next?.startsWith('/') && !next.startsWith('//') ? next : '/'
+  next?.startsWith('/') && !next.startsWith('//') ? next : '/me'
 
 const StudentLoginPage = async ({ searchParams }: Props) => {
   const { next } = await searchParams

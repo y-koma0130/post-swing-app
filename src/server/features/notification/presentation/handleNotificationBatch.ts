@@ -6,9 +6,9 @@ import { sendEmail } from '../infrastructure/external-services/sendEmail'
 import { sendLinePush } from '../infrastructure/external-services/sendLinePush'
 import {
   findDeliverableEmail,
-  findLineRecipient,
   findNotificationContext,
 } from '../infrastructure/repositories/notificationRepository'
+import { findLineRecipientWithFriendship } from './lineRecipient'
 
 /**
  * 通知のキューを受ける（Worker の queue ハンドラから呼ぶ）
@@ -26,7 +26,7 @@ export const handleNotificationBatch = async (batch: MessageBatch): Promise<void
     try {
       const result = await deliverNotification(parsed.data, {
         findContext: findNotificationContext,
-        findLineRecipient,
+        findLineRecipient: findLineRecipientWithFriendship,
         findEmail: findDeliverableEmail,
         sendLinePush,
         sendEmail,

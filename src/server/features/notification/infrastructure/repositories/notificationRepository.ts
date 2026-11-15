@@ -73,8 +73,11 @@ export const findNotificationContext: FindNotificationContext = async (message) 
 
 export type FindLineRecipient = (
   userId: string
-) => Promise<{ lineUserId: string; isFriend: boolean } | null>
-/** LINE でログインした人の LINE ユーザーIDと、公式アカウントの友だちかどうか */
+) => Promise<{ lineUserId: string; isFriend: boolean | null } | null>
+/**
+ * LINE でログインした人の LINE ユーザーIDと、公式アカウントの友だちかどうか。
+ * Webhook で友だち追加・ブロックを受けていなければ isFriend は null（記録がない）
+ */
 export const findLineRecipient: FindLineRecipient = async (userId) => {
   const row = await getDb()
     .select({ lineUserId: account.accountId, isFriend: lineFriend.isFriend })
@@ -82,7 +85,7 @@ export const findLineRecipient: FindLineRecipient = async (userId) => {
     .leftJoin(lineFriend, eq(lineFriend.lineUserId, account.accountId))
     .where(and(eq(account.userId, userId), eq(account.providerId, 'line')))
     .get()
-  return row ? { lineUserId: row.lineUserId, isFriend: row.isFriend ?? false } : null
+  return row ? { lineUserId: row.lineUserId, isFriend: row.isFriend } : null
 }
 
 export type FindDeliverableEmail = (userId: string) => Promise<string | null>
