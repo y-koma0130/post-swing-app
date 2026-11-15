@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { Logo } from '@/app/components/Logo'
 import { SignOutButton } from '@/app/features/auth/components/SignOutButton'
 import { getActor } from '@/server/auth/getActor'
 
@@ -15,8 +16,8 @@ const CoachLayout = async ({ children }: Props) => {
     <div className="min-h-dvh bg-gray-50">
       <header className="border-b border-gray-100 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/coach" className="text-ink font-bold">
-            SwingPost
+          <Link href="/coach">
+            <Logo height={28} />
           </Link>
           {actor && (
             <nav className="flex items-center gap-5 text-sm">

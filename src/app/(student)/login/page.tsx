@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Logo } from '@/app/components/Logo'
 import { EmailCodeLoginForm } from '@/app/features/auth/components/EmailCodeLoginForm'
 import { LineLoginButton } from '@/app/features/auth/components/LineLoginButton'
 import { getLoginOptions } from '@/server/auth/loginOptions'
@@ -23,6 +24,7 @@ const StudentLoginPage = async ({ searchParams }: Props) => {
 
   return (
     <main className="space-y-8 px-6 py-12">
+      <Logo height={32} />
       <div className="space-y-2">
         <h1 className="text-xl font-bold">ログイン</h1>
         <p className="text-sm text-gray-600">

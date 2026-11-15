@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { ComponentProps } from 'react'
 
 const base =
-  'inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-40'
+  'inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40'
 
 const variants = {
   primary: 'bg-mint text-ink',

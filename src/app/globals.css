@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
-/* デザイン：白ベース、余白多め、角丸大きめ。差し色ブライトミント、ボタン文字は濃い緑 */
+/* デザイン：白ベース、余白多め、角丸大きめ。差し色ミント（ロゴと同じ）、ボタン文字は濃い緑 */
 @theme {
-  --color-mint: #5fd4a0;
+  --color-mint: #3fbf87;
   --color-mint-soft: #e6f8ef;
   --color-ink: #0b3d2c;
+  /* 本文の文字色。真っ黒より少し淡いグレー（白地で 11:1） */
+  --color-body: #3a3d3c;
   --radius-card: 1.25rem;
   --font-sans:
     "Hiragino Sans", "Noto Sans JP", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -18,7 +20,7 @@
 body {
   margin: 0;
   background: #ffffff;
-  color: #111827;
+  color: var(--color-body);
   font-family: var(--font-sans);
 }
 

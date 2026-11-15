@@ -1,10 +1,11 @@
+import { Logo } from '@/app/components/Logo'
 import { ButtonLink } from '@/app/components/ui/Button'
 
 /** トップ。生徒はコーチの受付ページから来るので、ここはコーチ向けの入口だけ */
 const HomePage = () => (
   <main className="mx-auto max-w-md px-6 py-16">
-    <p className="text-mint text-sm font-bold">SwingPost</p>
-    <h1 className="mt-2 text-2xl leading-snug font-bold">
+    <Logo height={36} />
+    <h1 className="mt-8 text-2xl leading-snug font-bold">
       フォロワーに、
       <br />
       スイング添削を届けよう。
