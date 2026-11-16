@@ -1,12 +1,39 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
+import {
+  coachShareDescription,
+  coachShareTitle,
+} from '@/app/features/coach-profile/utils/coachShareText'
 import { ReviewSummary } from '@/app/features/coach-review/components/ReviewSummary'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
 import { getCoachReviewSummary } from '@/server/features/coach-review/presentation/queries'
+import { getSiteUrl } from '@/server/utils/siteUrl'
 
 type Props = {
   params: Promise<{ coachSlug: string }>
+}
+
+/**
+ * インスタのプロフィールやストーリーにリンクを貼ったときのカード。
+ * 画像は同じフォルダの opengraph-image.tsx が作る
+ */
+export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
+  const { coachSlug } = await params
+  const coach = await getCoachProfile(coachSlug)
+  if (!coach) return {}
+  const title = coachShareTitle(coach)
+  const description = coachShareDescription(coach)
+  return {
+    // opengraph-image の URL は、ページ側の metadataBase で絶対 URL になる（vinext はレイアウトの値を引き継がない）
+    metadataBase: getSiteUrl(),
+    title,
+    description,
+    alternates: { canonical: `/c/${coach.slug}` },
+    openGraph: { type: 'profile', title, description, url: `/c/${coach.slug}` },
+    twitter: { card: 'summary_large_image', title, description },
+  }
 }
 
 /** 受付ページ */
