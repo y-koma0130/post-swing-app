@@ -25,7 +25,7 @@ export const cardTitle = (
   `${index + 1}. ${videoLabel?.(card.videoId) ? `${videoLabel(card.videoId)}・` : ''}${KEY_POSITION_LABEL[card.position]}`
 
 /**
- * 1回の添削（生徒のスマホで読む形）。画像を横にスワイプして見て、その下に説明とおすすめのドリル
+ * 1回の添削（生徒のスマホで読む形）。画像を横に並べ（スワイプで見る）、その下に説明とおすすめのドリル
  */
 export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props) => (
   <div className="space-y-4">
@@ -61,11 +61,6 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
         </li>
       ))}
     </ol>
-    {reply.cards.length > 1 && (
-      <p className="text-caption text-muted -mt-2">
-        ← 横にスワイプして {reply.cards.length} 枚を見る
-      </p>
-    )}
     {reply.comment && (
       <p className="text-body rounded-card bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap shadow-sm">
         {reply.comment}
