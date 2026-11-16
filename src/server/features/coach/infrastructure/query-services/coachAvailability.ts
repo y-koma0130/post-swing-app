@@ -2,17 +2,17 @@ import 'server-only'
 import type {
   CoachAvailabilityDto,
   UpcomingAbsenceDto,
-} from '../application/dto/CoachAvailability.dto'
-import { calcCoachAvailability } from '../domain/services/calcCoachAvailability.service'
-import { findUpcomingAbsence } from '../domain/services/findUpcomingAbsence.service'
-import type { CoachAbsence } from '../domain/values/CoachAbsence'
-import type { CoachAvailability } from '../domain/values/CoachAvailability'
+} from '../../application/dto/CoachAvailability.dto'
+import { calcCoachAvailability } from '../../domain/services/calcCoachAvailability.service'
+import { findUpcomingAbsence } from '../../domain/services/findUpcomingAbsence.service'
+import type { CoachAbsence } from '../../domain/values/CoachAbsence'
+import type { CoachAvailability } from '../../domain/values/CoachAvailability'
 import {
   findAbsences,
   findAbsencesForCoaches,
   findDelayFlagSetAt,
   findDelayFlagsForCoaches,
-} from '../infrastructure/repositories/absenceRepository'
+} from '../repositories/absenceRepository'
 
 export type CoachAvailabilityFacts = Readonly<{
   absences: CoachAbsence[]

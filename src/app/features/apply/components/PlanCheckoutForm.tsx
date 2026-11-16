@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
@@ -15,11 +15,21 @@ type Props = {
   student: ApplyPageDto['student']
   /** ボット対策（Turnstile）のサイトキー */
   turnstileSiteKey: string
+  /** コーチが不在・返信遅れのとき、了承チェックの文言。了承が要らなければ null */
+  delayAckLabel: string | null
 }
 
 /** プランを選んで Stripe の支払い画面へ進む */
-export const PlanCheckoutForm = ({ coachSlug, plans, student, turnstileSiteKey }: Props) => {
+export const PlanCheckoutForm = ({
+  coachSlug,
+  plans,
+  student,
+  turnstileSiteKey,
+  delayAckLabel,
+}: Props) => {
   const [state, action, pending] = useActionState(startCheckoutAction, IDLE_ACTION_STATE)
+  const [acknowledged, setAcknowledged] = useState(false)
+  const needsAck = student !== null && delayAckLabel !== null
 
   const unavailableReason = (kind: Props['plans'][number]['kind']): string | null => {
     if (kind === 'trial' && student?.trialUsed) return '利用済み'
@@ -74,8 +84,24 @@ export const PlanCheckoutForm = ({ coachSlug, plans, student, turnstileSiteKey }
           action="checkout"
         />
       )}
+      {needsAck && (
+        <label className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm">
+          <input
+            type="checkbox"
+            name="acknowledgeDelay"
+            checked={acknowledged}
+            onChange={(event) => setAcknowledged(event.currentTarget.checked)}
+            className="accent-mint mt-1"
+          />
+          {delayAckLabel}
+        </label>
+      )}
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending || !firstAvailable} className="w-full">
+      <Button
+        type="submit"
+        disabled={pending || !firstAvailable || (needsAck && !acknowledged)}
+        className="w-full"
+      >
         {student ? 'お支払いへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-xs text-gray-500">

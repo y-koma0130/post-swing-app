@@ -11,6 +11,10 @@ import {
   isDelayFlagActive,
 } from '../domain/services/calcCoachAvailability.service'
 import { fetchChargesEnabled } from '../infrastructure/external-services/stripeConnect'
+import {
+  findCoachAvailabilityFacts,
+  toAvailabilityDto,
+} from '../infrastructure/query-services/coachAvailability'
 import { findCoachProfileBySlug } from '../infrastructure/query-services/findCoachProfileBySlug'
 import { findCoachSettings } from '../infrastructure/query-services/findCoachSettings'
 import { listCoachesForAdmin } from '../infrastructure/query-services/listCoachesForAdmin'
@@ -18,7 +22,6 @@ import {
   findStripeAccountId,
   saveChargesEnabled,
 } from '../infrastructure/repositories/coachRepository'
-import { findCoachAvailabilityFacts, toAvailabilityDto } from './availability'
 
 /** 受付ページ */
 export const getCoachProfile = (slug: string) => findCoachProfileBySlug(slug)

@@ -1,10 +1,13 @@
 import { calcRemainingCapacity } from '@/server/features/coach/domain/services/calcRemainingCapacity.service'
+import type { SignupGuard } from '@/server/features/coach/domain/services/decideSignupGuard.service'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import { err, ok, type Result } from '@/server/utils/result'
 
 export type PurchaseBlocker =
   | 'not_accepting'
   | 'own_coach'
+  | 'paused_for_absence'
+  | 'ack_required'
   | 'full'
   | 'trial_used'
   | 'already_subscribed'
@@ -40,6 +43,10 @@ export type CheckPurchaseEligibility = (
     planKind: PlanKind
     studentUserId: string
     facts: PurchaseFacts
+    /** コーチの不在・返信遅れのときの扱い（decideSignupGuard） */
+    signupGuard: SignupGuard
+    /** 生徒が「返信が遅れること」を了承したか */
+    acknowledgedDelay: boolean
   }>
 ) => Result<EligiblePurchase, PurchaseBlocker>
 
@@ -49,6 +56,7 @@ export type CheckPurchaseEligibility = (
  * ドメインルール:
  * - コーチが決済を受けられ、そのプランが受付中で、管理者が受付を止めていないこと
  * - 自分自身には申し込めない
+ * - コーチが不在中で新規を止めていれば申し込めない。不在・返信遅れのときは了承が要る
  * - 受付枠が残っていること（満枠ならキャンセル待ちへ）
  * - お試しは同じコーチにつき1回まで
  * - 月額は同じコーチに2重に申し込めない
@@ -58,12 +66,16 @@ export const checkPurchaseEligibility: CheckPurchaseEligibility = ({
   planKind,
   studentUserId,
   facts,
+  signupGuard,
+  acknowledgedDelay,
 }) => {
   const plan = coach.plans.find((p) => p.kind === planKind && p.active)
   if (!plan || coach.suspended || !coach.chargesEnabled || coach.stripeAccountId === null) {
     return err('not_accepting')
   }
   if (coach.userId === studentUserId) return err('own_coach')
+  if (signupGuard === 'paused') return err('paused_for_absence')
+  if (signupGuard === 'ack_required' && !acknowledgedDelay) return err('ack_required')
   if (calcRemainingCapacity(coach, facts.activeThreadCount) === 0) return err('full')
   if (planKind === 'trial' && facts.hasPaidTrial) return err('trial_used')
   if (planKind === 'monthly' && facts.hasActiveSubscription) return err('already_subscribed')

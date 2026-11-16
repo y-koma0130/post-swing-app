@@ -1,3 +1,5 @@
+import { decideSignupGuard } from '@/server/features/coach/domain/services/decideSignupGuard.service'
+import type { CoachAvailability } from '@/server/features/coach/domain/values/CoachAvailability'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
@@ -33,6 +35,9 @@ export type StartCheckoutParams = Readonly<{
   actor: Actor
   coachSlug: string
   planKind: PlanKind
+  /** 不在・返信遅れのとき、返信が遅れることを了承したか */
+  acknowledgedDelay: boolean
+  now: Date
 }>
 
 type Dependencies = Readonly<{
@@ -40,6 +45,8 @@ type Dependencies = Readonly<{
   countActiveThreads: (coachUserId: string) => Promise<number>
   hasPaidTrial: (studentUserId: string, coachUserId: string) => Promise<boolean>
   hasActiveSubscription: (studentUserId: string, coachUserId: string) => Promise<boolean>
+  /** コーチの今の状態（不在・返信遅れ） */
+  findCoachAvailability: (coachUserId: string, now: Date) => Promise<CoachAvailability>
   savePendingPurchase: (purchase: Purchase) => Promise<void>
   createCheckoutSession: (
     input: CreateCheckoutSessionInput
@@ -58,21 +65,27 @@ export type StartCheckout = (
 /**
  * 生徒が申し込み、Stripe の支払い画面へ進む（申し込めるかは checkPurchaseEligibility で決める）
  */
-export const startCheckout: StartCheckout = async ({ actor, coachSlug, planKind }, deps) => {
+export const startCheckout: StartCheckout = async (
+  { actor, coachSlug, planKind, acknowledgedDelay, now },
+  deps
+) => {
   const coach = await deps.findCoachForCheckout(coachSlug)
   if (!coach) {
     return err('not_found')
   }
-  const [activeThreadCount, hasPaidTrial, hasActiveSubscription] = await Promise.all([
+  const [activeThreadCount, hasPaidTrial, hasActiveSubscription, availability] = await Promise.all([
     deps.countActiveThreads(coach.userId),
     deps.hasPaidTrial(actor.userId, coach.userId),
     deps.hasActiveSubscription(actor.userId, coach.userId),
+    deps.findCoachAvailability(coach.userId, now),
   ])
   const eligibility = checkPurchaseEligibility({
     coach,
     planKind,
     studentUserId: actor.userId,
     facts: { activeThreadCount, hasPaidTrial, hasActiveSubscription },
+    signupGuard: decideSignupGuard(availability),
+    acknowledgedDelay,
   })
   if (!eligibility.ok) {
     return err(eligibility.error)

@@ -5,10 +5,17 @@ import { coachProfile, thread } from '@/server/db/schema'
 import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
 import type { CoachProfileDto } from '../../application/dto/CoachProfile.dto'
 import { PLAN_DISPLAY_ORDER } from '../../domain/rules'
+import { calcCoachAvailability } from '../../domain/services/calcCoachAvailability.service'
 import { calcRemainingCapacity } from '../../domain/services/calcRemainingCapacity.service'
 import { canAcceptApplications } from '../../domain/services/canAcceptApplications.service'
+import { decideSignupGuard } from '../../domain/services/decideSignupGuard.service'
 import { coachSlugSchema } from '../../domain/values/CoachSlug'
 import { findCoachByUserId } from '../repositories/coachRepository'
+import {
+  findCoachAvailabilityFacts,
+  toAvailabilityDto,
+  toUpcomingAbsenceDto,
+} from './coachAvailability'
 
 export type FindCoachProfileBySlug = (slug: string) => Promise<CoachProfileDto | null>
 
@@ -40,6 +47,9 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     )
     .get()
   const activeThreadCount = active?.n ?? 0
+  const now = new Date()
+  const facts = await findCoachAvailabilityFacts(coach.userId)
+  const availability = calcCoachAvailability({ ...facts, now })
 
   return {
     slug: coach.slug,
@@ -49,6 +59,9 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     instagram: coach.instagram,
     remainingCapacity: calcRemainingCapacity(coach, activeThreadCount),
     acceptingApplications: canAcceptApplications(coach),
+    availability: toAvailabilityDto(availability),
+    upcomingAbsence: toUpcomingAbsenceDto(facts, now),
+    signupGuard: decideSignupGuard(availability),
     plans: coach.plans
       .filter((plan) => plan.active)
       .toSorted((a, b) => PLAN_DISPLAY_ORDER[a.kind] - PLAN_DISPLAY_ORDER[b.kind])

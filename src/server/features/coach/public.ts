@@ -1,5 +1,13 @@
 import 'server-only'
 
+/** コーチの不在期間と返信遅れフラグ、今の状態（thread・purchase が判定に使う） */
+export {
+  findCoachAvailability,
+  findCoachAvailabilityFacts,
+  findCoachAvailabilityFactsForCoaches,
+  toAvailabilityDto,
+  toUpcomingAbsenceDto,
+} from './infrastructure/query-services/coachAvailability'
 /**
  * coach がほかの feature に公開する関数（ほかの feature は、coach の domain・dto と、このファイルだけを使う）
  */
@@ -10,11 +18,3 @@ export {
   isCoach,
   saveChargesEnabled as savePayoutStatus,
 } from './infrastructure/repositories/coachRepository'
-/** コーチの不在期間と返信遅れフラグ、今の状態（thread・purchase が判定に使う） */
-export {
-  findCoachAvailability,
-  findCoachAvailabilityFacts,
-  findCoachAvailabilityFactsForCoaches,
-  toAvailabilityDto,
-  toUpcomingAbsenceDto,
-} from './presentation/availability'

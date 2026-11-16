@@ -20,6 +20,8 @@ const check = (overrides: Partial<Parameters<typeof checkPurchaseEligibility>[0]
     planKind: 'single',
     studentUserId: 'student-1',
     facts,
+    signupGuard: 'open',
+    acknowledgedDelay: false,
     ...overrides,
   })
 
@@ -55,6 +57,18 @@ describe('checkPurchaseEligibility', () => {
       ok: false,
       error: 'not_accepting',
     })
+  })
+
+  it('不在で新規を止めていれば申し込めない', () => {
+    expect(check({ signupGuard: 'paused', acknowledgedDelay: true })).toEqual({
+      ok: false,
+      error: 'paused_for_absence',
+    })
+  })
+
+  it('不在・返信遅れのときは、了承してはじめて申し込める', () => {
+    expect(check({ signupGuard: 'ack_required' })).toEqual({ ok: false, error: 'ack_required' })
+    expect(check({ signupGuard: 'ack_required', acknowledgedDelay: true }).ok).toBe(true)
   })
 
   it('自分自身には申し込めない', () => {

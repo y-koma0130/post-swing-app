@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
+import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
+import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
 import {
   coachShareDescription,
@@ -56,13 +58,26 @@ const CoachLandingPage = async ({ params }: Props) => {
           ? `今月の受付 残り${coach.remainingCapacity}枠`
           : '今月は満枠です（キャンセル待ち受付中）'}
       </p>
+      <div className="mt-6">
+        <CoachAvailabilityNotice
+          coachName={coach.name}
+          availability={coach.availability}
+          upcomingAbsence={coach.upcomingAbsence}
+        />
+      </div>
       <div className="mt-8">
         <PlanList plans={coach.plans} />
       </div>
       <div className="mt-10">
         <ReviewSummary summary={reviews} />
       </div>
-      {coach.acceptingApplications ? (
+      {coach.acceptingApplications && coach.signupGuard === 'paused' ? (
+        <p className="mt-8 rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+          {coach.availability.kind === 'absent'
+            ? pausedMessage(coach.availability.resumeDate)
+            : 'ただいま申し込みを止めています'}
+        </p>
+      ) : coach.acceptingApplications ? (
         <ButtonLink href={`/c/${coach.slug}/apply`} className="mt-8 w-full">
           動画を送って添削してもらう
         </ButtonLink>
