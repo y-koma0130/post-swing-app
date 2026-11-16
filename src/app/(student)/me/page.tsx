@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLinks'
+import { uniqueCoaches } from '@/app/features/coach-profile/utils/uniqueCoaches'
 import { LineFriendPrompt } from '@/app/features/notification/components/LineFriendPrompt'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { formatYen } from '@/app/utils/format'
@@ -45,6 +47,12 @@ const MyPage = async ({ searchParams }: Props) => {
           <ThreadList threads={threads} viewer="student" />
         )}
       </section>
+      {purchases.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-bold">コーチ</h2>
+          <MyCoachLinks coaches={uniqueCoaches(purchases)} />
+        </section>
+      )}
       <section className="space-y-3">
         <h2 className="font-bold">申し込み</h2>
         {purchases.length === 0 ? (
