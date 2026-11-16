@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { localDateSchema } from '@/server/utils/localDate'
 import type { Thread } from '../../domain/values/Thread'
 import { threadIdSchema } from '../../domain/values/ThreadId'
 import { submitVideo } from './submitVideo.usecase'
@@ -30,18 +31,41 @@ const params = {
   now,
 }
 
-const setup = (t: Thread | null = thread) => {
+const absentFacts = (start: string, end: string) => ({
+  absences: [
+    {
+      id: 'absence-1',
+      coachUserId: 'coach-1',
+      startDate: localDateSchema.parse(start),
+      endDate: localDateSchema.parse(end),
+      note: '',
+      pauseNewSignups: false,
+    },
+  ],
+  delayFlagSetAt: null,
+})
+
+const setup = (
+  t: Thread | null = thread,
+  facts: Awaited<ReturnType<Deps['findCoachAvailabilityFacts']>> = {
+    absences: [],
+    delayFlagSetAt: null,
+  }
+) => {
   const storeVideo = vi.fn<Deps['storeVideo']>(async () => undefined)
+  const saveThreadNotice = vi.fn<Deps['saveThreadNotice']>(async () => undefined)
   const saveVideo = vi.fn<Deps['saveVideo']>(async () => undefined)
   const notifyVideoSubmitted = vi.fn<Deps['notifyVideoSubmitted']>(async () => undefined)
   const deps: Deps = {
     findThread: async () => t,
+    findCoachAvailabilityFacts: async () => facts,
+    saveThreadNotice,
     storeVideo,
     saveVideo,
     notifyVideoSubmitted,
     generateId: () => 'video-1',
   }
-  return { deps, storeVideo, saveVideo, notifyVideoSubmitted }
+  return { deps, storeVideo, saveVideo, notifyVideoSubmitted, saveThreadNotice }
 }
 
 describe('submitVideo', () => {
@@ -120,5 +144,33 @@ describe('submitVideo', () => {
       videos: [{ id: 'v0', uploadedAt: now, note: '', replied: false }],
     })
     expect(await submitVideo(params, deps)).toEqual({ ok: false, error: 'awaiting_reply' })
+  })
+
+  it('コーチの不在中に送ると、不在を記録し、スレッドにお知らせを出す', async () => {
+    const day = now.toISOString().slice(0, 10)
+    const { deps, saveVideo, saveThreadNotice } = setup(thread, absentFacts(day, day))
+    await submitVideo(params, deps)
+    expect(saveVideo.mock.calls[0]?.[0].sentDuringAbsenceId).toBe('absence-1')
+    expect(saveThreadNotice.mock.calls[0]?.[0]).toMatchObject({
+      threadId: 'thread-1',
+      absenceId: 'absence-1',
+    })
+  })
+
+  it('通常は不在の記録もお知らせもない', async () => {
+    const { deps, saveVideo, saveThreadNotice } = setup()
+    await submitVideo(params, deps)
+    expect(saveVideo.mock.calls[0]?.[0].sentDuringAbsenceId).toBeNull()
+    expect(saveThreadNotice).not.toHaveBeenCalled()
+  })
+
+  it('保存した期限を過ぎていても、不在の分だけ延びていれば送れる', async () => {
+    const expired = { ...thread, expiresAt: new Date(now.getTime() - 60 * 60 * 1000) }
+    const startDay = thread.startedAt.toISOString().slice(0, 10)
+    const { deps } = setup(expired, {
+      ...absentFacts(startDay, startDay),
+      absences: absentFacts(startDay, startDay).absences.map((a) => ({ ...a, id: 'past' })),
+    })
+    expect((await submitVideo(params, deps)).ok).toBe(true)
   })
 })

@@ -1,5 +1,7 @@
+import type { CoachAvailabilityDto } from '@/server/features/coach/application/dto/CoachAvailability.dto'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import type { VideoSubmissionBlocker } from '../../domain/services/checkVideoSubmission.service'
+import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
 import type { ChatSender } from '../../domain/values/ChatMessage'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
@@ -17,7 +19,14 @@ export type ThreadDetailDto = {
   theme: string
   status: ThreadStatus
   startedAt: Date
+  /** 実際の期限（コーチの不在の分だけ延びる） */
   expiresAt: Date
+  /** 不在のために延びた日数 */
+  extendedDays: number
+  /** コーチの今の状態（不在・返信遅れ・通常） */
+  coachAvailability: CoachAvailabilityDto
+  /** 生徒が送る前の確認（動画・チャット） */
+  sendGuard: { video: SendGuard; chat: SendGuard }
   maxVideos: number
   /** 動画1本の大きさの上限（バイト） */
   maxVideoBytes: number
@@ -55,6 +64,12 @@ export type ThreadDetailDto = {
       from: ChatSender
       body: string
       sentAt: Date
+    }>
+    /** システムメッセージ（不在中に送られたときの「戻り次第返信します」） */
+    notices: Array<{
+      id: string
+      absenceEndDate: string
+      createdAt: Date
     }>
   }>
 }

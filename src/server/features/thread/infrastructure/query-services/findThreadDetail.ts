@@ -1,20 +1,26 @@
 import 'server-only'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import {
+  absenceAck,
   coachProfile,
   coachReview,
   drill,
   reply,
   reviewCard,
   thread,
+  threadNotice,
   user,
   video,
 } from '@/server/db/schema'
+import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
+import { findCoachAvailabilityFacts, toAvailabilityDto } from '@/server/features/coach/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
+import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import { checkVideoSubmission } from '../../domain/services/checkVideoSubmission.service'
 import { countRemainingStudentMessages } from '../../domain/services/countRemainingStudentMessages.service'
+import { decideSendGuard } from '../../domain/services/decideSendGuard.service'
 import { annotationSchema } from '../../domain/values/Annotation'
 import { findThread } from '../repositories/threadRepository'
 
@@ -80,6 +86,20 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   if (!people) {
     return null
   }
+  const [facts, notices, acks] = await Promise.all([
+    findCoachAvailabilityFacts(t.coachUserId),
+    db.select().from(threadNotice).where(eq(threadNotice.threadId, threadId)).all(),
+    db
+      .select({ absenceId: absenceAck.absenceId })
+      .from(absenceAck)
+      .where(and(eq(absenceAck.threadId, threadId), eq(absenceAck.studentUserId, t.studentUserId)))
+      .all(),
+  ])
+  const now = new Date()
+  const availability = calcCoachAvailability({ ...facts, now })
+  const expiry = calcEffectiveExpiry(t, facts.absences)
+  const chatAcknowledged =
+    availability.kind === 'absent' && acks.some((a) => a.absenceId === availability.absence.id)
 
   const detail: ThreadDetailDto = {
     id: t.id,
@@ -90,10 +110,16 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     theme: t.theme,
     status: t.status,
     startedAt: t.startedAt,
-    expiresAt: t.expiresAt,
+    expiresAt: expiry.expiresAt,
+    extendedDays: expiry.extendedDays,
+    coachAvailability: toAvailabilityDto(availability),
+    sendGuard: {
+      video: decideSendGuard({ availability, target: 'video', acknowledged: false }),
+      chat: decideSendGuard({ availability, target: 'chat', acknowledged: chatAcknowledged }),
+    },
     maxVideos: THREAD_RULES.maxVideosByPlan[t.planKind],
     maxVideoBytes: VIDEO_RULES.maxBytes,
-    videoSubmissionBlocker: checkVideoSubmission(t, new Date()),
+    videoSubmissionBlocker: checkVideoSubmission({ ...t, expiresAt: expiry.expiresAt }, now),
     review: reviewRow ?? null,
     videos: t.videos.map((v) => {
       const r = replies.find((x) => x.videoId === v.id)
@@ -126,6 +152,9 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         messages: t.messages
           .filter((m) => m.videoId === v.id)
           .map((m) => ({ id: m.id, from: m.from, body: m.body, sentAt: m.sentAt })),
+        notices: notices
+          .filter((n) => n.videoId === v.id)
+          .map((n) => ({ id: n.id, absenceEndDate: n.absenceEndDate, createdAt: n.createdAt })),
       }
     }),
   }

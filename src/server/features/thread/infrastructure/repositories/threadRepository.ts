@@ -1,12 +1,21 @@
 import 'server-only'
 import { and, asc, eq, gt, inArray, isNull, lt, lte, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { chatMessage, reply, reviewCard, thread, video } from '@/server/db/schema'
+import {
+  absenceAck,
+  chatMessage,
+  reply,
+  reviewCard,
+  thread,
+  threadNotice,
+  video,
+} from '@/server/db/schema'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
 import type { NewVideo } from '../../application/usecases/submitVideo.usecase'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
+import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
 
 export type FindThread = (threadId: string) => Promise<Thread | null>
 export const findThread: FindThread = async (threadId) => {
@@ -49,6 +58,7 @@ export const findThread: FindThread = async (threadId) => {
       from: m.senderRole,
       body: m.body,
       sentAt: m.sentAt,
+      sentDuringAbsenceId: m.sentDuringAbsenceId,
     })),
   })
 }
@@ -65,6 +75,7 @@ export const saveVideo: SaveVideo = async (v) => {
       sizeBytes: v.sizeBytes,
       note: v.note,
       frameRate: v.frameRate,
+      sentDuringAbsenceId: v.sentDuringAbsenceId,
       uploadedAt: v.uploadedAt,
     }),
     db
@@ -318,4 +329,28 @@ export const markThreadRefunded: MarkThreadRefunded = async (threadId, refundedA
     .update(thread)
     .set({ status: 'closed', closedAt: refundedAt, refundedAt, updatedAt: refundedAt })
     .where(eq(thread.id, threadId))
+}
+
+export type SaveThreadNotice = (notice: NewThreadNotice) => Promise<void>
+/** 不在のお知らせ。同じ不在・同じスレッドにすでにあれば何もしない（一意制約） */
+export const saveThreadNotice: SaveThreadNotice = async (notice) => {
+  await getDb().insert(threadNotice).values(notice).onConflictDoNothing()
+}
+
+export type SaveAbsenceAck = (input: {
+  studentUserId: string
+  threadId: string
+  absenceId: string
+  at: Date
+}) => Promise<void>
+export const saveAbsenceAck: SaveAbsenceAck = async ({
+  studentUserId,
+  threadId,
+  absenceId,
+  at,
+}) => {
+  await getDb()
+    .insert(absenceAck)
+    .values({ studentUserId, threadId, absenceId, createdAt: at })
+    .onConflictDoNothing()
 }

@@ -11,6 +11,7 @@ export type ThreadSummaryDto = {
   planKind: PlanKind
   theme: string
   status: ThreadStatus
+  /** 実際の期限（コーチの不在の分だけ延びる） */
   expiresAt: Date
   videoCount: number
 }
