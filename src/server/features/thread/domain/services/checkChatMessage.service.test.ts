@@ -3,23 +3,35 @@ import { checkChatMessage } from './checkChatMessage.service'
 
 const message = (from: 'coach' | 'student') => ({
   id: crypto.randomUUID(),
-  videoId: 'v1',
   from,
   body: 'こんにちは',
   sentAt: new Date(),
 })
-const thread = { status: 'waiting_coach' as const, messages: [] }
+const submission = {
+  id: 's1',
+  submittedAt: new Date(),
+  note: '',
+  videos: [{ id: 'v1', angle: 'front' as const }],
+  replied: false,
+}
+const thread = {
+  status: 'waiting_coach' as const,
+  planKind: 'single' as const,
+  submissions: [submission],
+  messages: [],
+}
 
 describe('checkChatMessage', () => {
   it('前後の空白を除いた本文を返す', () => {
-    expect(
-      checkChatMessage({ thread, videoId: 'v1', sender: 'student', body: ' 質問です ' })
-    ).toEqual({ ok: true, value: { body: '質問です' } })
+    expect(checkChatMessage({ thread, sender: 'student', body: ' 質問です ' })).toEqual({
+      ok: true,
+      value: { body: '質問です' },
+    })
   })
 
   it('終了したスレッド・空・長すぎる本文は送れない', () => {
     const check = (overrides: Partial<Parameters<typeof checkChatMessage>[0]>) =>
-      checkChatMessage({ thread, videoId: 'v1', sender: 'coach', body: 'a', ...overrides })
+      checkChatMessage({ thread, sender: 'coach', body: 'a', ...overrides })
     expect(check({ thread: { ...thread, status: 'closed' } })).toEqual({
       ok: false,
       error: 'closed',
@@ -28,22 +40,28 @@ describe('checkChatMessage', () => {
     expect(check({ body: 'あ'.repeat(1001) })).toEqual({ ok: false, error: 'too_long' })
   })
 
-  it('生徒は動画ごとの上限まで。コーチは無制限', () => {
+  it('生徒は最初の提出のあとから送れる。コーチはいつでも送れる', () => {
+    const before = { ...thread, status: 'waiting_student' as const, submissions: [] }
+    expect(checkChatMessage({ thread: before, sender: 'student', body: 'a' })).toEqual({
+      ok: false,
+      error: 'no_submission',
+    })
+    expect(checkChatMessage({ thread: before, sender: 'coach', body: 'a' }).ok).toBe(true)
+  })
+
+  it('生徒はスレッド全体の上限まで（お試しは10通）。コーチは無制限', () => {
     const full = {
       ...thread,
-      messages: [message('student'), message('student'), message('student')],
+      planKind: 'trial' as const,
+      messages: Array.from({ length: 10 }, () => message('student')),
     }
-    expect(checkChatMessage({ thread: full, videoId: 'v1', sender: 'student', body: 'a' })).toEqual(
-      {
-        ok: false,
-        error: 'limit_reached',
-      }
-    )
-    expect(checkChatMessage({ thread: full, videoId: 'v1', sender: 'coach', body: 'a' }).ok).toBe(
-      true
-    )
-    expect(checkChatMessage({ thread: full, videoId: 'v2', sender: 'student', body: 'a' }).ok).toBe(
-      true
-    )
+    expect(checkChatMessage({ thread: full, sender: 'student', body: 'a' })).toEqual({
+      ok: false,
+      error: 'limit_reached',
+    })
+    expect(checkChatMessage({ thread: full, sender: 'coach', body: 'a' }).ok).toBe(true)
+    expect(
+      checkChatMessage({ thread: { ...full, planKind: 'single' }, sender: 'student', body: 'a' }).ok
+    ).toBe(true)
   })
 })

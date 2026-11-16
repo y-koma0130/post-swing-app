@@ -2,7 +2,7 @@ import 'server-only'
 import { and, desc, eq, inArray, isNull, min } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { getDb } from '@/server/db/client'
-import { coachProfile, purchase, reply, thread, user, video } from '@/server/db/schema'
+import { coachProfile, purchase, reply, submission, thread, user } from '@/server/db/schema'
 import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
 import type { AdminThreadRowDto } from '../../application/dto/AdminThreadRow.dto'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
@@ -39,19 +39,19 @@ export const listThreadsForAdmin: ListThreadsForAdmin = async () => {
   if (rows.length === 0) return []
 
   const unreplied = await db
-    .select({ threadId: video.threadId, oldest: min(video.uploadedAt) })
-    .from(video)
-    .leftJoin(reply, eq(reply.videoId, video.id))
+    .select({ threadId: submission.threadId, oldest: min(submission.submittedAt) })
+    .from(submission)
+    .leftJoin(reply, eq(reply.submissionId, submission.id))
     .where(
       and(
         inArray(
-          video.threadId,
+          submission.threadId,
           rows.map((r) => r.id)
         ),
         isNull(reply.id)
       )
     )
-    .groupBy(video.threadId)
+    .groupBy(submission.threadId)
     .all()
 
   const facts = await findCoachAvailabilityFactsForCoaches(rows.map((r) => r.coachUserId))

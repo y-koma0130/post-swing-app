@@ -71,6 +71,13 @@
       "when": 1794803096058,
       "tag": "0009_coach_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794807311896,
+      "tag": "0010_submission",
+      "breakpoints": true
     }
   ]
 }

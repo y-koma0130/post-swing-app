@@ -8,7 +8,6 @@ type Deps = Parameters<typeof sendChatMessage>[1]
 const now = new Date('2026-11-20T00:00:00Z')
 const message = (from: 'coach' | 'student') => ({
   id: crypto.randomUUID(),
-  videoId: 'v1',
   from,
   body: 'テスト',
   sentAt: now,
@@ -23,7 +22,9 @@ const thread: Thread = {
   startedAt: now,
   expiresAt: new Date('2026-12-20T00:00:00Z'),
   closedAt: null,
-  videos: [{ id: 'v1', uploadedAt: now, note: '', replied: true }],
+  submissions: [
+    { id: 's1', submittedAt: now, note: '', videos: [{ id: 'v1', angle: 'front' }], replied: true },
+  ],
   messages: [],
 }
 const student = { userId: 'student-1', name: '佐藤' }
@@ -66,10 +67,7 @@ const setup = (
   return { deps, saveChatMessage, notifyChatMessage, saveThreadNotice, saveAbsenceAck }
 }
 const send = (actor: typeof student, deps: Deps, body = '質問です', hide = false) =>
-  sendChatMessage(
-    { actor, threadId: 'thread-1', videoId: 'v1', body, hideAbsenceNoticeFromNow: hide, now },
-    deps
-  )
+  sendChatMessage({ actor, threadId: 'thread-1', body, hideAbsenceNoticeFromNow: hide, now }, deps)
 
 describe('sendChatMessage', () => {
   it('生徒が送るとコーチの番になり、コーチに知らせる', async () => {
@@ -86,9 +84,21 @@ describe('sendChatMessage', () => {
     })
   })
 
-  it('生徒は動画1本につき3通まで', async () => {
-    const { deps } = setup({ ...thread, messages: [1, 2, 3].map(() => message('student')) })
-    expect(await send(student, deps)).toEqual({ ok: false, error: 'limit_reached' })
+  it('生徒はスレッド全体で30通まで（お試しは10通）', async () => {
+    const sent = (n: number) => Array.from({ length: n }, () => message('student'))
+    expect(await send(student, setup({ ...thread, messages: sent(30) }).deps)).toEqual({
+      ok: false,
+      error: 'limit_reached',
+    })
+    expect((await send(student, setup({ ...thread, messages: sent(29) }).deps)).ok).toBe(true)
+    expect(
+      await send(student, setup({ ...thread, planKind: 'trial', messages: sent(10) }).deps)
+    ).toEqual({ ok: false, error: 'limit_reached' })
+  })
+
+  it('生徒は最初の提出の前には送れない', async () => {
+    const { deps } = setup({ ...thread, submissions: [] })
+    expect(await send(student, deps)).toEqual({ ok: false, error: 'no_submission' })
   })
 
   it('コーチは何通でも送れ、生徒の番になる', async () => {
@@ -128,6 +138,7 @@ describe('sendChatMessage', () => {
     await send(student, deps, '質問です', true)
     expect(saveChatMessage.mock.calls[0]?.[0].sentDuringAbsenceId).toBe('absence-1')
     expect(saveThreadNotice).toHaveBeenCalledTimes(1)
+    expect(saveThreadNotice.mock.calls[0]?.[0].submissionId).toBe('s1')
     expect(saveAbsenceAck.mock.calls[0]?.[0]).toMatchObject({
       studentUserId: 'student-1',
       threadId: 'thread-1',

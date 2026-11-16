@@ -4,6 +4,8 @@ import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosi
 
 export type CardDraft = {
   localId: string
+  /** どの動画（正面・後方など）から作ったか */
+  videoId: string
   position: KeyPosition
   timeSec: number
   annotations: Annotation[]
@@ -72,12 +74,13 @@ export const useCardDrafts = () => {
   }, [])
 
   const send = useCallback(
-    async (threadId: string, videoId: string): Promise<SendResult> => {
+    async (threadId: string, submissionId: string): Promise<SendResult> => {
       const form = new FormData()
       form.set(
         'cards',
         JSON.stringify(
-          drafts.map(({ position, timeSec, annotations, comment, drillId }) => ({
+          drafts.map(({ videoId, position, timeSec, annotations, comment, drillId }) => ({
+            videoId,
             position,
             timeSec,
             annotations,
@@ -89,7 +92,7 @@ export const useCardDrafts = () => {
       drafts.forEach((draft, index) => {
         form.set(`image-${index}`, draft.image, `card-${index}.png`)
       })
-      const response = await fetch(`/api/threads/${threadId}/videos/${videoId}/reply`, {
+      const response = await fetch(`/api/threads/${threadId}/submissions/${submissionId}/reply`, {
         method: 'POST',
         body: form,
       })

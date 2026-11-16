@@ -14,22 +14,22 @@ describe('defaultClipRange', () => {
     expect(defaultClipRange(8)).toEqual({ start: 0, end: 8 })
   })
 
-  it('長い動画は先頭から20秒', () => {
+  it('長い動画は先頭から60秒', () => {
     expect(defaultClipRange(95)).toEqual({ start: 0, end: CLIP_RULES.maxSeconds })
   })
 })
 
 describe('adjustClipRange', () => {
-  it('20秒以内なら、開始を動かしても終了はそのまま', () => {
-    expect(adjustClipRange({ start: 5, end: 20 }, 60, 'start')).toEqual({ start: 5, end: 20 })
+  it('60秒以内なら、開始を動かしても終了はそのまま', () => {
+    expect(adjustClipRange({ start: 5, end: 50 }, 120, 'start')).toEqual({ start: 5, end: 50 })
   })
 
-  it('終了を延ばして20秒を超えたら、開始を後ろへ寄せる', () => {
-    expect(adjustClipRange({ start: 0, end: 30 }, 60, 'end')).toEqual({ start: 10, end: 30 })
+  it('終了を延ばして60秒を超えたら、開始を後ろへ寄せる', () => {
+    expect(adjustClipRange({ start: 0, end: 90 }, 120, 'end')).toEqual({ start: 30, end: 90 })
   })
 
-  it('開始を前へ戻して20秒を超えたら、終了を前へ寄せる', () => {
-    expect(adjustClipRange({ start: 10, end: 40 }, 60, 'start')).toEqual({ start: 10, end: 30 })
+  it('開始を前へ戻して60秒を超えたら、終了を前へ寄せる', () => {
+    expect(adjustClipRange({ start: 10, end: 100 }, 120, 'start')).toEqual({ start: 10, end: 70 })
   })
 
   it('開始を終了より後ろへ動かしたら、最短の長さを残して終了を押す', () => {
@@ -74,7 +74,7 @@ describe('planBitrate', () => {
   })
 
   it('長さと送信の上限から、出来上がりが上限を超えない', () => {
-    const seconds = 20
+    const seconds = 60
     const bitrate = planBitrate({ ...base, frameRate: 240, width: 3840, height: 2160, seconds })
     expect((bitrate * seconds) / 8).toBeLessThanOrEqual(100 * MB * CLIP_RULES.sizeBudgetRatio)
   })

@@ -6,6 +6,8 @@ export type StoredVideo = Readonly<{
   r2Key: string
   contentType: string
   deleted: boolean
+  /** 提出前の下書きなら、上げた本人（生徒）だけが見られる */
+  draft: boolean
   members: ThreadMembers
 }>
 
@@ -18,13 +20,14 @@ export type AuthorizeVideo = (
   dependencies: Dependencies
 ) => Promise<Result<{ r2Key: string; contentType: string }, 'not_found'>>
 
-/** 動画を見てよいか。担当のコーチと本人の生徒だけ */
+/** 動画を見てよいか。担当のコーチと本人の生徒だけ。提出前の下書きはコーチにも見せない */
 export const authorizeVideo: AuthorizeVideo = async ({ actor, videoId }, deps) => {
   const video = await deps.findStoredVideo(videoId)
   if (
     !video ||
     video.deleted ||
-    (video.members.coachUserId !== actor.userId && video.members.studentUserId !== actor.userId)
+    (video.members.coachUserId !== actor.userId && video.members.studentUserId !== actor.userId) ||
+    (video.draft && video.members.studentUserId !== actor.userId)
   ) {
     return err('not_found')
   }

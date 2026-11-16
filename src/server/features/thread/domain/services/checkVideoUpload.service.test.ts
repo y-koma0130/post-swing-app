@@ -3,51 +3,56 @@ import { checkVideoUpload } from './checkVideoUpload.service'
 
 const MB = 1024 * 1024
 const base = {
-  thread: { videos: [] },
   contentType: 'video/mp4',
   sizeBytes: 20 * MB,
-  note: '  ドライバーです  ',
-  theme: 'トップで右ひざが流れる',
+  angle: 'front',
+  durationSec: 12.5,
   frameRate: 119.88,
 }
-const replied = { id: 'v0', uploadedAt: new Date(), note: '', replied: true }
 
 describe('checkVideoUpload', () => {
-  it('最初の動画はテーマを受け取り、メモの前後の空白を除く', () => {
+  it('受け付けて、角度・フレームレート・長さを返す', () => {
     expect(checkVideoUpload(base)).toEqual({
       ok: true,
-      value: { note: 'ドライバーです', theme: 'トップで右ひざが流れる', frameRate: 119.88 },
+      value: { angle: 'front', frameRate: 119.88, durationSec: 12.5 },
     })
   })
 
-  it('最初の動画でテーマが空なら受け付けない', () => {
-    expect(checkVideoUpload({ ...base, theme: '  ' })).toEqual({
+  it('形式と大きさ', () => {
+    expect(checkVideoUpload({ ...base, contentType: 'image/png' })).toEqual({
       ok: false,
-      error: 'theme_required',
+      error: 'unsupported_type',
     })
-  })
-
-  it('2本目以降はテーマを変えない（空でもよい）', () => {
-    const result = checkVideoUpload({ ...base, thread: { videos: [replied] }, theme: '' })
-    expect(result.ok && result.value.theme).toBeNull()
-  })
-
-  it('動画以外・100MB超・長すぎるメモは受け付けない', () => {
-    expect(checkVideoUpload({ ...base, contentType: 'image/png' }).ok).toBe(false)
     expect(checkVideoUpload({ ...base, sizeBytes: 101 * MB })).toEqual({
       ok: false,
       error: 'too_large',
     })
-    expect(checkVideoUpload({ ...base, note: 'あ'.repeat(1001) })).toEqual({
+    expect(checkVideoUpload({ ...base, sizeBytes: 0 })).toEqual({ ok: false, error: 'too_large' })
+  })
+
+  it('60秒まで。測れなかったときは止めない', () => {
+    expect(checkVideoUpload({ ...base, durationSec: 60 }).ok).toBe(true)
+    expect(checkVideoUpload({ ...base, durationSec: 60.5 })).toEqual({
       ok: false,
-      error: 'note_too_long',
+      error: 'too_long',
+    })
+    expect(checkVideoUpload({ ...base, durationSec: null })).toEqual({
+      ok: true,
+      value: { angle: 'front', frameRate: 119.88, durationSec: null },
     })
   })
 
-  it('ありえないフレームレートは記録しないが、受け付ける', () => {
-    for (const frameRate of [0, -30, 5000, Number.NaN, null]) {
-      const result = checkVideoUpload({ ...base, frameRate })
-      expect(result.ok && result.value.frameRate).toBeNull()
-    }
+  it('角度は正面・後方・その他のどれか', () => {
+    expect(checkVideoUpload({ ...base, angle: 'back' }).ok).toBe(true)
+    expect(checkVideoUpload({ ...base, angle: 'other' }).ok).toBe(true)
+    expect(checkVideoUpload({ ...base, angle: 'side' })).toEqual({
+      ok: false,
+      error: 'invalid_angle',
+    })
+  })
+
+  it('ありえないフレームレートは記録しない', () => {
+    const result = checkVideoUpload({ ...base, frameRate: 5000 })
+    expect(result.ok && result.value.frameRate).toBeNull()
   })
 })

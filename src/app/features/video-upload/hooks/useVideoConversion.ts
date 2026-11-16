@@ -135,8 +135,28 @@ export type VideoAnalysis =
   | { kind: 'none' }
   | { kind: 'reading' }
   | { kind: 'ready'; info: VideoInfo }
-  /** 読めない、またはこのブラウザで変換できない。元のファイルをそのまま送る */
-  | { kind: 'as_is' }
+  /**
+   * 読めない、またはこのブラウザで変換できない。元のファイルをそのまま送る。
+   * 長さはブラウザの再生機能で測る（測れなければ null）
+   */
+  | { kind: 'as_is'; duration: number | null }
+
+/** 変換できない動画の長さを、ブラウザの再生機能で測る。測れなければ null */
+const readDurationByPlayer = (file: File): Promise<number | null> =>
+  new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    const done = (value: number | null) => {
+      URL.revokeObjectURL(url)
+      video.removeAttribute('src')
+      resolve(value)
+    }
+    video.preload = 'metadata'
+    video.onloadedmetadata = () =>
+      done(Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null)
+    video.onerror = () => done(null)
+    video.src = url
+  })
 
 const MB = 1024 * 1024
 
@@ -164,7 +184,10 @@ export const useVideoConversion = (maxBytes: number) => {
       setAnalysis({ kind: 'ready', info })
       setRange(defaultClipRange(info.duration))
     } else {
-      setAnalysis({ kind: 'as_is' })
+      setAnalysis({
+        kind: 'as_is',
+        duration: info?.duration ?? (await readDurationByPlayer(selected)),
+      })
     }
   }, [])
 
@@ -208,6 +231,13 @@ export const useVideoConversion = (maxBytes: number) => {
     error,
     /** 送るときのフレームレート。変換に失敗して元のファイルを送るときも同じ値 */
     frameRate: analysis.kind === 'ready' ? analysis.info.frameRate : null,
+    /** 送る長さ（秒）。変換するなら選んだ範囲、そのまま送るなら動画の長さ。分からなければ null */
+    durationSec:
+      analysis.kind === 'ready'
+        ? range.end - range.start
+        : analysis.kind === 'as_is'
+          ? analysis.duration
+          : null,
     select,
     moveRange,
     prepare,

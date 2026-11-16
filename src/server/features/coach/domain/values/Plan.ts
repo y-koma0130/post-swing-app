@@ -3,7 +3,7 @@ import { priceYenSchema } from './PriceYen'
 
 /**
  * プランの種類
- * - trial: お試し（動画1本のミニスレッド）
+ * - trial: お試し（提出1回のミニスレッド）
  * - single: 1スレッドの都度購入
  * - monthly: 月額（毎月1スレッド）
  */

@@ -2,7 +2,7 @@
 export type NewThreadNotice = Readonly<{
   id: string
   threadId: string
-  videoId: string
+  submissionId: string
   absenceId: string
   absenceEndDate: string
   createdAt: Date

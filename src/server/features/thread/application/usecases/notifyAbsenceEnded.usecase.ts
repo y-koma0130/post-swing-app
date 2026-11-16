@@ -5,11 +5,13 @@ import { ok, type Result } from '@/server/utils/result'
 type Dependencies = Readonly<{
   /** その日に終わった不在（coach が持つ） */
   findAbsencesEndingOn: (endDate: LocalDate) => Promise<CoachAbsence[]>
-  /** 不在中に届いて未返信の動画と、生徒からの質問の数 */
-  countAbsenceBacklog: (absenceId: string) => Promise<{ videoCount: number; chatCount: number }>
+  /** 不在中に届いて未添削の提出と、生徒からの質問の数 */
+  countAbsenceBacklog: (
+    absenceId: string
+  ) => Promise<{ submissionCount: number; chatCount: number }>
   notifyAbsenceEnded: (input: {
     coachUserId: string
-    videoCount: number
+    submissionCount: number
     chatCount: number
   }) => Promise<void>
 }>
@@ -20,7 +22,7 @@ export type NotifyAbsenceEnded = (
 ) => Promise<Result<{ notified: number }, never>>
 
 /**
- * 不在が明けた朝（日本時間9時の Cron）に、不在中に届いた動画と質問の件数をコーチに知らせる
+ * 不在が明けた朝（日本時間9時の Cron）に、不在中に届いた提出と質問の件数をコーチに知らせる
  *
  * ドメインルール:
  * - 対象は前日（日本時間）に終わった不在。返信を再開する日の朝に届く
@@ -31,7 +33,7 @@ export const notifyAbsenceEnded: NotifyAbsenceEnded = async ({ now }, deps) => {
   let notified = 0
   for (const absence of absences) {
     const backlog = await deps.countAbsenceBacklog(absence.id)
-    if (backlog.videoCount === 0 && backlog.chatCount === 0) continue
+    if (backlog.submissionCount === 0 && backlog.chatCount === 0) continue
     await deps.notifyAbsenceEnded({ coachUserId: absence.coachUserId, ...backlog })
     notified += 1
   }

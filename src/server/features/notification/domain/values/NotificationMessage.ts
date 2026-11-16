@@ -32,7 +32,7 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('absence_ended'),
     coachUserId: z.string(),
-    videoCount: z.number().int().nonnegative(),
+    submissionCount: z.number().int().nonnegative(),
     chatCount: z.number().int().nonnegative(),
   }),
   /** 招待されたコーチへ：ログインの案内（メール） */

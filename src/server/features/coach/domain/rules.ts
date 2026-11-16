@@ -25,14 +25,14 @@ export const DEFAULT_PLANS: readonly Plan[] = [
     kind: 'trial',
     name: 'お試し',
     price: priceYenSchema.parse(550),
-    description: '動画1本のミニ添削（チャット3通）',
+    description: '1回の提出（正面・後方の動画2本まで）のミニ添削',
     active: true,
   },
   {
     kind: 'single',
     name: '1スレッド',
     price: priceYenSchema.parse(4980),
-    description: '動画3本まで・30日間',
+    description: '提出3回まで・30日間',
     active: true,
   },
   {

@@ -10,12 +10,14 @@ import { deleteMediaObject } from '../infrastructure/external-services/videoStor
 import {
   closeThreads,
   countAbsenceBacklog,
+  deleteDraftVideos,
+  findDraftVideosToDelete,
   findExpiredOpenThreads,
   findOpenThreadsExpiringBy,
-  findUnrepliedVideosSince,
+  findUnrepliedSubmissionsSince,
   findVideosToDelete,
   markVideosDeleted,
-} from '../infrastructure/repositories/threadRepository'
+} from '../infrastructure/repositories/maintenanceRepository'
 
 /** 毎日の処理（スレッド）。Worker の scheduled ハンドラから呼ぶ */
 export const runDailyThreadMaintenance = async (now: Date) => {
@@ -30,11 +32,13 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       closeThreads,
       findOpenThreadsExpiringBy,
       notifyThreadExpiring: (input) => notify({ kind: 'thread_expiring', ...input }),
-      findUnrepliedVideosSince,
+      findUnrepliedSubmissionsSince,
       notifyReplyOverdue: (input) => notify({ kind: 'reply_overdue', ...input }),
       findVideosToDelete,
       deleteMediaObject,
       markVideosDeleted,
+      findDraftVideosToDelete,
+      deleteDraftVideos,
     }
   )
   if (result.ok) console.info('[scheduled] スレッド', result.value)

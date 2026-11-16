@@ -8,51 +8,78 @@ import { AnnotationLayer } from '@/app/features/annotation/components/Annotation
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
 import { renderAnnotatedFrame } from '@/app/features/annotation/components/renderAnnotatedFrame'
 import { useAnnotationEditor } from '@/app/features/annotation/hooks/useAnnotationEditor'
-import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
-import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import {
   KEY_POSITION_LABEL,
   ReviewCardList,
 } from '@/app/features/review-card/components/ReviewCardList'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
+import { ANGLE_LABEL, ordinalLabel } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
+import { CoachConversation } from './CoachConversation'
 
 type Props = {
   threadId: string
   closed: boolean
-  videos: ThreadDetailDto['videos']
+  submissions: ThreadDetailDto['submissions']
+  messages: ThreadDetailDto['messages']
+  notices: ThreadDetailDto['notices']
   drills: DrillDto[]
 }
 
 const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
 
+/** 最初に開く提出：まだ添削していないもの。なければ最後の提出 */
+const initialIndex = (submissions: ThreadDetailDto['submissions']): number => {
+  const unreplied = submissions.findIndex((s) => s.reply === null)
+  return unreplied >= 0 ? unreplied : submissions.length - 1
+}
+
+const tabClass = (active: boolean) =>
+  `rounded-full px-4 py-1.5 text-sm font-bold ${
+    active ? 'bg-ink text-white' : 'text-body bg-white shadow-sm'
+  }`
+
 /**
  * 添削画面の作業エリア
- * 動画を止めて線を引き、キー位置ごとにキャプチャしてカードにする。カードをまとめて1通で送る
+ * 提出を選び、動画（正面・後方など）を切り替えながら、止めて線を引き、キー位置ごとにキャプチャしてカードにする。
+ * カードは提出ごとにまとめて1通で送る
  *
  * 複数の feature を組み合わせるので、features/ ではなくこの画面の _components/ に置く
  */
-export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => {
+export const ReviewWorkspace = ({
+  threadId,
+  closed,
+  submissions,
+  messages,
+  notices,
+  drills,
+}: Props) => {
   const router = useRouter()
   const editor = useAnnotationEditor()
   const cards = useCardDrafts()
   const videoElement = useRef<HTMLVideoElement | null>(null)
-  const [index, setIndex] = useState(videos.length - 1)
+  const [index, setIndex] = useState(() => initialIndex(submissions))
+  const [videoIndex, setVideoIndex] = useState(0)
   const [comparing, setComparing] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const current = videos[index]
-  const previous = index > 0 ? videos[index - 1] : undefined
+  const current = submissions[index]
+  const currentVideo = current?.videos[videoIndex] ?? current?.videos[0]
+  const previousSubmission = index > 0 ? submissions[index - 1] : undefined
+  // 前回の同じ角度の動画と並べる（なければ前回の1本目）
+  const previousVideo =
+    previousSubmission?.videos.find((v) => v.angle === currentVideo?.angle) ??
+    previousSubmission?.videos[0]
 
   const onVideoElement = useCallback((video: HTMLVideoElement | null) => {
     videoElement.current = video
   }, [])
 
-  if (!current) {
+  if (!current || !currentVideo) {
     return (
       <p className="rounded-card text-muted bg-white p-6 text-sm shadow-sm">
         まだ動画が届いていません。届いたらメールでお知らせします。
@@ -60,9 +87,20 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
     )
   }
 
-  const select = (next: number) => {
+  const angleOf = (videoId: string): string | null => {
+    const video = current.videos.find((v) => v.id === videoId)
+    return video && current.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
+  }
+
+  const selectSubmission = (next: number) => {
     setIndex(next)
+    setVideoIndex(0)
     // 別の動画に引いた線は持ち越さない
+    editor.reset()
+  }
+
+  const selectVideo = (next: number) => {
+    setVideoIndex(next)
     editor.reset()
   }
 
@@ -74,6 +112,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
     try {
       const image = await renderAnnotatedFrame(video, editor.annotations)
       cards.add({
+        videoId: currentVideo.id,
         position,
         timeSec: video.currentTime,
         annotations: [...editor.annotations],
@@ -106,20 +145,19 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {videos.map((video, i) => (
+          {submissions.map((submission, i) => (
             <button
-              key={video.id}
+              key={submission.id}
               type="button"
               aria-pressed={i === index}
-              onClick={() => select(i)}
-              className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-                i === index ? 'bg-ink text-white' : 'text-body bg-white shadow-sm'
-              }`}
+              onClick={() => selectSubmission(i)}
+              className={tabClass(i === index)}
             >
-              {i + 1}本目{video.reply ? '（返信済み）' : ''}
+              {ordinalLabel(i)}
+              {submission.reply ? '（添削済み）' : ''}
             </button>
           ))}
-          {previous && (
+          {previousVideo && (
             <label className="ml-auto flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -131,12 +169,34 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
             </label>
           )}
         </div>
+        {current.videos.length > 1 && (
+          <div className="flex gap-2" role="tablist" aria-label="動画の角度">
+            {current.videos.map((video, i) => (
+              <button
+                key={video.id}
+                type="button"
+                role="tab"
+                aria-selected={video.id === currentVideo.id}
+                onClick={() => selectVideo(i)}
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  video.id === currentVideo.id
+                    ? 'border-mint bg-mint-soft text-ink font-bold'
+                    : 'border-line text-muted bg-white'
+                }`}
+              >
+                {ANGLE_LABEL[video.angle]}
+                {cards.drafts.some((d) => d.videoId === video.id) &&
+                  `（${cards.drafts.filter((d) => d.videoId === video.id).length}枚）`}
+              </button>
+            ))}
+          </div>
+        )}
         {!current.reply && <AnnotationToolbar editor={editor} />}
-        <div className={comparing && previous ? 'grid gap-3 md:grid-cols-2' : ''}>
+        <div className={comparing && previousVideo ? 'grid gap-3 md:grid-cols-2' : ''}>
           <VideoPlayer
-            key={current.url}
-            src={current.url}
-            frameRate={current.frameRate}
+            key={currentVideo.url}
+            src={currentVideo.url}
+            frameRate={currentVideo.frameRate}
             onVideoElement={onVideoElement}
             renderOverlay={
               current.reply
@@ -146,8 +206,12 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
                   )
             }
           />
-          {comparing && previous && (
-            <VideoPlayer key={previous.url} src={previous.url} frameRate={previous.frameRate} />
+          {comparing && previousVideo && (
+            <VideoPlayer
+              key={previousVideo.url}
+              src={previousVideo.url}
+              frameRate={previousVideo.frameRate}
+            />
           )}
         </div>
         {current.note && (
@@ -161,7 +225,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
         {current.reply ? (
           <Card className="space-y-3">
             <h2 className="text-heading">送った添削</h2>
-            <ReviewCardList cards={current.reply.cards} />
+            <ReviewCardList cards={current.reply.cards} videoLabel={angleOf} />
           </Card>
         ) : (
           <Card className="space-y-4">
@@ -169,6 +233,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
               <h2 className="text-heading">添削カード</h2>
               <p className="text-caption text-muted">
                 動画を止めて線を引き、キー位置を押すと、そのコマがカードになります。
+                {current.videos.length > 1 && '角度を切り替えて、両方の動画からカードを作れます。'}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {KEY_POSITIONS.map((position) => (
@@ -187,6 +252,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
             <CardDraftList
               drafts={cards.drafts}
               drills={drills}
+              videoLabel={angleOf}
               onChange={cards.update}
               onRemove={cards.remove}
             />
@@ -207,20 +273,13 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
             </Button>
           </Card>
         )}
-        <Card className="space-y-3">
-          <h2 className="text-heading">チャット</h2>
-          <ChatPanel
-            threadId={threadId}
-            video={current}
-            viewer="coach"
-            closed={closed}
-            notices={current.notices.map((n) => ({
-              id: n.id,
-              text: `不在中に送られました（${formatShortDate(n.absenceEndDate)}まで不在）`,
-              createdAt: n.createdAt,
-            }))}
-          />
-        </Card>
+        <CoachConversation
+          threadId={threadId}
+          closed={closed}
+          submissions={submissions}
+          messages={messages}
+          notices={notices}
+        />
       </aside>
     </div>
   )

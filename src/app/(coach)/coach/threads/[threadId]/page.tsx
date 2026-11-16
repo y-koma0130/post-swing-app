@@ -4,6 +4,7 @@ import { Card } from '@/app/components/ui/Card'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
+import { threadUsageText } from '@/app/features/thread/utils/threadText'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
@@ -31,7 +32,11 @@ const ReviewPage = async ({ params }: Props) => {
         title={thread.theme === '' ? '（動画待ち）' : thread.theme}
         description={
           <>
-            動画 {thread.videos.length}/{thread.maxVideos}本・期限{' '}
+            {threadUsageText({
+              submissionCount: thread.submissions.length,
+              maxSubmissions: thread.limits.maxSubmissions,
+            })}
+            ・生徒のチャット 残り{thread.remainingStudentMessages}通・期限{' '}
             {formatMonthDay(thread.expiresAt)}
             {extensionNote(thread.extendedDays)}
             {thread.status === 'closed' && '・終了'}
@@ -56,7 +61,9 @@ const ReviewPage = async ({ params }: Props) => {
       <ReviewWorkspace
         threadId={thread.id}
         closed={thread.status === 'closed'}
-        videos={thread.videos}
+        submissions={thread.submissions}
+        messages={thread.messages}
+        notices={thread.notices}
         drills={drills}
       />
     </Page>

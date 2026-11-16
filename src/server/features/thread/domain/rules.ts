@@ -4,9 +4,20 @@ import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
  * スレッドのルール（暫定）。計画書「5. サービスの仕組み」より
  */
 export const THREAD_RULES = {
-  /** 送れる動画の本数。お試しは1本のミニスレッド */
-  maxVideosByPlan: { trial: 1, single: 3, monthly: 3 } as const satisfies Record<PlanKind, number>,
-  maxStudentMessagesPerVideo: 3,
+  /** 提出できる回数。お試しは1回のミニスレッド */
+  maxSubmissionsByPlan: { trial: 1, single: 3, monthly: 3 } as const satisfies Record<
+    PlanKind,
+    number
+  >,
+  /** 1回の提出で送れる動画の本数（正面と後方など） */
+  maxVideosPerSubmission: 2,
+  /** 生徒がスレッド全体で送れるチャットの通数（提出の回数とは別に数える） */
+  maxStudentMessagesByPlan: { trial: 10, single: 30, monthly: 30 } as const satisfies Record<
+    PlanKind,
+    number
+  >,
+  /** 提出に添えるメモ */
+  maxSubmissionNoteLength: 1000,
   durationDays: 30,
 } as const
 
@@ -19,8 +30,8 @@ export const VIDEO_RULES = {
   /** 受け取るフレームレートの範囲。外れた値は記録しない（スマホのスロー撮影は 240fps まで） */
   minFrameRate: 1,
   maxFrameRate: 1000,
-  /** 動画に添えるメモ */
-  maxNoteLength: 1000,
+  /** 1本の長さの上限（秒）。スイングの前後を含めて十分な長さ */
+  maxDurationSeconds: 60,
 } as const
 
 /** 返信のルール */
@@ -53,4 +64,6 @@ export const MAINTENANCE_RULES = {
   unrepliedLookbackDays: 60,
   /** スレッドの終了から何日で動画を消すか（暫定。利用規約で決める） */
   videoRetentionDays: 90,
+  /** 上げたまま提出しなかった動画（下書き）を何時間で消すか */
+  draftVideoRetentionHours: 24,
 } as const

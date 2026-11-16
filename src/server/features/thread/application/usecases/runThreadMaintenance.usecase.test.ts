@@ -19,7 +19,13 @@ const thread = (id: string, replied: boolean[]): Thread => ({
   startedAt: new Date('2026-11-14T00:00:00Z'),
   expiresAt: new Date('2026-12-14T00:00:00Z'),
   closedAt: null,
-  videos: replied.map((r, i) => ({ id: `${id}-v${i}`, uploadedAt: now, note: '', replied: r })),
+  submissions: replied.map((r, i) => ({
+    id: `${id}-s${i}`,
+    submittedAt: now,
+    note: '',
+    videos: [{ id: `${id}-v${i}`, angle: 'front' as const }],
+    replied: r,
+  })),
   messages: [],
 })
 
@@ -39,17 +45,21 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
   const deleteMediaObject = vi.fn<Deps['deleteMediaObject']>(async () => undefined)
   const markVideosDeleted = vi.fn<Deps['markVideosDeleted']>(async () => undefined)
   const findVideosToDelete = vi.fn<Deps['findVideosToDelete']>(async () => [])
+  const findDraftVideosToDelete = vi.fn<Deps['findDraftVideosToDelete']>(async () => [])
+  const deleteDraftVideos = vi.fn<Deps['deleteDraftVideos']>(async () => undefined)
   const deps: Deps = {
     findAbsencesForCoaches: async () => new Map([['coach-1', absences]]),
     findExpiredOpenThreads: async () => [],
     closeThreads,
     findOpenThreadsExpiringBy: async () => [],
     notifyThreadExpiring,
-    findUnrepliedVideosSince: async () => [],
+    findUnrepliedSubmissionsSince: async () => [],
     notifyReplyOverdue,
     findVideosToDelete,
     deleteMediaObject,
     markVideosDeleted,
+    findDraftVideosToDelete,
+    deleteDraftVideos,
     ...overrides,
   }
   return {
@@ -60,11 +70,13 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
     deleteMediaObject,
     markVideosDeleted,
     findVideosToDelete,
+    findDraftVideosToDelete,
+    deleteDraftVideos,
   }
 }
 
 describe('runThreadMaintenance', () => {
-  it('期限切れで、すべて返信済みのスレッドだけを終了する', async () => {
+  it('期限切れで、すべて添削済みのスレッドだけを終了する', async () => {
     const { deps, closeThreads } = setup({
       findExpiredOpenThreads: async () => [
         thread('done', [true, true]),
@@ -76,7 +88,7 @@ describe('runThreadMaintenance', () => {
     expect(closeThreads).toHaveBeenCalledWith(['done', 'empty'], now)
     expect(result).toEqual({
       ok: true,
-      value: { closed: 2, reminded: 0, overdue: 0, deletedVideos: 0 },
+      value: { closed: 2, reminded: 0, overdue: 0, deletedVideos: 0, deletedDrafts: 0 },
     })
   })
 
@@ -113,16 +125,20 @@ describe('runThreadMaintenance', () => {
     expect(notifyThreadExpiring.mock.calls).toEqual([[{ threadId: 't1', studentUserId: 's1' }]])
   })
 
-  it('返信の期限（48時間）を、この1日で過ぎた動画のコーチに1回だけ知らせる', async () => {
+  it('添削の期限（48時間）を、この1日で過ぎた提出のコーチに1回だけ知らせる', async () => {
     const { deps, notifyReplyOverdue } = setup({
-      findUnrepliedVideosSince: async () => [
+      findUnrepliedSubmissionsSince: async () => [
         // 日本時間 12/14 10:00 に届いた → 期限 12/16 10:00 → まだ
-        { threadId: 'later', coachUserId: 'coach-1', uploadedAt: new Date('2026-12-14T01:00:00Z') },
-        // 12/13 20:00・21:00 に届いた → 期限 12/15 20:00・21:00 → この1日で過ぎた（2本でも1回）
-        { threadId: 'due', coachUserId: 'coach-1', uploadedAt: new Date('2026-12-13T11:00:00Z') },
-        { threadId: 'due', coachUserId: 'coach-1', uploadedAt: new Date('2026-12-13T12:00:00Z') },
+        {
+          threadId: 'later',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-14T01:00:00Z'),
+        },
+        // 12/13 20:00・21:00 に届いた → 期限 12/15 20:00・21:00 → この1日で過ぎた（2回分でも1回）
+        { threadId: 'due', coachUserId: 'coach-1', submittedAt: new Date('2026-12-13T11:00:00Z') },
+        { threadId: 'due', coachUserId: 'coach-1', submittedAt: new Date('2026-12-13T12:00:00Z') },
         // 12/12 に届いた → 期限はきのうより前で、もう知らせた
-        { threadId: 'old', coachUserId: 'coach-1', uploadedAt: new Date('2026-12-12T01:00:00Z') },
+        { threadId: 'old', coachUserId: 'coach-1', submittedAt: new Date('2026-12-12T01:00:00Z') },
       ],
     })
     const result = await runThreadMaintenance({ now }, deps)
@@ -130,11 +146,11 @@ describe('runThreadMaintenance', () => {
     expect(result.ok && result.value.overdue).toBe(1)
   })
 
-  it('不在中に届いた動画は、再開日から48時間で数える', async () => {
+  it('不在中に届いた提出は、再開日から48時間で数える', async () => {
     const { deps, notifyReplyOverdue } = setup(
       {
-        findUnrepliedVideosSince: async () => [
-          { threadId: 't1', coachUserId: 'coach-1', uploadedAt: new Date('2026-12-10T01:00:00Z') },
+        findUnrepliedSubmissionsSince: async () => [
+          { threadId: 't1', coachUserId: 'coach-1', submittedAt: new Date('2026-12-10T01:00:00Z') },
         ],
       },
       // 12/10〜12/13 不在 → 再開 12/14 0:00 → 期限 12/16 0:00（日本時間）→ この1日で過ぎた
@@ -151,5 +167,15 @@ describe('runThreadMaintenance', () => {
     expect(findVideosToDelete).toHaveBeenCalledWith(new Date('2026-09-16T19:00:00Z'))
     expect(deleteMediaObject).toHaveBeenCalledWith('videos/t/v1')
     expect(markVideosDeleted).toHaveBeenCalledWith(['v1'], now)
+  })
+
+  it('24時間たっても提出に使われなかった動画（下書き）を R2 と記録から消す', async () => {
+    const { deps, deleteMediaObject, findDraftVideosToDelete, deleteDraftVideos } = setup()
+    findDraftVideosToDelete.mockResolvedValue([{ id: 'd1', r2Key: 'videos/t/d1' }])
+    const result = await runThreadMaintenance({ now }, deps)
+    expect(findDraftVideosToDelete).toHaveBeenCalledWith(new Date('2026-12-14T19:00:00Z'))
+    expect(deleteMediaObject).toHaveBeenCalledWith('videos/t/d1')
+    expect(deleteDraftVideos).toHaveBeenCalledWith(['d1'])
+    expect(result.ok && result.value.deletedDrafts).toBe(1)
   })
 })

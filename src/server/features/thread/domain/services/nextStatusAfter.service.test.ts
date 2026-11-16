@@ -1,33 +1,51 @@
 import { describe, expect, it } from 'vitest'
 import { nextStatusAfter } from './nextStatusAfter.service'
 
-const video = (replied: boolean) => ({
+const submission = (replied: boolean) => ({
   id: crypto.randomUUID(),
-  uploadedAt: new Date(),
+  submittedAt: new Date(),
   note: '',
+  videos: [{ id: 'v', angle: 'front' as const }],
   replied,
 })
 
 describe('nextStatusAfter', () => {
-  it('生徒が動画やチャットを送ったら、コーチの番', () => {
-    const thread = { status: 'waiting_student' as const, videos: [video(true)] }
-    expect(nextStatusAfter(thread, 'student_sent_video')).toBe('waiting_coach')
+  it('生徒が提出やチャットを送ったら、コーチの番', () => {
+    const thread = { status: 'waiting_student' as const, submissions: [submission(true)] }
+    expect(nextStatusAfter(thread, 'student_submitted')).toBe('waiting_coach')
     expect(nextStatusAfter(thread, 'student_chatted')).toBe('waiting_coach')
   })
 
-  it('コーチが返信したら生徒の番。返信していない動画が残ればコーチの番のまま', () => {
+  it('コーチが添削を返したら生徒の番。添削していない提出が残ればコーチの番のまま', () => {
     expect(
-      nextStatusAfter({ status: 'waiting_coach', videos: [video(false)] }, 'coach_replied')
+      nextStatusAfter(
+        { status: 'waiting_coach', submissions: [submission(false)] },
+        'coach_replied'
+      )
     ).toBe('waiting_student')
     expect(
       nextStatusAfter(
-        { status: 'waiting_coach', videos: [video(false), video(false)] },
+        { status: 'waiting_coach', submissions: [submission(false), submission(false)] },
         'coach_replied'
       )
     ).toBe('waiting_coach')
   })
 
+  it('コーチのチャットは、添削していない提出があればコーチの番のまま', () => {
+    expect(
+      nextStatusAfter(
+        { status: 'waiting_coach', submissions: [submission(false)] },
+        'coach_chatted'
+      )
+    ).toBe('waiting_coach')
+    expect(
+      nextStatusAfter({ status: 'waiting_coach', submissions: [submission(true)] }, 'coach_chatted')
+    ).toBe('waiting_student')
+  })
+
   it('終了したスレッドは変わらない', () => {
-    expect(nextStatusAfter({ status: 'closed', videos: [] }, 'student_sent_video')).toBe('closed')
+    expect(nextStatusAfter({ status: 'closed', submissions: [] }, 'student_submitted')).toBe(
+      'closed'
+    )
   })
 })
