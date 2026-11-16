@@ -1,13 +1,14 @@
+import { Badge } from '@/app/components/ui/Badge'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import { ThreadList } from './ThreadList'
 
 type SectionDef = { status: ThreadStatus; title: string; empty: string | null }
 
-/** コーチが先に見るべき順（添削待ち → 生徒の番 → 完了）。empty が null なら、0件のとき出さない */
+/** コーチが先に見るべき順（添削待ち → レッスン中 → 完了）。empty が null なら、0件のとき出さない */
 const SECTIONS = [
   { status: 'waiting_coach', title: '添削待ち', empty: '添削待ちのスレッドはありません。' },
-  { status: 'waiting_student', title: '生徒の番', empty: null },
+  { status: 'waiting_student', title: 'レッスン中', empty: null },
   { status: 'closed', title: '完了', empty: null },
 ] as const satisfies ReadonlyArray<SectionDef>
 
@@ -20,7 +21,11 @@ const Section = ({ section, threads }: SectionProps) => {
   const heading = (
     <h2 className="text-heading flex items-center gap-2">
       {section.title}
-      <span className="text-caption text-muted font-normal">{threads.length}件</span>
+      {section.status === 'waiting_coach' && threads.length > 0 ? (
+        <Badge tone="mint">{threads.length}件</Badge>
+      ) : (
+        <span className="text-caption text-muted font-normal">{threads.length}件</span>
+      )}
     </h2>
   )
   const body =
