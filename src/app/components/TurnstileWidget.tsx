@@ -6,6 +6,7 @@ type TurnstileRenderOptions = {
   sitekey: string
   action: string
   language: string
+  appearance: 'always' | 'execute' | 'interaction-only'
   callback: (token: string) => void
   'expired-callback': () => void
   'error-callback': () => void
@@ -55,7 +56,7 @@ type Props = {
 /**
  * Cloudflare Turnstile（ボット対策）の部品
  *
- * ほとんどの人には何も出ないか、チェックが一瞬出るだけ。フォームの中に置くと、
+ * ほとんどの人には何も出ない（確認が要る人にだけチェックが出る）。フォームの中に置くと、
  * トークンが cf-turnstile-response という名前の隠し項目で一緒に送られる。
  * トークンは1回しか使えないので、送ったあとは key を変えて作り直す
  */
@@ -76,6 +77,8 @@ export const TurnstileWidget = ({ siteKey, action, onToken }: Props) => {
           sitekey: siteKey,
           action,
           language: 'ja',
+          // ふつうは何も出さず、確認が要る人にだけチェックを出す
+          appearance: 'interaction-only',
           callback: (token) => onTokenRef.current?.(token),
           'expired-callback': () => onTokenRef.current?.(null),
           'error-callback': () => onTokenRef.current?.(null),
@@ -88,5 +91,5 @@ export const TurnstileWidget = ({ siteKey, action, onToken }: Props) => {
     }
   }, [siteKey, action])
 
-  return <div ref={containerRef} className="min-h-[65px]" />
+  return <div ref={containerRef} />
 }

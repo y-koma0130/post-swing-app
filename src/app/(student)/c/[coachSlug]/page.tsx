@@ -6,6 +6,7 @@ import { Page } from '@/app/components/ui/Page'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
+import { HowItWorks } from '@/app/features/coach-profile/components/HowItWorks'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
 import {
   coachShareDescription,
@@ -50,51 +51,53 @@ const CoachLandingPage = async ({ params }: Props) => {
   ])
   if (!coach) notFound()
 
+  const closedMessage =
+    coach.signupGuard === 'paused'
+      ? coach.availability.kind === 'absent'
+        ? pausedMessage(coach.availability.resumeDate)
+        : 'ただいま申し込みを止めています'
+      : coach.acceptingApplications
+        ? null
+        : 'ただいま申し込みの準備中です'
+
   return (
     <Page layout="student">
-      <div className="flex items-center gap-4">
-        <CoachAvatar name={coach.name} url={coach.avatarUrl} size={80} />
-        <div>
-          <p className="text-muted text-sm">{coach.title}</p>
-          <h1 className="mt-1 text-2xl font-bold">{coach.name}</h1>
-          <p className="text-muted mt-1 text-sm">{coach.instagram}</p>
+      <header className="flex items-center gap-4">
+        <CoachAvatar name={coach.name} url={coach.avatarUrl} size={72} />
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-caption text-muted">{coach.title}</p>
+          <h1 className="text-title">{coach.name}</h1>
+          {coach.instagram && <p className="text-caption text-muted">{coach.instagram}</p>}
         </div>
-      </div>
-      <p className="text-body mt-6 leading-relaxed">{coach.bio}</p>
-      <p className="mt-6">
+      </header>
+      <p className="text-body leading-relaxed whitespace-pre-wrap">{coach.bio}</p>
+      <section aria-label="受付の状況" className="space-y-3">
         <Badge tone={coach.remainingCapacity > 0 ? 'mint' : 'neutral'}>
           {coach.remainingCapacity > 0
             ? `今月の受付 残り${coach.remainingCapacity}枠`
             : '今月は満枠です（キャンセル待ち受付中）'}
         </Badge>
-      </p>
-      <div className="mt-6">
         <CoachAvailabilityNotice
           coachName={coach.name}
           availability={coach.availability}
           upcomingAbsence={coach.upcomingAbsence}
         />
-      </div>
-      <div className="mt-8">
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-heading">プラン</h2>
         <PlanList plans={coach.plans} />
-      </div>
-      <div className="mt-10">
-        <ReviewSummary summary={reviews} />
-      </div>
-      {coach.acceptingApplications && coach.signupGuard === 'paused' ? (
-        <p className="bg-surface text-muted mt-8 rounded-xl p-4 text-center text-sm">
-          {coach.availability.kind === 'absent'
-            ? pausedMessage(coach.availability.resumeDate)
-            : 'ただいま申し込みを止めています'}
-        </p>
-      ) : coach.acceptingApplications ? (
-        <ButtonLink href={`/c/${coach.slug}/apply`} size="lg" className="mt-8 w-full">
-          動画を送って添削してもらう
-        </ButtonLink>
+      </section>
+      <HowItWorks />
+      <ReviewSummary summary={reviews} />
+      {closedMessage ? (
+        <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">{closedMessage}</p>
       ) : (
-        <p className="bg-surface text-muted mt-8 rounded-xl p-4 text-center text-sm">
-          ただいま申し込みの準備中です
-        </p>
+        // スクロールしても申し込みボタンが画面の下に残る
+        <div className="border-line-soft sticky bottom-0 -mx-6 border-t bg-white/90 px-6 py-3 backdrop-blur">
+          <ButtonLink href={`/c/${coach.slug}/apply`} size="lg" className="w-full">
+            動画を送って添削してもらう
+          </ButtonLink>
+        </div>
       )}
     </Page>
   )
