@@ -37,6 +37,8 @@ type Props = {
   maxBytes: number
   maxSeconds: number
   disabled: boolean
+  /** submission：生徒の提出（角度を選ぶ）、chat：コーチがチャットに添える（角度は選ばない） */
+  purpose?: 'submission' | 'chat' | undefined
   onStatusChange: (status: VideoSlotStatus) => void
 }
 
@@ -53,6 +55,7 @@ export const VideoSlot = ({
   maxSeconds,
   disabled,
   onStatusChange,
+  purpose = 'submission',
 }: Props) => {
   const [angle, setAngle] = useState<VideoAngle>(defaultAngle)
   const conversion = useVideoConversion(maxBytes)
@@ -83,6 +86,7 @@ export const VideoSlot = ({
           : conversion.durationSec
       const videoId = await upload({
         threadId,
+        purpose,
         file: toSend,
         angle,
         durationSec,
@@ -100,22 +104,24 @@ export const VideoSlot = ({
   return (
     <fieldset className="border-line rounded-card space-y-3 border p-4" disabled={disabled}>
       <legend className={`${labelTextClass} px-1`}>{label}</legend>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="撮った角度">
-        {ANGLES.map((value) => (
-          <label
-            key={value}
-            className="has-checked:border-mint has-checked:bg-mint-soft has-checked:text-ink border-line text-muted cursor-pointer rounded-full border px-3 py-1 text-sm"
-          >
-            <input
-              type="radio"
-              className="sr-only"
-              checked={angle === value}
-              onChange={() => setAngle(value)}
-            />
-            {ANGLE_LABEL[value]}
-          </label>
-        ))}
-      </div>
+      {purpose === 'submission' && (
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="撮った角度">
+          {ANGLES.map((value) => (
+            <label
+              key={value}
+              className="has-checked:border-mint has-checked:bg-mint-soft has-checked:text-ink border-line text-muted cursor-pointer rounded-full border px-3 py-1 text-sm"
+            >
+              <input
+                type="radio"
+                className="sr-only"
+                checked={angle === value}
+                onChange={() => setAngle(value)}
+              />
+              {ANGLE_LABEL[value]}
+            </label>
+          ))}
+        </div>
+      )}
       <input
         type="file"
         accept="video/mp4,video/quicktime,video/webm,video/*"

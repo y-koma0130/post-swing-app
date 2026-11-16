@@ -51,3 +51,15 @@ export const listDrills: ListDrills = async (coachUserId) =>
     .where(eq(drill.coachUserId, coachUserId))
     .orderBy(desc(drill.createdAt))
     .all()
+
+export type FindOwnDrill = (
+  coachUserId: string,
+  drillId: string
+) => Promise<{ title: string; description: string } | null>
+/** そのコーチ自身のドリル（チャットで送るときに中身を写す）。ほかのコーチのものなら null */
+export const findOwnDrill: FindOwnDrill = async (coachUserId, drillId) =>
+  (await getDb()
+    .select({ title: drill.title, description: drill.description })
+    .from(drill)
+    .where(and(eq(drill.coachUserId, coachUserId), eq(drill.id, drillId)))
+    .get()) ?? null

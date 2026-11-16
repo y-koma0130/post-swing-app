@@ -16,7 +16,9 @@ import type { NewChatMessage } from '../../application/usecases/sendChatMessage.
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
 import type { NewSubmission } from '../../application/usecases/submitSubmission.usecase'
 import type { NewDraftVideo } from '../../application/usecases/uploadVideo.usecase'
-import type { DraftVideo } from '../../domain/values/Submission'
+import type { ThreadCard } from '../../domain/services/checkQuoteTarget.service'
+import { type ChatMessage, chatMessageSchema } from '../../domain/values/ChatMessage'
+import { type DraftVideo, isUnusedDraft } from '../../domain/values/Submission'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
 import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
 
@@ -64,21 +66,32 @@ export const findThread: FindThread = async (threadId) => {
         .map((v) => ({ id: v.id, angle: v.angle })),
       replied: s.replyId !== null,
     })),
-    messages: messages.map((m) => ({
-      id: m.id,
-      from: m.senderRole,
-      body: m.body,
-      sentAt: m.sentAt,
-    })),
+    messages: messages.map(toChatMessage),
   })
 }
+
+/** 保存したチャットの行を domain の形にする（引用の JSON はここで検証する） */
+const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
+  chatMessageSchema.parse({
+    id: m.id,
+    from: m.senderRole,
+    body: m.body,
+    sentAt: m.sentAt,
+    attachment:
+      m.attachmentKind === 'drill'
+        ? { kind: 'drill', title: m.drillTitle ?? '', description: m.drillDescription ?? '' }
+        : m.attachmentKind === 'video' && m.videoId
+          ? { kind: 'video', videoId: m.videoId }
+          : { kind: 'none' },
+    quote: m.quote ?? null,
+  })
 
 export type SaveDraftVideo = (v: NewDraftVideo) => Promise<void>
 /** 提出前の動画（下書き）を記録する。スレッドの状態は変えない */
 export const saveDraftVideo: SaveDraftVideo = async (v) => {
   await getDb()
     .insert(video)
-    .values({ ...v, submissionId: null })
+    .values({ ...v, submissionId: null, chatMessageId: null })
 }
 
 export type FindDraftVideos = (videoIds: ReadonlyArray<string>) => Promise<DraftVideo[]>
@@ -90,12 +103,32 @@ export const findDraftVideos: FindDraftVideos = async (videoIds) => {
       threadId: video.threadId,
       uploaderUserId: video.uploaderUserId,
       submissionId: video.submissionId,
+      chatMessageId: video.chatMessageId,
       angle: video.angle,
     })
     .from(video)
     .where(and(inArray(video.id, [...videoIds]), isNull(video.deletedAt)))
     .all()
 }
+
+export type FindDraftVideo = (videoId: string) => Promise<DraftVideo | null>
+export const findDraftVideo: FindDraftVideo = async (videoId) =>
+  (await findDraftVideos([videoId]))[0] ?? null
+
+export type FindThreadCards = (threadId: string) => Promise<ThreadCard[]>
+/** スレッドの添削カード（引用先の確認に使う） */
+export const findThreadCards: FindThreadCards = async (threadId) =>
+  getDb()
+    .select({
+      id: reviewCard.id,
+      submissionId: reply.submissionId,
+      position: reviewCard.position,
+    })
+    .from(reviewCard)
+    .innerJoin(reply, eq(reply.id, reviewCard.replyId))
+    .innerJoin(submission, eq(submission.id, reply.submissionId))
+    .where(eq(submission.threadId, threadId))
+    .all()
 
 export type SaveSubmission = (s: NewSubmission) => Promise<void>
 /** 提出を作り、動画をひも付け、スレッドの状態（と最初ならテーマ）を変える。まとめて1回で書く */
@@ -138,6 +171,7 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
       contentType: video.contentType,
       deletedAt: video.deletedAt,
       submissionId: video.submissionId,
+      chatMessageId: video.chatMessageId,
       coachUserId: thread.coachUserId,
       studentUserId: thread.studentUserId,
     })
@@ -152,7 +186,7 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
     r2Key: row.r2Key,
     contentType: row.contentType,
     deleted: row.deletedAt !== null,
-    draft: row.submissionId === null,
+    draft: isUnusedDraft(row),
     members: { coachUserId: row.coachUserId, studentUserId: row.studentUserId },
   }
 }
@@ -213,8 +247,30 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       senderRole: m.senderRole,
       senderUserId: m.senderUserId,
       body: m.body,
+      attachmentKind: m.attachment.kind,
+      drillTitle: m.attachment.kind === 'drill' ? m.attachment.title : null,
+      drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
+      videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
+      quote: m.quote,
       sentAt: m.sentAt,
+      sentDuringAbsenceId: m.sentDuringAbsenceId,
     }),
+    // 添えた動画を、このメッセージにひも付ける（下書きでなくなる）
+    ...(m.attachment.kind === 'video'
+      ? [
+          db
+            .update(video)
+            .set({ chatMessageId: m.id })
+            .where(
+              and(
+                eq(video.id, m.attachment.videoId),
+                eq(video.threadId, m.threadId),
+                isNull(video.submissionId),
+                isNull(video.chatMessageId)
+              )
+            ),
+        ]
+      : []),
     db
       .update(thread)
       .set({ status: m.nextStatus, updatedAt: m.sentAt })

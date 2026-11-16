@@ -6,6 +6,8 @@ const message = (from: 'coach' | 'student') => ({
   from,
   body: 'こんにちは',
   sentAt: new Date(),
+  attachment: { kind: 'none' as const },
+  quote: null,
 })
 const submission = {
   id: 's1',
@@ -23,7 +25,9 @@ const thread = {
 
 describe('checkChatMessage', () => {
   it('前後の空白を除いた本文を返す', () => {
-    expect(checkChatMessage({ thread, sender: 'student', body: ' 質問です ' })).toEqual({
+    expect(
+      checkChatMessage({ thread, sender: 'student', body: ' 質問です ', attachmentKind: 'none' })
+    ).toEqual({
       ok: true,
       value: { body: '質問です' },
     })
@@ -31,7 +35,7 @@ describe('checkChatMessage', () => {
 
   it('終了したスレッド・空・長すぎる本文は送れない', () => {
     const check = (overrides: Partial<Parameters<typeof checkChatMessage>[0]>) =>
-      checkChatMessage({ thread, sender: 'coach', body: 'a', ...overrides })
+      checkChatMessage({ thread, sender: 'coach', body: 'a', attachmentKind: 'none', ...overrides })
     expect(check({ thread: { ...thread, status: 'closed' } })).toEqual({
       ok: false,
       error: 'closed',
@@ -42,11 +46,15 @@ describe('checkChatMessage', () => {
 
   it('生徒は最初の提出のあとから送れる。コーチはいつでも送れる', () => {
     const before = { ...thread, status: 'waiting_student' as const, submissions: [] }
-    expect(checkChatMessage({ thread: before, sender: 'student', body: 'a' })).toEqual({
+    expect(
+      checkChatMessage({ thread: before, sender: 'student', body: 'a', attachmentKind: 'none' })
+    ).toEqual({
       ok: false,
       error: 'no_submission',
     })
-    expect(checkChatMessage({ thread: before, sender: 'coach', body: 'a' }).ok).toBe(true)
+    expect(
+      checkChatMessage({ thread: before, sender: 'coach', body: 'a', attachmentKind: 'none' }).ok
+    ).toBe(true)
   })
 
   it('生徒はスレッド全体の上限まで（お試しは10通）。コーチは無制限', () => {
@@ -55,13 +63,34 @@ describe('checkChatMessage', () => {
       planKind: 'trial' as const,
       messages: Array.from({ length: 10 }, () => message('student')),
     }
-    expect(checkChatMessage({ thread: full, sender: 'student', body: 'a' })).toEqual({
+    expect(
+      checkChatMessage({ thread: full, sender: 'student', body: 'a', attachmentKind: 'none' })
+    ).toEqual({
       ok: false,
       error: 'limit_reached',
     })
-    expect(checkChatMessage({ thread: full, sender: 'coach', body: 'a' }).ok).toBe(true)
     expect(
-      checkChatMessage({ thread: { ...full, planKind: 'single' }, sender: 'student', body: 'a' }).ok
+      checkChatMessage({ thread: full, sender: 'coach', body: 'a', attachmentKind: 'none' }).ok
     ).toBe(true)
+    expect(
+      checkChatMessage({
+        thread: { ...full, planKind: 'single' },
+        sender: 'student',
+        body: 'a',
+        attachmentKind: 'none',
+      }).ok
+    ).toBe(true)
+  })
+
+  it('コーチはドリル・動画を添えられ、添えれば本文なしでも送れる。生徒は添えられない', () => {
+    expect(
+      checkChatMessage({ thread, sender: 'coach', body: ' ', attachmentKind: 'drill' })
+    ).toEqual({ ok: true, value: { body: '' } })
+    expect(
+      checkChatMessage({ thread, sender: 'coach', body: '', attachmentKind: 'video' }).ok
+    ).toBe(true)
+    expect(
+      checkChatMessage({ thread, sender: 'student', body: '見て', attachmentKind: 'video' })
+    ).toEqual({ ok: false, error: 'attachment_not_allowed' })
   })
 })

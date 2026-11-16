@@ -93,14 +93,22 @@ export const findDraftVideosToDelete: FindDraftVideosToDelete = async (createdBe
   getDb()
     .select({ id: video.id, r2Key: video.r2Key })
     .from(video)
-    .where(and(isNull(video.submissionId), lt(video.uploadedAt, createdBefore)))
+    .where(
+      and(
+        isNull(video.submissionId),
+        isNull(video.chatMessageId),
+        lt(video.uploadedAt, createdBefore)
+      )
+    )
     .all()
 
 export type DeleteDraftVideos = (videoIds: string[]) => Promise<void>
 export const deleteDraftVideos: DeleteDraftVideos = async (videoIds) => {
   await getDb()
     .delete(video)
-    .where(and(inArray(video.id, videoIds), isNull(video.submissionId)))
+    .where(
+      and(inArray(video.id, videoIds), isNull(video.submissionId), isNull(video.chatMessageId))
+    )
 }
 
 export type CountAbsenceBacklog = (

@@ -67,7 +67,8 @@ export const submission = sqliteTable(
 
 /**
  * 生徒が上げた動画。本体は R2 に置き、ここには場所だけを持つ。
- * 上げた時点では下書き（submission_id が null）で、提出したときにひも付ける
+ * 上げた時点では下書き（submission_id も chat_message_id も null）で、提出やチャットを送ったときにひも付ける。
+ * 下書きは本人にしか見せず、24時間で消す
  */
 export const video = sqliteTable(
   'video',
@@ -76,8 +77,10 @@ export const video = sqliteTable(
     threadId: text()
       .notNull()
       .references(() => thread.id),
-    /** null なら下書き（コーチには見せない。24時間で消す） */
+    /** 提出の動画なら、その提出 */
     submissionId: text().references(() => submission.id),
+    /** コーチがチャットで送った動画なら、そのメッセージ（提出にもチャットにも付いていなければ下書き） */
+    chatMessageId: text(),
     uploaderUserId: text()
       .notNull()
       .references(() => user.id),
@@ -146,7 +149,17 @@ export const chatMessage = sqliteTable(
     senderUserId: text()
       .notNull()
       .references(() => user.id),
+    /** 添付だけのメッセージでは空 */
     body: text().notNull(),
+    /** 添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ */
+    attachmentKind: text({ enum: ['none', 'drill', 'video'] })
+      .notNull()
+      .default('none'),
+    drillTitle: text(),
+    drillDescription: text(),
+    videoId: text().references(() => video.id),
+    /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
+    quote: text({ mode: 'json' }),
     sentAt: integer({ mode: 'timestamp_ms' }).notNull(),
     /** 送られたとき、コーチが不在中だったか（あとで返信時間を集計するときに除く） */
     sentDuringAbsenceId: text(),

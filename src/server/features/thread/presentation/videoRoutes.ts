@@ -2,6 +2,10 @@ import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { authorizeVideo } from '../application/usecases/authorizeVideo.usecase'
+import {
+  type UploadChatVideoError,
+  uploadChatVideo,
+} from '../application/usecases/uploadChatVideo.usecase'
 import { type UploadVideoError, uploadVideo } from '../application/usecases/uploadVideo.usecase'
 import {
   putMediaObject,
@@ -23,7 +27,10 @@ const UPLOAD_ERROR = {
   too_large: { status: 413, message: '動画は100MBまでです。短く切ってから送ってください' },
   too_long: { status: 413, message: '動画は1本60秒までです。短く切ってから送ってください' },
   invalid_angle: { status: 400, message: '撮った角度を選んでください' },
-} as const satisfies Record<UploadVideoError, { status: number; message: string }>
+} as const satisfies Record<
+  UploadVideoError | UploadChatVideoError,
+  { status: number; message: string }
+>
 
 /** 数でなければ null。範囲の確認はユースケースで行う */
 const parseNumber = (value: string | null): number | null => {
@@ -33,7 +40,8 @@ const parseNumber = (value: string | null): number | null => {
 }
 
 /**
- * 提出に使う動画を1本受け取って R2 に保存する（下書き。提出は submitSubmissionAction でまとめて確定する）
+ * 動画を1本受け取って R2 に保存する（下書き）。生徒の提出の動画は submitSubmissionAction、
+ * コーチがチャットに添える動画（?purpose=chat）は sendChatMessageAction で確定する
  *
  * 本体は multipart にせずそのまま送ってもらい、R2 へ流す（Worker のメモリに載せない）。
  * 角度・長さ・フレームレートはヘッダーで受ける
@@ -49,25 +57,36 @@ export const handleVideoUpload = async (request: Request, threadId: string): Pro
     return Response.json({ message: '動画が空です' }, { status: 411 })
   }
 
-  const result = await uploadVideo(
-    {
-      actor,
-      threadId,
-      contentType: (request.headers.get('content-type') ?? '').split(';')[0]?.trim() ?? '',
-      sizeBytes,
-      angle: request.headers.get('x-video-angle') ?? '',
-      durationSec: parseNumber(request.headers.get('x-video-duration')),
-      frameRate: parseNumber(request.headers.get('x-video-frame-rate')),
-      now: new Date(),
-    },
-    {
-      findThread,
-      findCoachAvailabilityFacts,
-      storeVideo: (r2Key, contentType) => putMediaObject(r2Key, body, contentType),
-      saveDraftVideo,
-      generateId: () => crypto.randomUUID(),
-    }
-  )
+  const contentType = (request.headers.get('content-type') ?? '').split(';')[0]?.trim() ?? ''
+  const durationSec = parseNumber(request.headers.get('x-video-duration'))
+  const frameRate = parseNumber(request.headers.get('x-video-frame-rate'))
+  const storeVideo = (r2Key: string, type: string) => putMediaObject(r2Key, body, type)
+  // コーチがチャットに添える動画（お手本など）
+  const result =
+    new URL(request.url).searchParams.get('purpose') === 'chat'
+      ? await uploadChatVideo(
+          { actor, threadId, contentType, sizeBytes, durationSec, frameRate, now: new Date() },
+          { findThread, storeVideo, saveDraftVideo, generateId: () => crypto.randomUUID() }
+        )
+      : await uploadVideo(
+          {
+            actor,
+            threadId,
+            contentType,
+            sizeBytes,
+            angle: request.headers.get('x-video-angle') ?? '',
+            durationSec,
+            frameRate,
+            now: new Date(),
+          },
+          {
+            findThread,
+            findCoachAvailabilityFacts,
+            storeVideo,
+            saveDraftVideo,
+            generateId: () => crypto.randomUUID(),
+          }
+        )
   if (!result.ok) {
     const { status, message } = UPLOAD_ERROR[result.error]
     return Response.json({ message }, { status })

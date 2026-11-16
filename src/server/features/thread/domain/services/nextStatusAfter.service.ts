@@ -16,13 +16,15 @@ export type NextStatusAfter = (
  * 出来事のあとのスレッドの状態
  *
  * ドメインルール:
- * - 生徒が提出やチャットを送ったら、コーチの番
+ * - 生徒が提出したら、コーチの番
  * - コーチが添削を返したら生徒の番。ただし添削していない提出が残っていればコーチの番のまま
+ * - チャットでは変わらない（「コーチの番」は添削を待つ提出があるときだけ。未読は既読で別に見る）
  * - 終了したスレッドは変わらない
  */
 export const nextStatusAfter: NextStatusAfter = (thread, event) => {
   if (thread.status === 'closed') return 'closed'
-  if (event === 'student_submitted' || event === 'student_chatted') return 'waiting_coach'
+  if (event === 'student_chatted' || event === 'coach_chatted') return thread.status
+  if (event === 'student_submitted') return 'waiting_coach'
   const unreplied = thread.submissions.filter((s) => !s.replied).length
   // 返した提出は、この時点ではまだ replied になっていない
   const remaining = event === 'coach_replied' ? unreplied - 1 : unreplied

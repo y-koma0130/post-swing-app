@@ -9,6 +9,8 @@ export type UploadState =
 
 type UploadInput = {
   threadId: string
+  /** submission：生徒の提出の動画、chat：コーチがチャットに添える動画 */
+  purpose: 'submission' | 'chat'
   file: File
   angle: VideoAngle
   /** 送る長さ（秒）。測れなければ null */
@@ -51,10 +53,13 @@ export const useVideoUpload = () => {
   const [state, setState] = useState<UploadState>({ kind: 'idle' })
 
   const upload = useCallback(
-    ({ threadId, file, angle, durationSec, frameRate }: UploadInput) =>
+    ({ threadId, purpose, file, angle, durationSec, frameRate }: UploadInput) =>
       new Promise<string | null>((resolve) => {
         const xhr = new XMLHttpRequest()
-        xhr.open('POST', `/api/threads/${threadId}/videos`)
+        xhr.open(
+          'POST',
+          `/api/threads/${threadId}/videos${purpose === 'chat' ? '?purpose=chat' : ''}`
+        )
         xhr.setRequestHeader('content-type', file.type)
         xhr.setRequestHeader('x-video-angle', angle)
         if (durationSec !== null) {

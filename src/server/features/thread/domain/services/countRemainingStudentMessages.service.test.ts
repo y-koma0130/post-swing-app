@@ -6,6 +6,8 @@ const message = (from: 'coach' | 'student') => ({
   from,
   body: 'はい',
   sentAt: new Date(),
+  attachment: { kind: 'none' as const },
+  quote: null,
 })
 
 describe('countRemainingStudentMessages', () => {

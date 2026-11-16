@@ -11,6 +11,8 @@ const message = (from: 'coach' | 'student') => ({
   from,
   body: 'テスト',
   sentAt: now,
+  attachment: { kind: 'none' as const },
+  quote: null,
 })
 const thread: Thread = {
   id: threadIdSchema.parse('thread-1'),
@@ -57,6 +59,20 @@ const setup = (
   const notifyChatMessage = vi.fn<Deps['notifyChatMessage']>(async () => undefined)
   const deps: Deps = {
     findThread: async () => t,
+    findThreadCards: async () => [{ id: 'c1', submissionId: 's1', position: 'top' }],
+    findOwnDrill: async (_coach, drillId) =>
+      drillId === 'own' ? { title: '壁ドリル', description: '壁の前で素振り' } : null,
+    findDraftVideo: async (videoId) =>
+      videoId === 'coach-video'
+        ? {
+            id: 'coach-video',
+            threadId: 'thread-1',
+            uploaderUserId: 'coach-1',
+            submissionId: null,
+            chatMessageId: null,
+            angle: 'other',
+          }
+        : null,
     findCoachAvailabilityFacts: async () => facts,
     saveThreadNotice,
     saveAbsenceAck,
@@ -66,16 +82,34 @@ const setup = (
   }
   return { deps, saveChatMessage, notifyChatMessage, saveThreadNotice, saveAbsenceAck }
 }
-const send = (actor: typeof student, deps: Deps, body = '質問です', hide = false) =>
-  sendChatMessage({ actor, threadId: 'thread-1', body, hideAbsenceNoticeFromNow: hide, now }, deps)
+const send = (
+  actor: typeof student,
+  deps: Deps,
+  body = '質問です',
+  hide = false,
+  extra: Partial<Parameters<typeof sendChatMessage>[0]> = {}
+) =>
+  sendChatMessage(
+    {
+      actor,
+      threadId: 'thread-1',
+      body,
+      attachment: { kind: 'none' },
+      quote: null,
+      hideAbsenceNoticeFromNow: hide,
+      now,
+      ...extra,
+    },
+    deps
+  )
 
 describe('sendChatMessage', () => {
-  it('生徒が送るとコーチの番になり、コーチに知らせる', async () => {
+  it('生徒が送っても状態は変えず、コーチに知らせる', async () => {
     const { deps, saveChatMessage, notifyChatMessage } = setup()
     expect((await send(student, deps)).ok).toBe(true)
     expect(saveChatMessage.mock.calls[0]?.[0]).toMatchObject({
       senderRole: 'student',
-      nextStatus: 'waiting_coach',
+      nextStatus: 'waiting_student',
     })
     expect(notifyChatMessage).toHaveBeenCalledWith({
       threadId: 'thread-1',
@@ -101,14 +135,54 @@ describe('sendChatMessage', () => {
     expect(await send(student, deps)).toEqual({ ok: false, error: 'no_submission' })
   })
 
-  it('コーチは何通でも送れ、生徒の番になる', async () => {
-    const { deps, saveChatMessage } = setup({
+  it('コーチは何通でも送れる', async () => {
+    const { deps } = setup({
       ...thread,
-      status: 'waiting_coach',
-      messages: [1, 2, 3, 4, 5].map(() => message('coach')),
+      messages: Array.from({ length: 40 }, () => message('coach')),
     })
     expect((await send(coach, deps)).ok).toBe(true)
-    expect(saveChatMessage.mock.calls[0]?.[0].nextStatus).toBe('waiting_student')
+  })
+
+  it('コーチは自分のドリルを写して送れる。ほかのコーチのドリルは送れない', async () => {
+    const { deps, saveChatMessage } = setup()
+    const sent = await send(coach, deps, '', false, {
+      attachment: { kind: 'drill', drillId: 'own' },
+    })
+    expect(sent.ok).toBe(true)
+    expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual({
+      kind: 'drill',
+      title: '壁ドリル',
+      description: '壁の前で素振り',
+    })
+    expect(
+      await send(coach, deps, '', false, { attachment: { kind: 'drill', drillId: 'others' } })
+    ).toEqual({ ok: false, error: 'invalid_drill' })
+  })
+
+  it('コーチは自分が上げた動画を送れる。生徒は動画を添えられない', async () => {
+    const { deps, saveChatMessage } = setup()
+    const attachment = { kind: 'video' as const, videoId: 'coach-video' }
+    expect((await send(coach, deps, 'お手本です', false, { attachment })).ok).toBe(true)
+    expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual(attachment)
+    expect(await send(student, deps, '見て', false, { attachment })).toEqual({
+      ok: false,
+      error: 'attachment_not_allowed',
+    })
+  })
+
+  it('引用は送った時点の様子を写す。スレッドにないものは引用できない', async () => {
+    const { deps, saveChatMessage } = setup()
+    const quote = { kind: 'video' as const, targetId: 'v1' }
+    expect((await send(coach, deps, 'ここの左手', false, { quote })).ok).toBe(true)
+    expect(saveChatMessage.mock.calls[0]?.[0].quote).toEqual({
+      kind: 'video',
+      targetId: 'v1',
+      submissionIndex: 0,
+      angle: 'front',
+    })
+    expect(
+      await send(student, deps, 'これ？', false, { quote: { kind: 'card', targetId: 'x' } })
+    ).toEqual({ ok: false, error: 'invalid_quote' })
   })
 
   it('当事者でなければ送れない', async () => {

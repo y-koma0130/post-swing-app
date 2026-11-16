@@ -26,6 +26,7 @@ const draft = (id: string, angle: DraftVideo['angle']): DraftVideo => ({
   threadId: 'thread-1',
   uploaderUserId: 'student-1',
   submissionId: null,
+  chatMessageId: null,
   angle,
 })
 const drafts = [draft('front-1', 'front'), draft('back-1', 'back')]
