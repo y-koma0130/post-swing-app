@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { Card } from '@/app/components/ui/Card'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
-import { QuoteButton, QuoteProvider } from '@/app/features/chat/components/QuoteContext'
+import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
+import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import {
   absenceNoticeMessage,
   availabilityBanner,
@@ -28,11 +28,11 @@ import {
   submissionLabel,
   threadUsageText,
 } from '@/app/features/thread/utils/threadText'
-import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentThread } from '@/server/features/thread/presentation/queries'
+import { MessageVideo } from './_components/MessageVideo'
 import { StudentSubmission } from './_components/StudentSubmission'
 
 export const metadata: Metadata = { title: 'スレッド' }
@@ -108,42 +108,42 @@ const ThreadViewPage = async ({ params }: Props) => {
                     const video = submission.videos.find((v) => v.id === videoId)
                     return video && submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
                   }}
-                  renderAction={(card) => (
-                    <QuoteButton
+                  wrapCard={(card, content) => (
+                    <LongPressQuote
                       target={{
                         kind: 'card',
                         targetId: card.id,
                         label: `${ordinalLabel(index)}の添削・${KEY_POSITION_LABEL[card.position]}`,
                       }}
-                    />
+                    >
+                      {content}
+                    </LongPressQuote>
                   )}
                 />
               </section>
             )
           }
           renderMessageVideo={(video) => (
-            <VideoPlayer src={video.url} frameRate={video.frameRate} />
+            <MessageVideo url={video.url} frameRate={video.frameRate} />
           )}
+          quoteMode="longPress"
         />
-
-        {thread.status === 'closed' && (
-          <section className="space-y-3">
-            <h2 className="text-heading">{thread.coachName} さんのレビュー</h2>
-            {thread.review ? (
-              <p className="text-muted text-sm">
-                ★{thread.review.rating} を送りました。ありがとうございました。
-              </p>
-            ) : (
-              <Card>
-                <CoachReviewForm threadId={thread.id} />
-              </Card>
-            )}
-          </section>
-        )}
 
         {/* チャットの入力欄。提出もここから（ドロワーで開く） */}
         <div className="border-line-soft sticky bottom-0 -mx-6 border-t bg-white/95 px-6 py-3 backdrop-blur">
-          {thread.studentChatBlocker === null ? (
+          {thread.status === 'closed' ? (
+            // 終わったスレッドは、入力欄の代わりにレビューを書いてもらう
+            thread.review ? (
+              <p className="text-muted text-center text-sm">
+                ★{thread.review.rating} のレビューを送りました。ありがとうございました。
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-bold">{thread.coachName} さんのレビューを書く</p>
+                <CoachReviewForm threadId={thread.id} />
+              </div>
+            )
+          ) : thread.studentChatBlocker === null ? (
             <ChatComposer
               threadId={thread.id}
               viewer="student"
@@ -153,6 +153,7 @@ const ThreadViewPage = async ({ params }: Props) => {
               confirmMessage={
                 sendConfirmMessage('chat', thread.coachName, availability) ?? undefined
               }
+              quoteByLongPress
               actions={
                 <SubmissionLauncher
                   threadId={thread.id}
@@ -181,7 +182,7 @@ const ThreadViewPage = async ({ params }: Props) => {
                 />
               }
             />
-          ) : thread.submissions.length === 0 && thread.status !== 'closed' ? (
+          ) : thread.submissions.length === 0 ? (
             <div className="space-y-2">
               <p className="text-caption text-muted text-center">
                 撮った動画を送ると、ここに{thread.coachName}さんの添削が届きます

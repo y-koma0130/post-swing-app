@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Drawer } from '@/app/components/ui/Drawer'
-import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
+import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
 import {
   ordinalLabel,
   quoteAnchorId,
@@ -20,7 +20,7 @@ type Props = {
 }
 
 /**
- * 生徒の時系列の「◯回目の提出」。動画は小さく並べ、押すと全画面で再生（コマ送り）する
+ * 生徒の時系列の「◯回目の提出」。動画は小さく並べ、押すと全画面で再生（コマ送り）する。長押しで引用
  *
  * 複数の feature を組み合わせるので、features/ ではなくこの画面の _components/ に置く
  */
@@ -52,16 +52,15 @@ export const StudentSubmission = ({ submission, index }: Props) => {
               id={quoteAnchorId('video', video.id)}
               className="scroll-mt-20 space-y-1"
             >
-              <VideoThumbnail src={video.url} label={label} onOpen={() => openVideo(i)} />
-              <div className="flex justify-end">
-                <QuoteButton
-                  target={{
-                    kind: 'video',
-                    targetId: video.id,
-                    label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
-                  }}
-                />
-              </div>
+              <LongPressQuote
+                target={{
+                  kind: 'video',
+                  targetId: video.id,
+                  label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
+                }}
+              >
+                <VideoThumbnail src={video.url} label={label} onOpen={() => openVideo(i)} />
+              </LongPressQuote>
             </li>
           )
         })}
