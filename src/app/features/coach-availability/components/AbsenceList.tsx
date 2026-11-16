@@ -21,7 +21,11 @@ export const AbsenceList = ({ coachName, settings }: Props) => {
   const [state, deleteAction, deleting] = useActionState(deleteAbsenceAction, IDLE_ACTION_STATE)
 
   if (settings.absences.length === 0) {
-    return <p className="text-muted text-sm">登録している不在期間はありません。</p>
+    return (
+      <p className="text-muted text-sm">
+        登録している不在期間はありません。旅行や試合で返信できない日があれば、下から追加してください。
+      </p>
+    )
   }
 
   return (

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
+import { EmptyState } from '@/app/components/ui/EmptyState'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
 import { CoachThreadSections } from '@/app/features/thread/components/CoachThreadSections'
@@ -56,9 +57,15 @@ const CoachHomePage = async () => {
         }
       />
       {threads.length === 0 ? (
-        <p className="bg-surface text-muted rounded-xl p-4 text-sm">
-          まだスレッドはありません。受付ページのリンクを、インスタのプロフィールなどで生徒に案内しましょう。
-        </p>
+        <EmptyState
+          title="まだスレッドはありません"
+          description="受付ページのリンクを、インスタのプロフィールやストーリーで生徒に案内しましょう。申し込みがあると、ここに並びます。"
+          action={
+            <ButtonLink href={`/c/${settings.slug}`} variant="secondary" size="sm">
+              受付ページを見る
+            </ButtonLink>
+          }
+        />
       ) : (
         <CoachThreadSections threads={threads} />
       )}
