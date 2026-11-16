@@ -22,12 +22,12 @@ import {
   ordinalLabel,
   quoteAnchorId,
   STUDENT_CHAT_BLOCKER_MESSAGE,
-  SUBMISSION_BLOCKER_MESSAGE,
+  SUBMISSION_BLOCKER_SHORT,
   submissionLabel,
   threadUsageText,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
-import { SubmissionForm } from '@/app/features/video-upload/components/SubmissionForm'
+import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentThread } from '@/server/features/thread/presentation/queries'
@@ -151,28 +151,6 @@ const ThreadViewPage = async ({ params }: Props) => {
           )}
         />
 
-        {thread.submissions.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-sm font-bold">コーチに質問する</h2>
-            {thread.studentChatBlocker === null ? (
-              <ChatComposer
-                threadId={thread.id}
-                viewer="student"
-                remaining={thread.remainingStudentMessages}
-                inputHint={chatReplyHint(thread.coachName, availability)}
-                guard={thread.sendGuard.chat}
-                confirmMessage={
-                  sendConfirmMessage('chat', thread.coachName, availability) ?? undefined
-                }
-              />
-            ) : (
-              <p className="text-caption text-muted">
-                {STUDENT_CHAT_BLOCKER_MESSAGE[thread.studentChatBlocker]}
-              </p>
-            )}
-          </section>
-        )}
-
         {thread.status === 'closed' && (
           <section className="space-y-3">
             <h2 className="text-heading">{thread.coachName} さんのレビュー</h2>
@@ -188,16 +166,60 @@ const ThreadViewPage = async ({ params }: Props) => {
           </section>
         )}
 
-        <section className="space-y-4">
-          <h2 className="text-heading">
-            {thread.submissions.length === 0
-              ? '動画を提出する'
-              : `${ordinalLabel(thread.submissions.length)}を提出する`}
-          </h2>
-          {thread.submissionBlocker === null ? (
-            <Card>
-              <SubmissionForm
+        {/* チャットの入力欄。提出もここから（ドロワーで開く） */}
+        <div className="border-line-soft sticky bottom-0 -mx-6 border-t bg-white/95 px-6 py-3 backdrop-blur">
+          {thread.studentChatBlocker === null ? (
+            <ChatComposer
+              threadId={thread.id}
+              viewer="student"
+              remaining={thread.remainingStudentMessages}
+              inputHint={chatReplyHint(thread.coachName, availability)}
+              guard={thread.sendGuard.chat}
+              confirmMessage={
+                sendConfirmMessage('chat', thread.coachName, availability) ?? undefined
+              }
+              actions={
+                <SubmissionLauncher
+                  threadId={thread.id}
+                  submissionCount={thread.submissions.length}
+                  maxSubmissions={limits.maxSubmissions}
+                  blockedReason={
+                    thread.submissionBlocker === null
+                      ? null
+                      : SUBMISSION_BLOCKER_SHORT[thread.submissionBlocker]
+                  }
+                  needsTheme={thread.submissions.length === 0}
+                  maxVideos={limits.maxVideosPerSubmission}
+                  maxBytes={limits.maxVideoBytes}
+                  maxSeconds={limits.maxVideoSeconds}
+                  confirmMessage={
+                    thread.sendGuard.video === 'none'
+                      ? null
+                      : sendConfirmMessage('video', thread.coachName, availability)
+                  }
+                  replyHint={
+                    availability.kind === 'available'
+                      ? replyTargetMessage(availability.replyTargetHours)
+                      : null
+                  }
+                  prominent={false}
+                />
+              }
+            />
+          ) : thread.submissions.length === 0 && thread.status !== 'closed' ? (
+            <div className="space-y-2">
+              <p className="text-caption text-muted text-center">
+                撮った動画を送ると、ここに{thread.coachName}さんの添削が届きます
+              </p>
+              <SubmissionLauncher
                 threadId={thread.id}
+                submissionCount={thread.submissions.length}
+                maxSubmissions={limits.maxSubmissions}
+                blockedReason={
+                  thread.submissionBlocker === null
+                    ? null
+                    : SUBMISSION_BLOCKER_SHORT[thread.submissionBlocker]
+                }
                 needsTheme={thread.submissions.length === 0}
                 maxVideos={limits.maxVideosPerSubmission}
                 maxBytes={limits.maxVideoBytes}
@@ -212,14 +234,15 @@ const ThreadViewPage = async ({ params }: Props) => {
                     ? replyTargetMessage(availability.replyTargetHours)
                     : null
                 }
+                prominent
               />
-            </Card>
+            </div>
           ) : (
-            <p className="bg-surface text-muted rounded-xl p-4 text-sm">
-              {SUBMISSION_BLOCKER_MESSAGE[thread.submissionBlocker]}
+            <p className="text-caption text-muted">
+              {STUDENT_CHAT_BLOCKER_MESSAGE[thread.studentChatBlocker]}
             </p>
           )}
-        </section>
+        </div>
       </Page>
     </QuoteProvider>
   )

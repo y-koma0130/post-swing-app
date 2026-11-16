@@ -10,7 +10,7 @@ import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
 import { getCoachThread } from '@/server/features/thread/presentation/queries'
-import { ReviewWorkspace } from './_components/ReviewWorkspace'
+import { CoachThreadView } from './_components/CoachThreadView'
 
 export const metadata: Metadata = { title: '添削' }
 
@@ -26,7 +26,7 @@ const ReviewPage = async ({ params }: Props) => {
   if (!thread) notFound()
 
   return (
-    <Page layout="wide">
+    <Page layout="list">
       <PageHeader
         back={{ href: '/coach', label: 'ホーム' }}
         eyebrow={thread.studentName || '（名前なし）'}
@@ -60,15 +60,7 @@ const ReviewPage = async ({ params }: Props) => {
         </Card>
       )}
       <QuoteProvider>
-        <ReviewWorkspace
-          threadId={thread.id}
-          closed={thread.status === 'closed'}
-          submissions={thread.submissions}
-          messages={thread.messages}
-          notices={thread.notices}
-          drills={drills}
-          limits={thread.limits}
-        />
+        <CoachThreadView thread={thread} drills={drills} />
       </QuoteProvider>
     </Page>
   )

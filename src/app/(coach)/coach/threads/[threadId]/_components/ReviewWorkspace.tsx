@@ -20,25 +20,20 @@ import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
-import { CoachConversation } from './CoachConversation'
 
 type Props = {
   threadId: string
   closed: boolean
   submissions: ThreadDetailDto['submissions']
-  messages: ThreadDetailDto['messages']
-  notices: ThreadDetailDto['notices']
+  /** 開いている提出（ドロワーを開いた提出）。中のタブで切り替えられる */
+  index: number
+  onIndexChange: (index: number) => void
   drills: DrillDto[]
-  limits: ThreadDetailDto['limits']
+  /** 添削を送れたとき（ドロワーを閉じる） */
+  onSent: () => void
 }
 
 const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
-
-/** 最初に開く提出：まだ添削していないもの。なければ最後の提出 */
-const initialIndex = (submissions: ThreadDetailDto['submissions']): number => {
-  const unreplied = submissions.findIndex((s) => s.reply === null)
-  return unreplied >= 0 ? unreplied : submissions.length - 1
-}
 
 const tabClass = (active: boolean) =>
   `rounded-full px-4 py-1.5 text-sm font-bold ${
@@ -46,9 +41,9 @@ const tabClass = (active: boolean) =>
   }`
 
 /**
- * 添削画面の作業エリア
- * 提出を選び、動画（正面・後方など）を切り替えながら、止めて線を引き、キー位置ごとにキャプチャしてカードにする。
- * カードは提出ごとにまとめて1通で送る
+ * 添削の作業エリア（ドロワーの中に開く）
+ * 動画（正面・後方など）を切り替えながら、止めて線を引き、キー位置ごとにキャプチャしてカードにする。
+ * カードは提出ごとにまとめて1通で送る。添削済みの提出は、動画と送った添削を見るだけ
  *
  * 複数の feature を組み合わせるので、features/ ではなくこの画面の _components/ に置く
  */
@@ -56,16 +51,15 @@ export const ReviewWorkspace = ({
   threadId,
   closed,
   submissions,
-  messages,
-  notices,
+  index,
+  onIndexChange,
   drills,
-  limits,
+  onSent,
 }: Props) => {
   const router = useRouter()
   const editor = useAnnotationEditor()
   const cards = useCardDrafts()
   const videoElement = useRef<HTMLVideoElement | null>(null)
-  const [index, setIndex] = useState(() => initialIndex(submissions))
   const [videoIndex, setVideoIndex] = useState(0)
   const [comparing, setComparing] = useState(false)
   const [sending, setSending] = useState(false)
@@ -96,7 +90,7 @@ export const ReviewWorkspace = ({
   }
 
   const selectSubmission = (next: number) => {
-    setIndex(next)
+    onIndexChange(next)
     setVideoIndex(0)
     // 別の動画に引いた線は持ち越さない
     editor.reset()
@@ -141,11 +135,12 @@ export const ReviewWorkspace = ({
       setError(result.message)
       return
     }
+    onSent()
     router.refresh()
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           {submissions.map((submission, i) => (
@@ -297,15 +292,6 @@ export const ReviewWorkspace = ({
             </Button>
           </Card>
         )}
-        <CoachConversation
-          threadId={threadId}
-          closed={closed}
-          submissions={submissions}
-          messages={messages}
-          notices={notices}
-          drills={drills}
-          limits={limits}
-        />
       </aside>
     </div>
   )

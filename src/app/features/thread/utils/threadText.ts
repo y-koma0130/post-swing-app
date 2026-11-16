@@ -28,6 +28,14 @@ export const SUBMISSION_BLOCKER_MESSAGE = {
   closed: 'このスレッドは終了しました。',
 } as const satisfies Record<SubmissionBlocker, string>
 
+/** 提出できないときの、ボタンに出す短い言い方 */
+export const SUBMISSION_BLOCKER_SHORT = {
+  awaiting_reply: '添削を待っています',
+  submission_limit: '提出は使い切りました',
+  expired: '期限が切れました',
+  closed: '終了しました',
+} as const satisfies Record<SubmissionBlocker, string>
+
 /** 生徒がいまチャットを送れない理由 */
 export const STUDENT_CHAT_BLOCKER_MESSAGE = {
   closed: 'このスレッドは終了しました',
