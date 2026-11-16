@@ -1,12 +1,15 @@
 'use client'
 
 import { type FormEvent, useState } from 'react'
+import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { authClient } from '@/app/utils/authClient'
 
 type Props = {
   /** ログイン後に開くページ */
   redirectTo: string
+  /** ボット対策（Turnstile）のサイトキー */
+  turnstileSiteKey: string
 }
 
 type Step = { kind: 'email' } | { kind: 'code'; email: string }
@@ -19,18 +22,30 @@ const inputClass =
  *
  * インスタや LINE のアプリ内ブラウザでも途切れないよう、リンクではなく同じ画面にコードを入れる
  */
-export const EmailCodeLoginForm = ({ redirectTo }: Props) => {
+export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
   const [step, setStep] = useState<Step>({ kind: 'email' })
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  // トークンは1回しか使えないので、送るたびに部品を作り直す
+  const [captchaKey, setCaptchaKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   const sendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const email = String(new FormData(event.currentTarget).get('email') ?? '').trim()
+    if (!captchaToken) {
+      setError('確認が終わるまで少し待ってから、もう一度お試しください。')
+      return
+    }
     setPending(true)
     setError(null)
-    const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' })
+    const { error } = await authClient.emailOtp.sendVerificationOtp(
+      { email, type: 'sign-in' },
+      { headers: { 'x-captcha-response': captchaToken } }
+    )
     setPending(false)
+    setCaptchaToken(null)
+    setCaptchaKey((key) => key + 1)
     if (error) {
       setError(
         error.status === 429
@@ -64,8 +79,14 @@ export const EmailCodeLoginForm = ({ redirectTo }: Props) => {
         <span className="text-sm font-bold">メールアドレス</span>
         <input name="email" type="email" required autoComplete="email" className={inputClass} />
       </label>
+      <TurnstileWidget
+        key={captchaKey}
+        siteKey={turnstileSiteKey}
+        action="login-code"
+        onToken={setCaptchaToken}
+      />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" disabled={pending || !captchaToken} className="w-full">
         ログインコードを送る
       </Button>
     </form>

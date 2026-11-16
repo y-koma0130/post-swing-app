@@ -23,3 +23,7 @@ LINE_MESSAGING_ACCESS_TOKEN=
 LINE_ADD_FRIEND_URL=
 # Stripe の Connect のイベント用エンドポイントの署名シークレット（本番・ステージングで別に作る。stripe listen では空でよい）
 STRIPE_CONNECT_WEBHOOK_SECRET=
+
+# Cloudflare Turnstile（ボット対策）。空なら、開発中は Cloudflare のテスト用のキー（いつも通る）を使う
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=

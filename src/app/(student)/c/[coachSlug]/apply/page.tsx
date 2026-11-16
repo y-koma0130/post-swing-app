@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PlanCheckoutForm } from '@/app/features/apply/components/PlanCheckoutForm'
 import { WaitlistForm } from '@/app/features/apply/components/WaitlistForm'
 import { getApplyPage } from '@/server/features/purchase/presentation/queries'
+import { getTurnstileSiteKey } from '@/server/utils/turnstile'
 
 export const metadata: Metadata = { title: '申し込み' }
 
@@ -35,7 +36,12 @@ const ApplyPage = async ({ params }: Props) => {
           )}
         </div>
       ) : (
-        <PlanCheckoutForm coachSlug={coach.slug} plans={coach.plans} student={student} />
+        <PlanCheckoutForm
+          coachSlug={coach.slug}
+          plans={coach.plans}
+          student={student}
+          turnstileSiteKey={getTurnstileSiteKey()}
+        />
       )}
     </main>
   )

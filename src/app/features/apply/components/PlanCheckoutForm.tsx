@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { formatYen } from '@/app/utils/format'
@@ -12,10 +13,12 @@ type Props = {
   coachSlug: string
   plans: ApplyPageDto['coach']['plans']
   student: ApplyPageDto['student']
+  /** ボット対策（Turnstile）のサイトキー */
+  turnstileSiteKey: string
 }
 
 /** プランを選んで Stripe の支払い画面へ進む */
-export const PlanCheckoutForm = ({ coachSlug, plans, student }: Props) => {
+export const PlanCheckoutForm = ({ coachSlug, plans, student, turnstileSiteKey }: Props) => {
   const [state, action, pending] = useActionState(startCheckoutAction, IDLE_ACTION_STATE)
 
   const unavailableReason = (kind: Props['plans'][number]['kind']): string | null => {
@@ -63,6 +66,14 @@ export const PlanCheckoutForm = ({ coachSlug, plans, student }: Props) => {
           )
         })}
       </fieldset>
+      {/* ログインしていなければ、先にログインへ進むので要らない。送ったあとは作り直す（トークンは1回きり） */}
+      {student && (
+        <TurnstileWidget
+          key={state.status === 'idle' ? 'idle' : state.message}
+          siteKey={turnstileSiteKey}
+          action="checkout"
+        />
+      )}
       <FormMessage state={state} />
       <Button type="submit" disabled={pending || !firstAvailable} className="w-full">
         {student ? 'お支払いへ進む' : 'ログインして申し込む'}

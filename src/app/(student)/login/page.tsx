@@ -3,6 +3,7 @@ import { Logo } from '@/app/components/Logo'
 import { EmailCodeLoginForm } from '@/app/features/auth/components/EmailCodeLoginForm'
 import { LineLoginButton } from '@/app/features/auth/components/LineLoginButton'
 import { getLoginOptions } from '@/server/auth/loginOptions'
+import { getTurnstileSiteKey } from '@/server/utils/turnstile'
 
 export const metadata: Metadata = { title: 'ログイン' }
 
@@ -39,7 +40,7 @@ const StudentLoginPage = async ({ searchParams }: Props) => {
       {options.devEmail && (
         <section className="space-y-4 rounded-xl border border-dashed border-gray-300 p-4">
           <p className="text-xs font-bold text-gray-500">開発用：メールのコードでログイン</p>
-          <EmailCodeLoginForm redirectTo={redirectTo} />
+          <EmailCodeLoginForm redirectTo={redirectTo} turnstileSiteKey={getTurnstileSiteKey()} />
         </section>
       )}
     </main>

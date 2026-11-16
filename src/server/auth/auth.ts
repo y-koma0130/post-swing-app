@@ -2,9 +2,16 @@ import 'server-only'
 import { env } from 'cloudflare:workers'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { captcha } from 'better-auth/plugins/captcha'
 import { emailOTP } from 'better-auth/plugins/email-otp'
 import { getDb } from '@/server/db/client'
 import * as schema from '@/server/db/schema'
+import {
+  getTurnstileSecretKey,
+  TURNSTILE_ACTIONS,
+  turnstileHostname,
+  usesRealTurnstileKeys,
+} from '@/server/utils/turnstile'
 import { sendLoginCodeEmail } from './sendLoginCodeEmail'
 
 /** LINE ではメールアドレスを取らない。Better Auth は user にメールを必須とするので、届かない仮のアドレスを入れる */
@@ -50,6 +57,18 @@ const createAuth = () =>
           }
         : {},
     plugins: [
+      // ログインコードの送信はボットに叩かれやすい（メールの送信枠と、送信元の評判を守る）
+      captcha({
+        provider: 'cloudflare-turnstile',
+        secretKey: getTurnstileSecretKey(),
+        endpoints: ['/email-otp/send-verification-otp'],
+        ...(usesRealTurnstileKeys()
+          ? {
+              expectedAction: TURNSTILE_ACTIONS.loginCode,
+              allowedHostnames: [turnstileHostname()],
+            }
+          : {}),
+      }),
       emailOTP({
         otpLength: 6,
         expiresIn: 10 * 60,
