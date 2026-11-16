@@ -2,7 +2,6 @@ import 'server-only'
 import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
-import type { NewThread } from '../../application/usecases/recordPayment.usecase'
 import type { CheckoutCoach } from '../../application/usecases/startCheckout.usecase'
 import { type Purchase, purchaseSchema } from '../../domain/values/Purchase'
 
@@ -125,24 +124,6 @@ export const markSubscriptionCanceled: MarkSubscriptionCanceled = async (stripeS
     .update(purchase)
     .set({ status: 'canceled', updatedAt: new Date() })
     .where(eq(purchase.stripeSubscriptionId, stripeSubscriptionId))
-}
-
-export type ThreadExists = (key: { purchaseId: string } | { invoiceId: string }) => Promise<boolean>
-export const threadExists: ThreadExists = async (key) => {
-  const where =
-    'invoiceId' in key
-      ? eq(thread.stripeInvoiceId, key.invoiceId)
-      : eq(thread.purchaseId, key.purchaseId)
-  const row = await getDb().select({ id: thread.id }).from(thread).where(where).get()
-  return row !== undefined
-}
-
-export type CreateThread = (t: NewThread) => Promise<void>
-export const createThread: CreateThread = async (t) => {
-  const now = new Date()
-  await getDb()
-    .insert(thread)
-    .values({ ...t, status: 'waiting_student', createdAt: now, updatedAt: now })
 }
 
 export type SaveWaitlistEntry = (coachUserId: string, studentUserId: string) => Promise<void>

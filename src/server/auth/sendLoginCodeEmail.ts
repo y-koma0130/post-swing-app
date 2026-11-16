@@ -1,16 +1,11 @@
 import 'server-only'
-import { env } from 'cloudflare:workers'
+import { sendEmail } from '@/server/features/notification/public'
 
 /**
- * ログイン用の6桁コードをメールで送る。開発中は送らずにログへ出す
+ * ログイン用の6桁コードをメールで送る（開発中は送らずにログへ出る。件名にコードを入れている）
  */
 export const sendLoginCodeEmail = async ({ to, code }: { to: string; code: string }) => {
-  if (import.meta.env.DEV) {
-    console.info(`[dev] ログインコード ${to}: ${code}`)
-    return
-  }
-  await env.EMAIL.send({
-    from: env.EMAIL_FROM,
+  await sendEmail({
     to,
     subject: `SwingPost のログインコード：${code}`,
     text: [

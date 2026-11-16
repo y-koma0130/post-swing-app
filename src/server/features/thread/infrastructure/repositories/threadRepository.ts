@@ -6,7 +6,7 @@ import type { StoredVideo } from '../../application/usecases/authorizeVideo.usec
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
 import type { NewVideo } from '../../application/usecases/submitVideo.usecase'
-import { type Thread, threadSchema } from '../../domain/values/Thread'
+import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
 
 export type FindThread = (threadId: string) => Promise<Thread | null>
 export const findThread: FindThread = async (threadId) => {
@@ -236,4 +236,23 @@ export const findVideosToDelete: FindVideosToDelete = async (closedBefore) =>
 export type MarkVideosDeleted = (videoIds: string[], deletedAt: Date) => Promise<void>
 export const markVideosDeleted: MarkVideosDeleted = async (videoIds, deletedAt) => {
   await getDb().update(video).set({ deletedAt }).where(inArray(video.id, videoIds))
+}
+
+/** 都度払いは申し込み、月額は請求で、すでにスレッドがあるか（Webhook が二重に届いても1つだけ作る） */
+export type ThreadExists = (key: { purchaseId: string } | { invoiceId: string }) => Promise<boolean>
+export const threadExists: ThreadExists = async (key) => {
+  const where =
+    'invoiceId' in key
+      ? eq(thread.stripeInvoiceId, key.invoiceId)
+      : eq(thread.purchaseId, key.purchaseId)
+  const row = await getDb().select({ id: thread.id }).from(thread).where(where).get()
+  return row !== undefined
+}
+
+export type CreateThread = (t: NewThread) => Promise<void>
+export const createThread: CreateThread = async (t) => {
+  const now = new Date()
+  await getDb()
+    .insert(thread)
+    .values({ ...t, status: 'waiting_student', createdAt: now, updatedAt: now })
 }

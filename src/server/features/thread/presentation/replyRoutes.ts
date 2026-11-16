@@ -1,8 +1,8 @@
 import 'server-only'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
-import { findOwnDrillIds } from '@/server/features/drill/infrastructure/repositories/drillRepository'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { findOwnDrillIds } from '@/server/features/drill/public'
+import { notify } from '@/server/features/notification/public'
 import { parseJson } from '@/server/utils/parseJson'
 import { authorizeVideo } from '../application/usecases/authorizeVideo.usecase'
 import { type SendReplyError, sendReply } from '../application/usecases/sendReply.usecase'
@@ -81,7 +81,7 @@ export const handleReplySubmit = async (
       },
       saveReply,
       notifyReplySent: ({ threadId: id, studentUserId }) =>
-        enqueueNotification({ kind: 'reply_sent', threadId: id, studentUserId }),
+        notify({ kind: 'reply_sent', threadId: id, studentUserId }),
       generateId: () => crypto.randomUUID(),
     }
   )

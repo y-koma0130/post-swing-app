@@ -1,5 +1,5 @@
 import 'server-only'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { notify } from '@/server/features/notification/public'
 import { runThreadMaintenance } from '../application/usecases/runThreadMaintenance.usecase'
 import { deleteMediaObject } from '../infrastructure/external-services/videoStorage'
 import {
@@ -18,7 +18,7 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       findExpiredOpenThreads,
       closeThreads,
       findThreadsExpiringBetween,
-      notifyThreadExpiring: (input) => enqueueNotification({ kind: 'thread_expiring', ...input }),
+      notifyThreadExpiring: (input) => notify({ kind: 'thread_expiring', ...input }),
       findVideosToDelete,
       deleteMediaObject,
       markVideosDeleted,

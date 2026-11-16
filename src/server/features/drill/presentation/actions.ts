@@ -3,7 +3,7 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
-import { isCoach } from '@/server/features/coach/infrastructure/repositories/coachRepository'
+import { isCoach } from '@/server/features/coach/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formString } from '@/server/utils/formData'
 import { createDrill } from '../application/usecases/createDrill.usecase'

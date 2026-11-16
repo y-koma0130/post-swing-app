@@ -72,6 +72,23 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - `queries.ts`：Server Component から呼ぶ読み取り口
 - `actions.ts`：Server Actions。入力は zod で検証し、ユースケースに依存を渡して呼ぶ
 - 先頭に `import 'server-only'` を書き、クライアントに混ざらないようにする
+- 外部サービスの細部（Webhook の署名の確認、SDK の呼び出し、`env` のシークレット）は infrastructure に置く。presentation は「入力の確認→ユースケース→結果の返却」だけにする
+
+### feature の境界
+
+各 feature の表（テーブル）に書き込むのは、その feature だけ。ほかの feature を使うときは、次のものだけを import する。
+
+| 使ってよいもの | 例 |
+|---|---|
+| ほかの feature の `domain/`（値・純粋な関数） | `coach/domain/values/Plan`、`thread/domain/services/calcThreadPeriod.service` |
+| ほかの feature の `application/dto/`（型） | `coach/application/dto/CoachProfile.dto` |
+| ほかの feature の `public.ts`（組み立て済みの関数） | `notification/public` の `notify`、`thread/public` の `createThread` |
+
+- `public.ts` は、その feature が外に出す関数だけを並べる。中身は infrastructure の関数をそのまま出すか、ユースケースを組み立てて出す
+- domain・application からは `public.ts` も使わない（infrastructure と組み合わさっているため）。ほかの feature の処理が要るなら、ユースケースの `dependencies` で受け取り、presentation で `public.ts` の関数を渡す
+- 自分の feature の中は相対パスで import する（`@/server/features/...` の絶対パスは、ほかの feature を指すときだけ）
+- 読み取り専用の query-service は、画面のためにほかの feature の表を join してよい（書き込みはしない）
+- Biome の `noRestrictedImports` で検出する
 
 ## フロントエンド（`src/app/`）
 

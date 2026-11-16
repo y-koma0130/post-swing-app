@@ -35,3 +35,16 @@ export const threadThemeSchema = z
   .trim()
   .min(1, '直したいところを書いてください')
   .max(100, '100文字までです')
+
+/** 支払いが済んだときに作るスレッド（作るのは thread、呼ぶのは purchase） */
+export type NewThread = Readonly<{
+  id: string
+  purchaseId: string
+  coachUserId: string
+  studentUserId: string
+  planKind: Thread['planKind']
+  startedAt: Date
+  expiresAt: Date
+  /** 月額のときの請求。請求ごとにスレッドを1つ作る */
+  stripeInvoiceId: string | null
+}>

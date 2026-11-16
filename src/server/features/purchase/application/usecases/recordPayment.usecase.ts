@@ -1,17 +1,7 @@
 import { calcThreadPeriod } from '@/server/features/thread/domain/services/calcThreadPeriod.service'
+import type { NewThread } from '@/server/features/thread/domain/values/Thread'
 import { err, ok, type Result } from '@/server/utils/result'
 import type { Purchase } from '../../domain/values/Purchase'
-
-export type NewThread = Readonly<{
-  id: string
-  purchaseId: string
-  coachUserId: string
-  studentUserId: string
-  planKind: Purchase['planKind']
-  startedAt: Date
-  expiresAt: Date
-  stripeInvoiceId: string | null
-}>
 
 export type RecordPaymentParams = Readonly<{
   purchaseId: string

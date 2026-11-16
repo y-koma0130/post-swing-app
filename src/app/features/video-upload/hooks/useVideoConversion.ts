@@ -1,4 +1,11 @@
-import { type ClipRange, planBitrate, planOutputSize } from '../utils/clipPlan'
+import { useCallback, useState } from 'react'
+import {
+  adjustClipRange,
+  type ClipRange,
+  defaultClipRange,
+  planBitrate,
+  planOutputSize,
+} from '../utils/clipPlan'
 
 /**
  * ブラウザ内での動画の読み取りと変換（WebCodecs を使う Mediabunny）
@@ -20,7 +27,7 @@ export type VideoInfo = Readonly<{
 const loadMediabunny = () => import('mediabunny')
 
 /** 動画の長さ・大きさ・フレームレートを読む。読めない形式なら null */
-export const inspectVideo = async (file: File): Promise<VideoInfo | null> => {
+const inspectVideo = async (file: File): Promise<VideoInfo | null> => {
   const { Input, ALL_FORMATS, BlobSource, canEncodeVideo } = await loadMediabunny()
   const input = new Input({ formats: ALL_FORMATS, source: new BlobSource(file) })
   try {
@@ -53,7 +60,7 @@ export const inspectVideo = async (file: File): Promise<VideoInfo | null> => {
  * - 回転はメタデータに頼らずコマに焼き込む（添削のカード画像を canvas で作るため）
  * - 音声は外す（添削に使わず、Safari では AAC の変換ができないことがある）
  */
-export const convertVideo = async ({
+const convertVideo = async ({
   file,
   info,
   range,
@@ -121,5 +128,88 @@ export const convertVideo = async ({
     return new File([target.buffer], `${name}.mp4`, { type: 'video/mp4' })
   } finally {
     input.dispose()
+  }
+}
+
+export type VideoAnalysis =
+  | { kind: 'none' }
+  | { kind: 'reading' }
+  | { kind: 'ready'; info: VideoInfo }
+  /** 読めない、またはこのブラウザで変換できない。元のファイルをそのまま送る */
+  | { kind: 'as_is' }
+
+const MB = 1024 * 1024
+
+/**
+ * 送る動画を選んだときの読み取り、範囲の選択、送る直前の変換
+ */
+export const useVideoConversion = (maxBytes: number) => {
+  const [file, setFile] = useState<File | null>(null)
+  const [analysis, setAnalysis] = useState<VideoAnalysis>({ kind: 'none' })
+  const [range, setRange] = useState<ClipRange>({ start: 0, end: 0 })
+  /** 変換の進み具合（0〜1）。変換していなければ null */
+  const [progress, setProgress] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const select = useCallback(async (selected: File | null) => {
+    setFile(selected)
+    setError(null)
+    if (!selected) {
+      setAnalysis({ kind: 'none' })
+      return
+    }
+    setAnalysis({ kind: 'reading' })
+    const info = await inspectVideo(selected).catch(() => null)
+    if (info?.canConvert) {
+      setAnalysis({ kind: 'ready', info })
+      setRange(defaultClipRange(info.duration))
+    } else {
+      setAnalysis({ kind: 'as_is' })
+    }
+  }, [])
+
+  const moveRange = useCallback(
+    (next: ClipRange, moved: 'start' | 'end') => {
+      if (analysis.kind !== 'ready') return
+      setRange(adjustClipRange(next, analysis.info.duration, moved))
+    },
+    [analysis]
+  )
+
+  /** 送るファイルを用意する。変換に失敗したら、上限以内なら元のファイルにする。送れなければ null */
+  const prepare = useCallback(async (): Promise<File | null> => {
+    if (!file) return null
+    if (analysis.kind !== 'ready') return file
+    setProgress(0)
+    try {
+      return await convertVideo({
+        file,
+        info: analysis.info,
+        range,
+        maxBytes,
+        onProgress: setProgress,
+      })
+    } catch {
+      if (file.size <= maxBytes) return file
+      setError(
+        `動画を変換できませんでした。${Math.floor(maxBytes / MB)}MB以内になるよう、撮影し直すか短く編集してから送ってください`
+      )
+      return null
+    } finally {
+      setProgress(null)
+    }
+  }, [file, analysis, range, maxBytes])
+
+  return {
+    file,
+    analysis,
+    range,
+    progress,
+    error,
+    /** 送るときのフレームレート。変換に失敗して元のファイルを送るときも同じ値 */
+    frameRate: analysis.kind === 'ready' ? analysis.info.frameRate : null,
+    select,
+    moveRange,
+    prepare,
   }
 }

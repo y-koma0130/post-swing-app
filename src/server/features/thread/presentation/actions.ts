@@ -3,7 +3,7 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formString } from '@/server/utils/formData'
 import {
@@ -41,7 +41,7 @@ export const sendChatMessageAction = async (
     {
       findThread,
       saveChatMessage,
-      notifyChatMessage: (input) => enqueueNotification({ kind: 'chat_message', ...input }),
+      notifyChatMessage: (input) => notify({ kind: 'chat_message', ...input }),
       generateId: () => crypto.randomUUID(),
     }
   )

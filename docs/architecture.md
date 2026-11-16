@@ -136,10 +136,11 @@ src/
     │       │   ├── repositories/     D1 の読み書き
     │       │   ├── query-services/   読み取り専用。DTO を直接返す
     │       │   └── external-services/ Stripe・LINE・R2・キューなど
-    │       └── presentation/
-    │           ├── queries.ts        Server Component から呼ぶ読み取り口
-    │           ├── actions.ts        Server Actions（書き込み口）
-    │           └── *Routes.ts など   Route Handler・Webhook・queue・scheduled の受け口
+    │       ├── presentation/
+    │       │   ├── queries.ts        Server Component から呼ぶ読み取り口
+    │       │   ├── actions.ts        Server Actions（書き込み口）
+    │       │   └── *Routes.ts など   Route Handler・Webhook・queue・scheduled の受け口
+    │       └── public.ts             ほかの feature に公開する関数（境界は coding-rules.md「feature の境界」）
     ├── auth/                         Better Auth の設定・ログイン中の利用者の取得
     ├── db/                           D1 の接続・Drizzle スキーマ・開発用のマイグレーション
     └── utils/                        機能をまたいで使う関数（Result 型、Stripe クライアントなど）
@@ -174,5 +175,6 @@ presentation ──▶ application ──▶ domain
 ```
 
 - `app/` から `infrastructure`・`usecases`・`db` は import できない（Biome で禁止）
+- feature 同士は、相手の `domain`・`application/dto`・`public.ts` だけを使う（Biome で禁止）
 - ユースケースは infrastructure を直接 import せず、関数を `dependencies` 引数で受け取る。組み立ては presentation で行う
 - 書き方の詳細は [コーディングルール](coding-rules.md)

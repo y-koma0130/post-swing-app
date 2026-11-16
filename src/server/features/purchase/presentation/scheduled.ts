@@ -1,5 +1,5 @@
 import 'server-only'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { notify } from '@/server/features/notification/public'
 import { notifyWaitlist } from '../application/usecases/notifyWaitlist.usecase'
 import {
   findCoachesWithOpenSlots,
@@ -14,7 +14,7 @@ export const runDailyWaitlistNotification = async (now: Date) => {
     {
       findCoachesWithOpenSlots,
       findWaitingStudents,
-      notifyWaitlistOpened: (input) => enqueueNotification({ kind: 'waitlist_opened', ...input }),
+      notifyWaitlistOpened: (input) => notify({ kind: 'waitlist_opened', ...input }),
       markWaitlistNotified,
     }
   )

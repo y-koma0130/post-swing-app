@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
@@ -66,7 +66,7 @@ export const inviteCoachAction = async (
     isSlugTaken,
     saveInvitedCoach,
     generateId: () => crypto.randomUUID(),
-    notifyCoachInvited: (input) => enqueueNotification({ kind: 'coach_invited', ...input }),
+    notifyCoachInvited: (input) => notify({ kind: 'coach_invited', ...input }),
   })
   if (!result.ok) {
     return actionError(

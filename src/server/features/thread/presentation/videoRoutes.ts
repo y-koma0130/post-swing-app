@@ -1,6 +1,6 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
-import { enqueueNotification } from '@/server/features/notification/infrastructure/external-services/enqueueNotification'
+import { notify } from '@/server/features/notification/public'
 import { authorizeVideo } from '../application/usecases/authorizeVideo.usecase'
 import { type SubmitVideoError, submitVideo } from '../application/usecases/submitVideo.usecase'
 import {
@@ -74,7 +74,7 @@ export const handleVideoUpload = async (request: Request, threadId: string): Pro
       findThread,
       storeVideo: (r2Key, contentType) => putMediaObject(r2Key, body, contentType),
       saveVideo,
-      notifyVideoSubmitted: (input) => enqueueNotification({ kind: 'video_submitted', ...input }),
+      notifyVideoSubmitted: (input) => notify({ kind: 'video_submitted', ...input }),
       generateId: () => crypto.randomUUID(),
     }
   )

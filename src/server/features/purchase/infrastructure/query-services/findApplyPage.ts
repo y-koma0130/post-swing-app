@@ -2,7 +2,7 @@ import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { waitlistEntry } from '@/server/db/schema'
-import { findCoachProfileBySlug } from '@/server/features/coach/infrastructure/query-services/findCoachProfileBySlug'
+import { findCoachProfileBySlug } from '@/server/features/coach/public'
 import type { ApplyPageDto } from '../../application/dto/ApplyPage.dto'
 import {
   findCoachUserIdBySlug,

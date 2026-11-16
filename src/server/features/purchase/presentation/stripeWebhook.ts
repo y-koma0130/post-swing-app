@@ -1,15 +1,13 @@
 import 'server-only'
-import { env } from 'cloudflare:workers'
 import type Stripe from 'stripe'
-import { saveChargesEnabled } from '@/server/features/coach/infrastructure/repositories/coachRepository'
-import { getStripe, stripeCryptoProvider } from '@/server/utils/stripeClient'
+import { savePayoutStatus } from '@/server/features/coach/public'
+import { createThread, threadExists } from '@/server/features/thread/public'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
+import { verifyStripeWebhook } from '../infrastructure/external-services/verifyStripeWebhook'
 import {
-  createThread,
   findPurchase,
   markPurchasePaid,
   markSubscriptionCanceled,
-  threadExists,
 } from '../infrastructure/repositories/purchaseRepository'
 import {
   isStripeEventProcessed,
@@ -76,37 +74,12 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
     // コーチの口座の状態（Connect のイベント）
     case 'account.updated': {
       const account = event.data.object
-      await saveChargesEnabled(account.id, account.charges_enabled)
+      await savePayoutStatus(account.id, account.charges_enabled)
       return
     }
     default:
       return
   }
-}
-
-/**
- * 署名を確かめてイベントを取り出す
- * 自分のアカウントのイベントと Connect（コーチの口座）のイベントは、Stripe では別のエンドポイント設定になり
- * 署名のシークレットも別になる。同じ URL で受けるので、両方のシークレットで試す
- */
-const verifyEvent = async (body: string, signature: string): Promise<Stripe.Event | null> => {
-  const secrets = [env.STRIPE_WEBHOOK_SECRET, env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(
-    (secret) => secret !== undefined && secret !== ''
-  )
-  for (const secret of secrets) {
-    try {
-      return await getStripe().webhooks.constructEventAsync(
-        body,
-        signature,
-        secret,
-        undefined,
-        stripeCryptoProvider
-      )
-    } catch {
-      // 次のシークレットで試す
-    }
-  }
-  return null
 }
 
 /**
@@ -121,7 +94,7 @@ export const handleStripeWebhook = async (request: Request): Promise<Response> =
   if (!signature) {
     return new Response('署名がありません', { status: 400 })
   }
-  const event = await verifyEvent(await request.text(), signature)
+  const event = await verifyStripeWebhook(await request.text(), signature)
   if (!event) {
     return new Response('署名が正しくありません', { status: 400 })
   }

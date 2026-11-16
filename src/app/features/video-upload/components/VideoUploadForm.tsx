@@ -1,12 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import type { FormEvent } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { useVideoConversion } from '../hooks/useVideoConversion'
 import { useVideoUpload } from '../hooks/useVideoUpload'
-import { convertVideo, inspectVideo, type VideoInfo } from '../hooks/videoConversion'
-import { adjustClipRange, type ClipRange, defaultClipRange } from '../utils/clipPlan'
 import { VideoClipPicker } from './VideoClipPicker'
 
 type Props = {
@@ -18,13 +17,6 @@ type Props = {
 
 const MB = 1024 * 1024
 
-type Analysis =
-  | { kind: 'none' }
-  | { kind: 'reading' }
-  | { kind: 'ready'; info: VideoInfo }
-  /** 読めない、またはこのブラウザで変換できない。元のファイルをそのまま送る */
-  | { kind: 'as_is' }
-
 /**
  * 生徒が動画を送るフォーム
  *
@@ -34,68 +26,25 @@ type Analysis =
 export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
   const router = useRouter()
   const { state, upload } = useVideoUpload()
-  const [file, setFile] = useState<File | null>(null)
-  const [analysis, setAnalysis] = useState<Analysis>({ kind: 'none' })
-  const [range, setRange] = useState<ClipRange>({ start: 0, end: 0 })
-  const [converting, setConverting] = useState<number | null>(null)
-  const [convertError, setConvertError] = useState<string | null>(null)
+  const conversion = useVideoConversion(maxBytes)
+  const { file, analysis, range, progress: converting } = conversion
+  const convertError = conversion.error
 
   const sendsAsIs = analysis.kind === 'as_is'
   const tooLarge = sendsAsIs && file !== null && file.size > maxBytes
-
-  const onSelect = async (selected: File | null) => {
-    setFile(selected)
-    setConvertError(null)
-    if (!selected) {
-      setAnalysis({ kind: 'none' })
-      return
-    }
-    setAnalysis({ kind: 'reading' })
-    const info = await inspectVideo(selected).catch(() => null)
-    if (info?.canConvert) {
-      setAnalysis({ kind: 'ready', info })
-      setRange(defaultClipRange(info.duration))
-    } else {
-      setAnalysis({ kind: 'as_is' })
-    }
-  }
-
-  /** 送るファイルを用意する。変換に失敗したら、上限以内なら元のファイルにする */
-  const prepareFile = async (selected: File): Promise<File | null> => {
-    if (analysis.kind !== 'ready') return selected
-    setConverting(0)
-    try {
-      return await convertVideo({
-        file: selected,
-        info: analysis.info,
-        range,
-        maxBytes,
-        onProgress: setConverting,
-      })
-    } catch {
-      if (selected.size <= maxBytes) return selected
-      setConvertError(
-        `動画を変換できませんでした。${Math.floor(maxBytes / MB)}MB以内になるよう、撮影し直すか短く編集してから送ってください`
-      )
-      return null
-    } finally {
-      setConverting(null)
-    }
-  }
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!file || tooLarge || analysis.kind === 'reading') return
     const form = new FormData(event.currentTarget)
-    const toSend = await prepareFile(file)
+    const toSend = await conversion.prepare()
     if (!toSend) return
     const ok = await upload({
       threadId,
       file: toSend,
       theme: String(form.get('theme') ?? ''),
       note: String(form.get('note') ?? ''),
-      // 変換に失敗して元のファイルを送るときも、フレームレートは同じ
-      frameRate: analysis.kind === 'ready' ? analysis.info.frameRate : null,
+      frameRate: conversion.frameRate,
     })
     if (ok) router.refresh()
   }
@@ -112,7 +61,7 @@ export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
           accept="video/mp4,video/quicktime,video/webm,video/*"
           required
           disabled={busy}
-          onChange={(event) => onSelect(event.currentTarget.files?.[0] ?? null)}
+          onChange={(event) => conversion.select(event.currentTarget.files?.[0] ?? null)}
           className="block w-full text-sm"
         />
         {analysis.kind === 'reading' && (
@@ -131,7 +80,7 @@ export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
           file={file}
           duration={analysis.info.duration}
           range={range}
-          onChange={(next, moved) => setRange(adjustClipRange(next, analysis.info.duration, moved))}
+          onChange={conversion.moveRange}
         />
       )}
       {needsTheme && (

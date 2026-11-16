@@ -1,14 +1,13 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
+import { createThread, threadExists } from '@/server/features/thread/public'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
 import {
-  createThread,
   findCoachForCheckout,
   findPurchase,
   markPurchasePaid,
   savePendingPurchase,
-  threadExists,
 } from '../infrastructure/repositories/purchaseRepository'
 
 /**
