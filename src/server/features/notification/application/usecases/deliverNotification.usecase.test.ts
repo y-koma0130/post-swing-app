@@ -17,6 +17,7 @@ const setup = (overrides: Partial<Omit<Deps, 'sendLinePush' | 'sendEmail'>> = {}
   const sendEmail = vi.fn<Deps['sendEmail']>(async () => undefined)
   const deps: Deps = {
     findContext: async () => ctx,
+    findActivityFacts: async () => null,
     findLineRecipient: async () => ({ lineUserId: 'U123', isFriend: true }),
     findEmail: async () => 'coach@example.com',
     appUrl: 'https://swingpost.example',
@@ -146,5 +147,59 @@ describe('deliverNotification', () => {
       deps
     )
     expect(sendLinePush.mock.calls[0]?.[1]).toContain('https://swingpost.example/c/yamada/apply')
+  })
+
+  describe('やりとりの通知をまとめる', () => {
+    const occurredAt = '2026-11-16T00:10:00.000Z'
+    const facts = (over: Partial<Awaited<ReturnType<Deps['findActivityFacts']>>> = {}) => ({
+      lastReadAt: new Date('2026-11-16T00:00:00Z'),
+      latestSenderActivityAt: new Date(occurredAt),
+      unseen: { submissions: 0, replies: 1, messages: 2 },
+      ...over,
+    })
+
+    it('まだ見ていない添削とメッセージを、1通にまとめて知らせる', async () => {
+      const { deps, sendLinePush } = setup({ findActivityFacts: async () => facts() })
+      const result = await deliverNotification(
+        {
+          kind: 'chat_message',
+          threadId: 't1',
+          to: 'student',
+          recipientUserId: 'student-1',
+          occurredAt,
+        },
+        deps
+      )
+      expect(result).toEqual({ ok: true, value: { sent: true } })
+      expect(sendLinePush).toHaveBeenCalledWith(
+        'U123',
+        '山田 太郎さんから添削とメッセージが届きました。\nhttps://swingpost.example/t/t1'
+      )
+    })
+
+    it('もう開いていたら送らない', async () => {
+      const { deps, sendLinePush } = setup({
+        findActivityFacts: async () => facts({ lastReadAt: new Date('2026-11-16T00:11:00Z') }),
+      })
+      const result = await deliverNotification(
+        { kind: 'reply_sent', threadId: 't1', studentUserId: 'student-1', occurredAt },
+        deps
+      )
+      expect(result).toEqual({ ok: true, value: { sent: false, reason: 'already_read' } })
+      expect(sendLinePush).not.toHaveBeenCalled()
+    })
+
+    it('あとにも出来事があれば、あとの通知に任せる', async () => {
+      const { deps, sendEmail } = setup({
+        findActivityFacts: async () =>
+          facts({ latestSenderActivityAt: new Date('2026-11-16T00:12:00Z') }),
+      })
+      const result = await deliverNotification(
+        { kind: 'video_submitted', threadId: 't1', coachUserId: 'coach-1', occurredAt },
+        deps
+      )
+      expect(result).toEqual({ ok: true, value: { sent: false, reason: 'superseded' } })
+      expect(sendEmail).not.toHaveBeenCalled()
+    })
   })
 })

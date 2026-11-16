@@ -9,8 +9,10 @@ import {
   submission,
   thread,
   threadNotice,
+  threadRead,
   video,
 } from '@/server/db/schema'
+import type { ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
@@ -382,4 +384,28 @@ export const saveAbsenceAck: SaveAbsenceAck = async ({
     .insert(absenceAck)
     .values({ studentUserId, threadId, absenceId, createdAt: at })
     .onConflictDoNothing()
+}
+
+export type FindThreadMembers = (threadId: string) => Promise<ThreadMembers | null>
+export const findThreadMembers: FindThreadMembers = async (threadId) =>
+  (await getDb()
+    .select({ coachUserId: thread.coachUserId, studentUserId: thread.studentUserId })
+    .from(thread)
+    .where(eq(thread.id, threadId))
+    .get()) ?? null
+
+export type SaveThreadRead = (input: {
+  threadId: string
+  userId: string
+  at: Date
+}) => Promise<void>
+/** 最後に開いた時刻を更新する */
+export const saveThreadRead: SaveThreadRead = async ({ threadId, userId, at }) => {
+  await getDb()
+    .insert(threadRead)
+    .values({ threadId, userId, lastReadAt: at })
+    .onConflictDoUpdate({
+      target: [threadRead.threadId, threadRead.userId],
+      set: { lastReadAt: at },
+    })
 }

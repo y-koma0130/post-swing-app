@@ -1,14 +1,34 @@
 import { ok, type Result } from '@/server/utils/result'
+import { type ActivityMessage, isActivity } from '../../domain/rules'
 import {
   composeNotification,
   type NotificationContext,
 } from '../../domain/services/composeNotification.service'
+import {
+  type ActivityFacts,
+  type ActivitySkipReason,
+  shouldDeliverActivity,
+} from '../../domain/services/shouldDeliverActivity.service'
 import type { NotificationMessage } from '../../domain/values/NotificationMessage'
 
-export type SkipReason = 'context_not_found' | 'no_line_account' | 'not_line_friend' | 'no_email'
+/** やりとりの通知を受け取る側 */
+const activityRecipient = (message: ActivityMessage): 'coach' | 'student' =>
+  message.kind === 'chat_message' ? message.to : message.kind === 'reply_sent' ? 'student' : 'coach'
+
+export type SkipReason =
+  | 'context_not_found'
+  | 'no_line_account'
+  | 'not_line_friend'
+  | 'no_email'
+  | ActivitySkipReason
 
 type Dependencies = Readonly<{
   findContext: (message: NotificationMessage) => Promise<Omit<NotificationContext, 'appUrl'> | null>
+  /** やりとりの通知で、受け取る人から見たスレッドの様子（thread が持つ） */
+  findActivityFacts: (
+    threadId: string,
+    recipient: 'coach' | 'student'
+  ) => Promise<ActivityFacts | null>
   findLineRecipient: (userId: string) => Promise<{ lineUserId: string; isFriend: boolean } | null>
   /** 送れるメールアドレス（LINE の仮のアドレスは null） */
   findEmail: (userId: string) => Promise<string | null>
@@ -33,7 +53,17 @@ export const deliverNotification: DeliverNotification = async (message, deps) =>
   if (!ctx) {
     return ok({ sent: false, reason: 'context_not_found' })
   }
-  const notification = composeNotification(message, { ...ctx, appUrl: deps.appUrl })
+  // やりとりの通知は、もう見た・あとの通知がある なら送らず、まだ見ていないものをまとめて知らせる
+  let unseen: ActivityFacts['unseen'] | null = null
+  if (isActivity(message) && message.occurredAt) {
+    const facts = await deps.findActivityFacts(message.threadId, activityRecipient(message))
+    if (facts) {
+      const skip = shouldDeliverActivity({ occurredAt: new Date(message.occurredAt), facts })
+      if (skip) return ok({ sent: false, reason: skip })
+      unseen = facts.unseen
+    }
+  }
+  const notification = composeNotification(message, { ...ctx, unseen, appUrl: deps.appUrl })
 
   if (notification.channel === 'line') {
     const line = await deps.findLineRecipient(notification.recipientUserId)

@@ -64,13 +64,14 @@ export const handleReplySubmit = async (
     return Response.json({ message: 'カードの画像がそろっていません' }, { status: 400 })
   }
 
+  const now = new Date()
   const result = await sendReply(
     {
       actor,
       threadId,
       submissionId,
       cards: cards.data.map((card, index) => ({ ...card, imageBytes: files[index]?.size ?? 0 })),
-      now: new Date(),
+      now,
     },
     {
       findThread,
@@ -82,7 +83,7 @@ export const handleReplySubmit = async (
       },
       saveReply,
       notifyReplySent: ({ threadId: id, studentUserId }) =>
-        notify({ kind: 'reply_sent', threadId: id, studentUserId }),
+        notify({ kind: 'reply_sent', threadId: id, studentUserId, occurredAt: now.toISOString() }),
       generateId: () => crypto.randomUUID(),
     }
   )

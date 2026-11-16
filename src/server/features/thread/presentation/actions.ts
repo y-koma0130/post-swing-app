@@ -8,6 +8,7 @@ import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import { markThreadRead } from '../application/usecases/markThreadRead.usecase'
 import {
   type SendChatMessageError,
   sendChatMessage,
@@ -24,10 +25,12 @@ import {
   findDraftVideos,
   findThread,
   findThreadCards,
+  findThreadMembers,
   saveAbsenceAck,
   saveChatMessage,
   saveSubmission,
   saveThreadNotice,
+  saveThreadRead,
 } from '../infrastructure/repositories/threadRepository'
 
 const CHAT_ERROR = {
@@ -69,6 +72,7 @@ export const sendChatMessageAction = async (
     return actionError('ログインし直してください')
   }
   const threadId = formString(formData, 'threadId')
+  const now = new Date()
   const result = await sendChatMessage(
     {
       actor,
@@ -77,7 +81,7 @@ export const sendChatMessageAction = async (
       attachment: parseAttachment(formData),
       quote: parseQuote(formData),
       hideAbsenceNoticeFromNow: formChecked(formData, 'hideAbsenceNotice'),
-      now: new Date(),
+      now,
     },
     {
       findThread,
@@ -88,7 +92,8 @@ export const sendChatMessageAction = async (
       saveThreadNotice,
       saveAbsenceAck,
       saveChatMessage,
-      notifyChatMessage: (input) => notify({ kind: 'chat_message', ...input }),
+      notifyChatMessage: (input) =>
+        notify({ kind: 'chat_message', ...input, occurredAt: now.toISOString() }),
       generateId: () => crypto.randomUUID(),
     }
   )
@@ -126,6 +131,7 @@ export const submitSubmissionAction = async (
     return actionError('ログインし直してください')
   }
   const threadId = formString(formData, 'threadId')
+  const now = new Date()
   const result = await submitSubmission(
     {
       actor,
@@ -133,7 +139,7 @@ export const submitSubmissionAction = async (
       theme: formString(formData, 'theme'),
       note: formString(formData, 'note'),
       videoIds: formData.getAll('videoId').filter((v): v is string => typeof v === 'string'),
-      now: new Date(),
+      now,
     },
     {
       findThread,
@@ -141,7 +147,8 @@ export const submitSubmissionAction = async (
       findDraftVideos,
       saveSubmission,
       saveThreadNotice,
-      notifySubmitted: (input) => notify({ kind: 'video_submitted', ...input }),
+      notifySubmitted: (input) =>
+        notify({ kind: 'video_submitted', ...input, occurredAt: now.toISOString() }),
       generateId: () => crypto.randomUUID(),
     }
   )
@@ -151,4 +158,11 @@ export const submitSubmissionAction = async (
   revalidatePath(`/t/${threadId}`)
   revalidatePath(`/coach/threads/${threadId}`)
   return actionSuccess('提出しました')
+}
+
+/** スレッドを開いたことを記録する（画面を開いたとき・新しいやりとりが届いたときに呼ぶ） */
+export const markThreadReadAction = async (threadId: string): Promise<void> => {
+  const actor = await getActor()
+  if (!actor) return
+  await markThreadRead({ actor, threadId, now: new Date() }, { findThreadMembers, saveThreadRead })
 }

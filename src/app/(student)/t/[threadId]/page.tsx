@@ -15,7 +15,9 @@ import {
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
+import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
+import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
 import {
   ANGLE_LABEL,
   KEY_POSITION_LABEL,
@@ -50,6 +52,7 @@ const ThreadViewPage = async ({ params }: Props) => {
 
   return (
     <QuoteProvider>
+      <MarkThreadRead threadId={thread.id} latestAt={latestTimelineAt(thread)} />
       <Page layout="student">
         <PageHeader
           back={{ href: '/me', label: 'マイページ' }}
