@@ -8,7 +8,6 @@ import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
-import { markThreadRead } from '../application/usecases/markThreadRead.usecase'
 import {
   type SendChatMessageError,
   sendChatMessage,
@@ -25,12 +24,10 @@ import {
   findDraftVideos,
   findThread,
   findThreadCards,
-  findThreadMembers,
   saveAbsenceAck,
   saveChatMessage,
   saveSubmission,
   saveThreadNotice,
-  saveThreadRead,
 } from '../infrastructure/repositories/threadRepository'
 
 const CHAT_ERROR = {
@@ -158,11 +155,4 @@ export const submitSubmissionAction = async (
   revalidatePath(`/t/${threadId}`)
   revalidatePath(`/coach/threads/${threadId}`)
   return actionSuccess('提出しました')
-}
-
-/** スレッドを開いたことを記録する（画面を開いたとき・新しいやりとりが届いたときに呼ぶ） */
-export const markThreadReadAction = async (threadId: string): Promise<void> => {
-  const actor = await getActor()
-  if (!actor) return
-  await markThreadRead({ actor, threadId, now: new Date() }, { findThreadMembers, saveThreadRead })
 }

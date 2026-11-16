@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { markThreadReadAction } from '@/server/features/thread/presentation/actions'
 
 type Props = {
   threadId: string
@@ -14,7 +13,8 @@ export const MarkThreadRead = ({ threadId, latestAt }: Props) => {
   useEffect(() => {
     // latestAt が変わったとき（新しいやりとりを表示したとき）にも記録し直す
     void latestAt
-    void markThreadReadAction(threadId)
+    // 画面を描き直さないよう Server Action ではなく API で記録する（readRoutes.ts）
+    void fetch(`/api/threads/${threadId}/read`, { method: 'POST' })
   }, [threadId, latestAt])
   return null
 }

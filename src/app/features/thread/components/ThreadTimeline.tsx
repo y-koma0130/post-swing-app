@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatDateTime } from '@/app/utils/format'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
-import { buildTimeline, type TimelineItem } from '../utils/buildTimeline'
+import { buildTimeline, firstNewItemKey, type TimelineItem } from '../utils/buildTimeline'
 import { quoteAnchorId } from '../utils/threadText'
 import { QuotePreview } from './QuotePreview'
+import { TIMELINE_END_ID, TIMELINE_NEW_ID } from './ScrollToLatest'
 
 type Submission = ThreadDetailDto['submissions'][number]
 type Message = ThreadDetailDto['messages'][number]
@@ -25,6 +26,8 @@ type Props = {
   renderReply: (submission: Submission, index: number) => ReactNode
   /** コーチがチャットで送った動画（再生の部品は別の feature なので、呼び出し側が描く） */
   renderMessageVideo: (video: MessageVideo) => ReactNode
+  /** 見ている人が最後に開いた時刻（開く前の値）。そのあとの相手の出来事の手前に「ここから新着」を出す */
+  lastReadAt?: Date | null | undefined
 }
 
 /**
@@ -40,7 +43,13 @@ export const ThreadTimeline = ({
   renderSubmission,
   renderReply,
   renderMessageVideo,
+  lastReadAt = null,
 }: Props) => {
+  const items = buildTimeline({ submissions, messages, notices })
+  const newKey = firstNewItemKey(items, {
+    lastReadAt,
+    counterpart: viewer === 'coach' ? 'student' : 'coach',
+  })
   const renderItem = (item: TimelineItem<Submission, Message, Notice>): ReactNode => {
     switch (item.kind) {
       case 'submission':
@@ -65,22 +74,37 @@ export const ThreadTimeline = ({
   }
 
   return (
-    <ol className="space-y-4">
-      {buildTimeline({ submissions, messages, notices }).map((item) => (
-        <li
-          key={item.key}
-          className={
-            item.kind === 'notice'
-              ? 'text-center'
-              : item.kind === 'message'
-                ? `flex ${item.message.from === viewer ? 'justify-end' : 'justify-start'}`
-                : undefined
-          }
-        >
-          {renderItem(item)}
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol className="space-y-4">
+        {items.map((item) => (
+          <Fragment key={item.key}>
+            {item.key === newKey && (
+              <li
+                id={TIMELINE_NEW_ID}
+                className="flex scroll-mt-24 items-center gap-3"
+                aria-label="ここから新着"
+              >
+                <span className="bg-mint h-px flex-1" />
+                <span className="text-caption text-mint font-bold">ここから新着</span>
+                <span className="bg-mint h-px flex-1" />
+              </li>
+            )}
+            <li
+              className={
+                item.kind === 'notice'
+                  ? 'text-center'
+                  : item.kind === 'message'
+                    ? `flex ${item.message.from === viewer ? 'justify-end' : 'justify-start'}`
+                    : undefined
+              }
+            >
+              {renderItem(item)}
+            </li>
+          </Fragment>
+        ))}
+      </ol>
+      <div id={TIMELINE_END_ID} />
+    </>
   )
 }
 

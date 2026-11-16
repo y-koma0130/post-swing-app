@@ -16,13 +16,13 @@ import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
+import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
 import {
   ANGLE_LABEL,
   KEY_POSITION_LABEL,
   ordinalLabel,
-  quoteAnchorId,
   STUDENT_CHAT_BLOCKER_MESSAGE,
   SUBMISSION_BLOCKER_SHORT,
   submissionLabel,
@@ -30,9 +30,10 @@ import {
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
-import { formatDateTime, formatMonthDay } from '@/app/utils/format'
+import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentThread } from '@/server/features/thread/presentation/queries'
+import { StudentSubmission } from './_components/StudentSubmission'
 
 export const metadata: Metadata = { title: 'スレッド' }
 
@@ -53,6 +54,7 @@ const ThreadViewPage = async ({ params }: Props) => {
   return (
     <QuoteProvider>
       <MarkThreadRead threadId={thread.id} latestAt={latestTimelineAt(thread)} />
+      <ScrollToLatest />
       <Page layout="student">
         <PageHeader
           back={{ href: '/me', label: 'マイページ' }}
@@ -86,40 +88,10 @@ const ThreadViewPage = async ({ params }: Props) => {
           messages={thread.messages}
           notices={thread.notices}
           viewer="student"
+          lastReadAt={thread.lastReadAt.student}
           noticeText={(n) => absenceNoticeMessage(thread.coachName, n.absenceEndDate)}
           renderSubmission={(submission, index) => (
-            <section className="space-y-3">
-              <h2 className="text-heading flex items-baseline justify-between gap-2">
-                {submissionLabel(index)}
-                <span className="text-caption text-muted font-normal">
-                  {formatDateTime(submission.submittedAt)}
-                </span>
-              </h2>
-              {submission.videos.map((video) => (
-                <div
-                  key={video.id}
-                  id={quoteAnchorId('video', video.id)}
-                  className="group scroll-mt-20 space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-caption text-muted font-bold">
-                      {submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : '動画'}
-                    </p>
-                    <QuoteButton
-                      target={{
-                        kind: 'video',
-                        targetId: video.id,
-                        label: `${ordinalLabel(index)}・${ANGLE_LABEL[video.angle]}の動画`,
-                      }}
-                    />
-                  </div>
-                  <VideoPlayer src={video.url} frameRate={video.frameRate} />
-                </div>
-              ))}
-              {submission.note && (
-                <p className="text-muted text-sm whitespace-pre-wrap">{submission.note}</p>
-              )}
-            </section>
+            <StudentSubmission submission={submission} index={index} />
           )}
           renderReply={(submission, index) =>
             submission.reply && (

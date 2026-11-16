@@ -49,6 +49,8 @@ export type ThreadDetailDto = {
   remainingStudentMessages: number
   /** 生徒がいまチャットを送れない理由。送れるなら null */
   studentChatBlocker: Extract<ChatBlocker, 'closed' | 'no_submission' | 'limit_reached'> | null
+  /** それぞれが最後にスレッドを開いた時刻（開く前の値。「ここから新着」の線を引くのに使う） */
+  lastReadAt: { coach: Date | null; student: Date | null }
   /** 終わったスレッドへの生徒のレビュー */
   review: {
     rating: number
