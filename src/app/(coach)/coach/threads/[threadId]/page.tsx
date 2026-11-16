@@ -5,6 +5,8 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
+import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
+import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
 import { threadUsageText } from '@/app/features/thread/utils/threadText'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
@@ -59,6 +61,7 @@ const ReviewPage = async ({ params }: Props) => {
           )}
         </Card>
       )}
+      <MarkThreadRead threadId={thread.id} latestAt={latestTimelineAt(thread)} />
       <QuoteProvider>
         <CoachThreadView thread={thread} drills={drills} />
       </QuoteProvider>

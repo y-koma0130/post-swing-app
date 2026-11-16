@@ -56,3 +56,19 @@ export const buildTimeline = <
   }
   return items.toSorted((a, b) => a.at.getTime() - b.at.getTime() || ORDER[a.kind] - ORDER[b.kind])
 }
+
+/** 時系列のいちばん新しい出来事の時刻（ミリ秒）。何もなければ 0 */
+export const latestTimelineAt = (
+  input: Readonly<{
+    submissions: ReadonlyArray<{ submittedAt: Date; reply: { sentAt: Date } | null }>
+    messages: ReadonlyArray<{ sentAt: Date }>
+  }>
+): number =>
+  Math.max(
+    0,
+    ...input.submissions.flatMap((s) => [
+      s.submittedAt.getTime(),
+      ...(s.reply ? [s.reply.sentAt.getTime()] : []),
+    ]),
+    ...input.messages.map((m) => m.sentAt.getTime())
+  )

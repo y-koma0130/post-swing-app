@@ -4,9 +4,9 @@ import { ThreadList } from './ThreadList'
 
 type SectionDef = { status: ThreadStatus; title: string; empty: string | null }
 
-/** コーチが先に見るべき順（返信待ち → 生徒の番 → 完了）。empty が null なら、0件のとき出さない */
+/** コーチが先に見るべき順（添削待ち → 生徒の番 → 完了）。empty が null なら、0件のとき出さない */
 const SECTIONS = [
-  { status: 'waiting_coach', title: '返信待ち', empty: '返信待ちのスレッドはありません。' },
+  { status: 'waiting_coach', title: '添削待ち', empty: '添削待ちのスレッドはありません。' },
   { status: 'waiting_student', title: '生徒の番', empty: null },
   { status: 'closed', title: '完了', empty: null },
 ] as const satisfies ReadonlyArray<SectionDef>

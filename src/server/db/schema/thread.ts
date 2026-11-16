@@ -221,3 +221,18 @@ export const drill = sqliteTable(
   },
   (t) => [index('drill_coach_idx').on(t.coachUserId)]
 )
+
+/** スレッドを最後に開いた時刻（人ごと）。未読の表示と、通知をまとめるのに使う */
+export const threadRead = sqliteTable(
+  'thread_read',
+  {
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    lastReadAt: integer({ mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.threadId, t.userId] })]
+)

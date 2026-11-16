@@ -1,5 +1,6 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
+import { findThreadActivityFacts } from '@/server/features/thread/public'
 import { deliverNotification } from '../application/usecases/deliverNotification.usecase'
 import { notificationMessageSchema } from '../domain/values/NotificationMessage'
 import { sendEmail } from '../infrastructure/external-services/sendEmail'
@@ -26,6 +27,7 @@ export const handleNotificationBatch = async (batch: MessageBatch): Promise<void
     try {
       const result = await deliverNotification(parsed.data, {
         findContext: findNotificationContext,
+        findActivityFacts: findThreadActivityFacts,
         findLineRecipient: findLineRecipientWithFriendship,
         findEmail: findDeliverableEmail,
         sendLinePush,

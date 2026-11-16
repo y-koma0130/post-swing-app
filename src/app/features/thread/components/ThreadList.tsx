@@ -6,7 +6,7 @@ import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 
 const STATUS_LABEL = {
-  coach: { waiting_coach: '返信待ち', waiting_student: '生徒の番', closed: '完了' },
+  coach: { waiting_coach: '添削待ち', waiting_student: '生徒の番', closed: '完了' },
   student: { waiting_coach: '添削待ち', waiting_student: 'あなたの番', closed: '完了' },
 } as const satisfies Record<'coach' | 'student', Record<ThreadStatus, string>>
 
@@ -35,7 +35,10 @@ export const ThreadList = ({ threads, viewer }: Props) => (
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
+              <span className="flex gap-1">
+                {t.unread && <Badge tone="warning">未読</Badge>}
+                <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
+              </span>
               <p className="text-caption text-muted">
                 提出 {t.submissionCount}/{t.maxSubmissions}回・期限 {formatMonthDay(t.expiresAt)}
               </p>

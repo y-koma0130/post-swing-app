@@ -8,6 +8,8 @@ export type NotificationContext = Readonly<{
   studentName: string
   studentUserId: string
   expiresAt: Date | null
+  /** やりとりの通知で、受け取る人がまだ見ていない出来事の数（まとめて知らせる）。なければ null */
+  unseen?: Readonly<{ submissions: number; replies: number; messages: number }> | null | undefined
 }>
 
 export type ComposedNotification = Readonly<{
@@ -34,6 +36,20 @@ export type ComposeNotification = (
  * - コーチにはメールで知らせる
  * - 本文には、開くページの URL を入れる（LINE のトーク画面からそのまま開ける）
  */
+/** まだ見ていないものをまとめた言い方（「添削とメッセージ」）。何もなければ null */
+const unseenPhrase = (
+  unseen: NotificationContext['unseen'],
+  to: 'coach' | 'student'
+): string | null => {
+  if (!unseen) return null
+  const parts = [
+    to === 'coach' && unseen.submissions > 0 ? '動画' : null,
+    to === 'student' && unseen.replies > 0 ? '添削' : null,
+    unseen.messages > 0 ? 'メッセージ' : null,
+  ].filter((p): p is string => p !== null)
+  return parts.length > 0 ? parts.join('と') : null
+}
+
 /** 名前が空のとき（LINE の表示名を消している人など）は「生徒」と呼ぶ */
 const nameOrDefault = (name: string, fallback: string): string =>
   name.trim() === '' ? fallback : name
@@ -46,35 +62,38 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
   }
   const studentThreadUrl = (threadId: string) => `${ctx.appUrl}/t/${threadId}`
   const coachThreadUrl = (threadId: string) => `${ctx.appUrl}/coach/threads/${threadId}`
+  // やりとりの通知は、まだ見ていないものをまとめて1通にする
+  const toStudent = unseenPhrase(ctx.unseen, 'student')
+  const toCoach = unseenPhrase(ctx.unseen, 'coach')
 
   switch (message.kind) {
     case 'reply_sent':
       return {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
-        subject: '添削が届きました',
-        text: `${ctx.coachName}さんから添削が届きました。\n${studentThreadUrl(message.threadId)}`,
+        subject: `${toStudent ?? '添削'}が届きました`,
+        text: `${ctx.coachName}さんから${toStudent ?? '添削'}が届きました。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'chat_message':
       return message.to === 'student'
         ? {
             channel: 'line',
             recipientUserId: ctx.studentUserId,
-            subject: 'メッセージが届きました',
-            text: `${ctx.coachName}さんからメッセージが届きました。\n${studentThreadUrl(message.threadId)}`,
+            subject: `${toStudent ?? 'メッセージ'}が届きました`,
+            text: `${ctx.coachName}さんから${toStudent ?? 'メッセージ'}が届きました。\n${studentThreadUrl(message.threadId)}`,
           }
         : {
             channel: 'email',
             recipientUserId: ctx.coachUserId,
-            subject: `${ctx.studentName}さんからメッセージが届きました`,
-            text: `${ctx.studentName}さんからメッセージが届きました。\n\n${coachThreadUrl(message.threadId)}`,
+            subject: `${ctx.studentName}さんから${toCoach ?? 'メッセージ'}が届きました`,
+            text: `${ctx.studentName}さんから${toCoach ?? 'メッセージ'}が届きました。\n\n${coachThreadUrl(message.threadId)}`,
           }
     case 'video_submitted':
       return {
         channel: 'email',
         recipientUserId: ctx.coachUserId,
-        subject: `${ctx.studentName}さんから動画が届きました`,
-        text: `${ctx.studentName}さんから動画が届きました。添削をお願いします。\n\n${coachThreadUrl(message.threadId)}`,
+        subject: `${ctx.studentName}さんから${toCoach ?? '動画'}が届きました`,
+        text: `${ctx.studentName}さんから${toCoach ?? '動画'}が届きました。添削をお願いします。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'thread_expiring':
       return {
