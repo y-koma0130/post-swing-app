@@ -19,6 +19,7 @@ export const findCoachForCheckout: FindCoachForCheckout = async (slug) => {
     name: coach.displayName,
     stripeAccountId: coach.stripeAccountId,
     chargesEnabled: coach.chargesEnabled,
+    suspended: coach.suspendedAt !== null,
     monthlyCapacity: coach.monthlyCapacity,
     plans: plans.map((p) => ({
       kind: p.kind,
@@ -111,6 +112,17 @@ export type FindPurchase = (purchaseId: string) => Promise<Purchase | null>
 export const findPurchase: FindPurchase = async (purchaseId) => {
   const row = await getDb().select().from(purchase).where(eq(purchase.id, purchaseId)).get()
   return row ? purchaseSchema.parse(row) : null
+}
+
+export type FindPurchaseForRefund = (
+  purchaseId: string
+) => Promise<(Purchase & { stripeCheckoutSessionId: string | null }) | null>
+/** 返金のための申し込み（Checkout の ID も一緒に） */
+export const findPurchaseForRefund: FindPurchaseForRefund = async (purchaseId) => {
+  const row = await getDb().select().from(purchase).where(eq(purchase.id, purchaseId)).get()
+  return row
+    ? { ...purchaseSchema.parse(row), stripeCheckoutSessionId: row.stripeCheckoutSessionId }
+    : null
 }
 
 export type MarkPurchasePaid = (

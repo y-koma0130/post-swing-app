@@ -24,6 +24,10 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     coachUserId: z.string(),
     studentUserId: z.string(),
   }),
+  /** コーチへ：申し込みの支払いが済み、スレッドが始まった（メール） */
+  z.object({ kind: z.literal('thread_started'), threadId: z.string(), coachUserId: z.string() }),
+  /** コーチへ：届いた動画に、しばらく返信していない（メール） */
+  z.object({ kind: z.literal('reply_overdue'), threadId: z.string(), coachUserId: z.string() }),
   /** 招待されたコーチへ：ログインの案内（メール） */
   z.object({ kind: z.literal('coach_invited'), coachUserId: z.string() }),
 ])

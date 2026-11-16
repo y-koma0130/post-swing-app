@@ -24,12 +24,14 @@ export type CoachProfile = z.infer<typeof coachProfileSchema>
  *
  * ドメインルール:
  * - プランは種類ごとに1つ
- * - 受付できるのは、Stripe で決済を受けられ、受付中のプランが1つ以上あるとき
+ * - 受付できるのは、Stripe で決済を受けられ、受付中のプランが1つ以上あり、管理者が受付を止めていないとき
  */
 export const coachSchema = coachProfileSchema.extend({
   userId: z.string().min(1),
   stripeAccountId: z.string().nullable(),
   chargesEnabled: z.boolean(),
+  /** 管理者が受付を止めている（規約違反の調査中など） */
+  suspended: z.boolean(),
   plans: z
     .array(planSchema)
     .refine(

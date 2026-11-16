@@ -16,9 +16,12 @@ const purchase: Purchase = {
 
 const paidAt = new Date('2026-11-14T00:00:00Z')
 
-const setup = (overrides: Partial<Omit<Deps, 'createThread' | 'markPurchasePaid'>> = {}) => {
+const setup = (
+  overrides: Partial<Omit<Deps, 'createThread' | 'markPurchasePaid' | 'notifyThreadStarted'>> = {}
+) => {
   const createThread = vi.fn<Deps['createThread']>(async () => undefined)
   const markPurchasePaid = vi.fn<Deps['markPurchasePaid']>(async () => undefined)
+  const notifyThreadStarted = vi.fn<Deps['notifyThreadStarted']>(async () => undefined)
   const deps: Deps = {
     findPurchase: async () => purchase,
     threadExists: async () => false,
@@ -26,8 +29,9 @@ const setup = (overrides: Partial<Omit<Deps, 'createThread' | 'markPurchasePaid'
     ...overrides,
     createThread,
     markPurchasePaid,
+    notifyThreadStarted,
   }
-  return { deps, createThread, markPurchasePaid }
+  return { deps, createThread, markPurchasePaid, notifyThreadStarted }
 }
 
 describe('recordPayment', () => {
@@ -50,8 +54,20 @@ describe('recordPayment', () => {
     })
   })
 
-  it('同じ通知が2回届いても、スレッドは1つだけ', async () => {
-    const { deps, createThread } = setup({
+  it('スレッドを作ったら、コーチに申し込みを知らせる', async () => {
+    const { deps, notifyThreadStarted } = setup()
+    await recordPayment(
+      { purchaseId: 'purchase-1', stripeCustomerId: 'cus_1', subscription: null, paidAt },
+      deps
+    )
+    expect(notifyThreadStarted).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      coachUserId: purchase.coachUserId,
+    })
+  })
+
+  it('同じ通知が2回届いても、スレッドは1つだけ（知らせるのも1回）', async () => {
+    const { deps, createThread, notifyThreadStarted } = setup({
       findPurchase: async () => ({ ...purchase, status: 'paid' }),
       threadExists: async () => true,
     })
@@ -61,6 +77,7 @@ describe('recordPayment', () => {
     )
     expect(result).toEqual({ ok: true, value: { threadCreated: false } })
     expect(createThread).not.toHaveBeenCalled()
+    expect(notifyThreadStarted).not.toHaveBeenCalled()
   })
 
   it('月額：請求ごとにスレッドを作り、請求IDで重複を見分ける', async () => {

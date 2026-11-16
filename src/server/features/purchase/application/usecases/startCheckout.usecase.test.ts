@@ -10,6 +10,7 @@ const coach: CheckoutCoach = {
   name: '山田 太郎',
   stripeAccountId: 'acct_123',
   chargesEnabled: true,
+  suspended: false,
   monthlyCapacity: 2,
   plans: [
     { kind: 'trial', name: 'お試し', priceYen: 550, active: true },

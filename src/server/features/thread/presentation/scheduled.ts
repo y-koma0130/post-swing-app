@@ -6,6 +6,7 @@ import {
   closeThreads,
   findExpiredOpenThreads,
   findThreadsExpiringBetween,
+  findThreadsWithUnrepliedVideosBetween,
   findVideosToDelete,
   markVideosDeleted,
 } from '../infrastructure/repositories/threadRepository'
@@ -19,6 +20,8 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       closeThreads,
       findThreadsExpiringBetween,
       notifyThreadExpiring: (input) => notify({ kind: 'thread_expiring', ...input }),
+      findThreadsWithUnrepliedVideosBetween,
+      notifyReplyOverdue: (input) => notify({ kind: 'reply_overdue', ...input }),
       findVideosToDelete,
       deleteMediaObject,
       markVideosDeleted,

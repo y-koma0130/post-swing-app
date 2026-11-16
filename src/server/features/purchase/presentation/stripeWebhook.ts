@@ -1,6 +1,7 @@
 import 'server-only'
 import type Stripe from 'stripe'
 import { savePayoutStatus } from '@/server/features/coach/public'
+import { notify } from '@/server/features/notification/public'
 import { createThread, threadExists } from '@/server/features/thread/public'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
 import { verifyStripeWebhook } from '../infrastructure/external-services/verifyStripeWebhook'
@@ -19,6 +20,8 @@ const recordPaymentDeps = {
   markPurchasePaid,
   threadExists,
   createThread,
+  notifyThreadStarted: (input: { threadId: string; coachUserId: string }) =>
+    notify({ kind: 'thread_started', ...input }),
   generateId: () => crypto.randomUUID(),
 }
 

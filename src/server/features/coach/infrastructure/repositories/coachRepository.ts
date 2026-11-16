@@ -58,6 +58,7 @@ export const findCoachByUserId: FindCoachByUserId = async (userId) => {
     monthlyCapacity: profile.monthlyCapacity,
     stripeAccountId: profile.stripeAccountId,
     chargesEnabled: profile.chargesEnabled,
+    suspended: profile.suspendedAt !== null,
     plans: plans.map((p) => ({
       kind: p.kind,
       name: p.name,
@@ -189,4 +190,13 @@ export const saveChargesEnabled: SaveChargesEnabled = async (stripeAccountId, ch
     .update(coachProfile)
     .set({ chargesEnabled, updatedAt: new Date() })
     .where(eq(coachProfile.stripeAccountId, stripeAccountId))
+}
+
+export type SaveCoachSuspended = (userId: string, suspendedAt: Date | null) => Promise<void>
+/** 受付を止める（日時）・再開する（null） */
+export const saveCoachSuspended: SaveCoachSuspended = async (userId, suspendedAt) => {
+  await getDb()
+    .update(coachProfile)
+    .set({ suspendedAt, updatedAt: new Date() })
+    .where(eq(coachProfile.userId, userId))
 }

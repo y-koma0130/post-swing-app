@@ -13,6 +13,12 @@ type Dependencies = Readonly<{
     to: Date
   ) => Promise<Array<{ id: string; studentUserId: string }>>
   notifyThreadExpiring: (input: { threadId: string; studentUserId: string }) => Promise<void>
+  /** from〜to に届き、まだ返信していない動画があるスレッド（終了していないもの） */
+  findThreadsWithUnrepliedVideosBetween: (
+    from: Date,
+    to: Date
+  ) => Promise<Array<{ id: string; coachUserId: string }>>
+  notifyReplyOverdue: (input: { threadId: string; coachUserId: string }) => Promise<void>
   /** closedBefore より前に終了したスレッドの、まだ消していない動画 */
   findVideosToDelete: (closedBefore: Date) => Promise<Array<{ id: string; r2Key: string }>>
   deleteMediaObject: (r2Key: string) => Promise<void>
@@ -22,10 +28,12 @@ type Dependencies = Readonly<{
 export type RunThreadMaintenance = (
   params: Readonly<{ now: Date }>,
   dependencies: Dependencies
-) => Promise<Result<{ closed: number; reminded: number; deletedVideos: number }, never>>
+) => Promise<
+  Result<{ closed: number; reminded: number; overdue: number; deletedVideos: number }, never>
+>
 
 /**
- * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、古い動画の削除
+ * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、返信の遅れのお知らせ、古い動画の削除
  * （終了してよいかは shouldCloseThread、日付は calcMaintenanceDates で決める）
  */
 export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) => {
@@ -44,6 +52,14 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     await deps.notifyThreadExpiring({ threadId: t.id, studentUserId: t.studentUserId })
   }
 
+  const overdue = await deps.findThreadsWithUnrepliedVideosBetween(
+    dates.overdueVideoFrom,
+    dates.overdueVideoTo
+  )
+  for (const t of overdue) {
+    await deps.notifyReplyOverdue({ threadId: t.id, coachUserId: t.coachUserId })
+  }
+
   const videos = await deps.findVideosToDelete(dates.deleteVideosClosedBefore)
   for (const v of videos) {
     await deps.deleteMediaObject(v.r2Key)
@@ -55,5 +71,10 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     )
   }
 
-  return ok({ closed: toClose.length, reminded: expiring.length, deletedVideos: videos.length })
+  return ok({
+    closed: toClose.length,
+    reminded: expiring.length,
+    overdue: overdue.length,
+    deletedVideos: videos.length,
+  })
 }

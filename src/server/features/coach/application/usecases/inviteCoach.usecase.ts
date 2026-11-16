@@ -52,6 +52,7 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
       monthlyCapacity: COACH_RULES.defaultMonthlyCapacity,
       stripeAccountId: null,
       chargesEnabled: false,
+      suspended: false,
       plans: [...DEFAULT_PLANS],
     },
     { email: params.email, isNew: existing === null }

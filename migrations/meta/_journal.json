@@ -50,6 +50,13 @@
       "when": 1794786691849,
       "tag": "0006_video_frame_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794792144929,
+      "tag": "0007_suspend_and_refund",
+      "breakpoints": true
     }
   ]
 }
