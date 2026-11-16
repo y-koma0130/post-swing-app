@@ -4,22 +4,27 @@ import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getActor } from '@/server/auth/getActor'
+import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
+import { findThreadPayment, markThreadRefunded } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formString } from '@/server/utils/formData'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
+import { refundThread } from '../application/usecases/refundThread.usecase'
 import {
   type StartCheckoutError,
   startCheckout,
 } from '../application/usecases/startCheckout.usecase'
 import { createBillingPortalSession } from '../infrastructure/external-services/createBillingPortalSession'
 import { createCheckoutSession } from '../infrastructure/external-services/createCheckoutSession'
+import { refundStripePayment } from '../infrastructure/external-services/refundStripePayment'
 import {
   attachCheckoutSession,
   countActiveThreads,
   findCoachForCheckout,
   findCoachUserIdBySlug,
   findPortalCustomer,
+  findPurchaseForRefund,
   hasActiveSubscription,
   hasPaidTrial,
   savePendingPurchase,
@@ -103,4 +108,37 @@ export const openBillingPortalAction = async (formData: FormData): Promise<void>
     redirect('/me')
   }
   redirect(await createBillingPortalSession(customerId))
+}
+
+const REFUND_ERROR_MESSAGE = {
+  not_found: 'スレッドが見つかりません',
+  already_refunded: 'すでに返金しています',
+  not_paid: '支払いが済んでいない申し込みです',
+  no_stripe_payment: 'Stripe を通っていない支払いなので、返金できません',
+} as const
+
+/** 管理者がスレッドの支払いを返金し、スレッドを終了する */
+export const refundThreadAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  if (!(await isAdminRequest())) {
+    return actionError('権限がありません')
+  }
+  try {
+    const result = await refundThread(
+      { threadId: formString(formData, 'threadId'), now: new Date() },
+      { findThreadPayment, findPurchaseForRefund, refundStripePayment, markThreadRefunded }
+    )
+    if (!result.ok) {
+      return actionError(REFUND_ERROR_MESSAGE[result.error])
+    }
+  } catch (error) {
+    console.error('[refund] 返金に失敗しました', error)
+    return actionError(
+      'Stripe で返金できませんでした。Stripe のダッシュボードで状態を確かめてください'
+    )
+  }
+  revalidatePath('/admin')
+  return actionSuccess('返金し、スレッドを終了しました')
 }

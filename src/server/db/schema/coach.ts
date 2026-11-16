@@ -21,6 +21,8 @@ export const coachProfile = sqliteTable('coach_profile', {
   stripeAccountId: text().unique(),
   /** Stripe で決済を受けられる状態か（account.updated で更新） */
   chargesEnabled: integer({ mode: 'boolean' }).notNull().default(false),
+  /** 管理者が受付を止めた日時。止めている間は新しい申し込みを受けない（進行中のスレッドは続く） */
+  suspendedAt: integer({ mode: 'timestamp_ms' }),
   ...timestamps,
 })
 

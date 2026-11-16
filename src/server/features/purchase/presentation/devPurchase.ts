@@ -1,6 +1,7 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
+import { notify } from '@/server/features/notification/public'
 import { createThread, threadExists } from '@/server/features/thread/public'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
 import {
@@ -49,6 +50,7 @@ export const handleDevPurchase = async (request: Request): Promise<Response> => 
       markPurchasePaid,
       threadExists,
       createThread,
+      notifyThreadStarted: (input) => notify({ kind: 'thread_started', ...input }),
       generateId: () => crypto.randomUUID(),
     }
   )

@@ -27,11 +27,17 @@ const setup = (overrides: Partial<Deps> = {}) => {
   const markVideosDeleted = vi.fn<Deps['markVideosDeleted']>(async () => undefined)
   const findThreadsExpiringBetween = vi.fn<Deps['findThreadsExpiringBetween']>(async () => [])
   const findVideosToDelete = vi.fn<Deps['findVideosToDelete']>(async () => [])
+  const findThreadsWithUnrepliedVideosBetween = vi.fn<
+    Deps['findThreadsWithUnrepliedVideosBetween']
+  >(async () => [])
+  const notifyReplyOverdue = vi.fn<Deps['notifyReplyOverdue']>(async () => undefined)
   const deps: Deps = {
     findExpiredOpenThreads: async () => [],
     closeThreads,
     findThreadsExpiringBetween,
     notifyThreadExpiring,
+    findThreadsWithUnrepliedVideosBetween,
+    notifyReplyOverdue,
     findVideosToDelete,
     deleteMediaObject,
     markVideosDeleted,
@@ -45,6 +51,8 @@ const setup = (overrides: Partial<Deps> = {}) => {
     markVideosDeleted,
     findThreadsExpiringBetween,
     findVideosToDelete,
+    findThreadsWithUnrepliedVideosBetween,
+    notifyReplyOverdue,
   }
 }
 
@@ -59,7 +67,10 @@ describe('runThreadMaintenance', () => {
     })
     const result = await runThreadMaintenance({ now }, deps)
     expect(closeThreads).toHaveBeenCalledWith(['done', 'empty'], now)
-    expect(result).toEqual({ ok: true, value: { closed: 2, reminded: 0, deletedVideos: 0 } })
+    expect(result).toEqual({
+      ok: true,
+      value: { closed: 2, reminded: 0, overdue: 0, deletedVideos: 0 },
+    })
   })
 
   it('期限まで2〜3日のスレッドに知らせる', async () => {
@@ -71,6 +82,17 @@ describe('runThreadMaintenance', () => {
       new Date('2026-12-18T19:00:00Z')
     )
     expect(notifyThreadExpiring).toHaveBeenCalledWith({ threadId: 't1', studentUserId: 's1' })
+  })
+
+  it('届いて3〜4日返信のない動画があるスレッドのコーチに知らせる', async () => {
+    const { deps, notifyReplyOverdue, findThreadsWithUnrepliedVideosBetween } = setup()
+    findThreadsWithUnrepliedVideosBetween.mockResolvedValue([{ id: 't1', coachUserId: 'c1' }])
+    await runThreadMaintenance({ now }, deps)
+    expect(findThreadsWithUnrepliedVideosBetween).toHaveBeenCalledWith(
+      new Date('2026-12-11T19:00:00Z'),
+      new Date('2026-12-12T19:00:00Z')
+    )
+    expect(notifyReplyOverdue).toHaveBeenCalledWith({ threadId: 't1', coachUserId: 'c1' })
   })
 
   it('終了から90日たった動画を R2 から消し、消したと記録する', async () => {

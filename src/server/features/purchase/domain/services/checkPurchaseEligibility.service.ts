@@ -14,6 +14,7 @@ export type EligibilityCoach = Readonly<{
   userId: string
   stripeAccountId: string | null
   chargesEnabled: boolean
+  suspended: boolean
   monthlyCapacity: number
   plans: ReadonlyArray<{ kind: PlanKind; name: string; priceYen: number; active: boolean }>
 }>
@@ -46,7 +47,7 @@ export type CheckPurchaseEligibility = (
  * 生徒がこのプランを申し込めるか
  *
  * ドメインルール:
- * - コーチが決済を受けられ、そのプランが受付中であること
+ * - コーチが決済を受けられ、そのプランが受付中で、管理者が受付を止めていないこと
  * - 自分自身には申し込めない
  * - 受付枠が残っていること（満枠ならキャンセル待ちへ）
  * - お試しは同じコーチにつき1回まで
@@ -59,7 +60,9 @@ export const checkPurchaseEligibility: CheckPurchaseEligibility = ({
   facts,
 }) => {
   const plan = coach.plans.find((p) => p.kind === planKind && p.active)
-  if (!plan || !coach.chargesEnabled || coach.stripeAccountId === null) return err('not_accepting')
+  if (!plan || coach.suspended || !coach.chargesEnabled || coach.stripeAccountId === null) {
+    return err('not_accepting')
+  }
   if (coach.userId === studentUserId) return err('own_coach')
   if (calcRemainingCapacity(coach, facts.activeThreadCount) === 0) return err('full')
   if (planKind === 'trial' && facts.hasPaidTrial) return err('trial_used')

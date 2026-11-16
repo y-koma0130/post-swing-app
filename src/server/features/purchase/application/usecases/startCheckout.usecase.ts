@@ -13,6 +13,7 @@ export type CheckoutCoach = Readonly<{
   name: string
   stripeAccountId: string | null
   chargesEnabled: boolean
+  suspended: boolean
   monthlyCapacity: number
   plans: ReadonlyArray<{ kind: PlanKind; name: string; priceYen: number; active: boolean }>
 }>

@@ -29,6 +29,8 @@ export const thread = sqliteTable(
     startedAt: integer({ mode: 'timestamp_ms' }).notNull(),
     expiresAt: integer({ mode: 'timestamp_ms' }).notNull(),
     closedAt: integer({ mode: 'timestamp_ms' }),
+    /** 管理者が返金した日時（返金したスレッドは終了する） */
+    refundedAt: integer({ mode: 'timestamp_ms' }),
     /** 月額で、この請求の支払いから作ったスレッド（同じ請求で2つ作らないため） */
     stripeInvoiceId: text().unique(),
     ...timestamps,

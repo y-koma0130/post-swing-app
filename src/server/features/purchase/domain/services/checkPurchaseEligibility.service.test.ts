@@ -5,6 +5,7 @@ const coach: EligibilityCoach = {
   userId: 'coach-1',
   stripeAccountId: 'acct_1',
   chargesEnabled: true,
+  suspended: false,
   monthlyCapacity: 5,
   plans: [
     { kind: 'trial', name: 'お試し', priceYen: 1000, active: true },
@@ -47,6 +48,10 @@ describe('checkPurchaseEligibility', () => {
       error: 'not_accepting',
     })
     expect(check({ coach: { ...coach, stripeAccountId: null } })).toEqual({
+      ok: false,
+      error: 'not_accepting',
+    })
+    expect(check({ coach: { ...coach, suspended: true } })).toEqual({
       ok: false,
       error: 'not_accepting',
     })

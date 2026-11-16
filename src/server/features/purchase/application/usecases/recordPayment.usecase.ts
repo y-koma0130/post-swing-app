@@ -20,6 +20,8 @@ type Dependencies = Readonly<{
   /** 都度払いは申し込み、月額は請求で、すでにスレッドがあるか */
   threadExists: (key: { purchaseId: string } | { invoiceId: string }) => Promise<boolean>
   createThread: (thread: NewThread) => Promise<void>
+  /** コーチに「申し込みがありました」と知らせる（キューに積むだけ） */
+  notifyThreadStarted: (input: { threadId: string; coachUserId: string }) => Promise<void>
   generateId: () => string
 }>
 
@@ -56,16 +58,16 @@ export const recordPayment: RecordPayment = async (params, deps) => {
     return ok({ threadCreated: false })
   }
 
-  await deps.createThread(
-    startThread({
-      id: deps.generateId(),
-      purchaseId: purchase.id,
-      coachUserId: purchase.coachUserId,
-      studentUserId: purchase.studentUserId,
-      planKind: purchase.planKind,
-      paidAt: params.paidAt,
-      stripeInvoiceId: params.subscription?.invoiceId ?? null,
-    })
-  )
+  const thread = startThread({
+    id: deps.generateId(),
+    purchaseId: purchase.id,
+    coachUserId: purchase.coachUserId,
+    studentUserId: purchase.studentUserId,
+    planKind: purchase.planKind,
+    paidAt: params.paidAt,
+    stripeInvoiceId: params.subscription?.invoiceId ?? null,
+  })
+  await deps.createThread(thread)
+  await deps.notifyThreadStarted({ threadId: thread.id, coachUserId: thread.coachUserId })
   return ok({ threadCreated: true })
 }

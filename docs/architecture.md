@@ -58,11 +58,11 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
 | 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
 | 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
-| 定期処理 | Cron Triggers（毎日4:00 JST） | 期限切れの終了、期限前のお知らせ、古い動画の削除、キャンセル待ちへの連絡 |
+| 定期処理 | Cron Triggers（毎日4:00 JST） | 期限切れの終了、期限前のお知らせ、返信が遅れているコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡 |
 | メール | Email Service（`send_email`） | コーチのログインコードとお知らせ。届きにくければ Resend に切り替え |
 | 秘密情報 | Workers Secrets | 一覧は `.dev.vars.example` |
 | ログ | Workers Logs | Sentry は未導入 |
-| 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する |
+| 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する。コーチの招待・受付の停止、スレッドの一覧（返信の遅れ）、返金（全額。コーチへの送金も取り戻す） |
 | ドメイン | DNS（Cloudflare） | 未確認（計画書 13章） |
 
 環境は `staging` と `production`。Worker・D1・R2・キューは環境ごとに分ける（`cloudflare.config.ts` が mode で名前を変える）。

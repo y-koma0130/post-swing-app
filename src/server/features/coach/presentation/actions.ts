@@ -10,6 +10,7 @@ import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
+import { setCoachSuspended } from '../application/usecases/setCoachSuspended.usecase'
 import { startPayoutOnboarding } from '../application/usecases/startPayoutOnboarding.usecase'
 import { updateCoachProfile } from '../application/usecases/updateCoachProfile.usecase'
 import { updatePlans } from '../application/usecases/updatePlans.usecase'
@@ -29,6 +30,7 @@ import {
   isCoach,
   isSlugTaken,
   saveCoachProfile,
+  saveCoachSuspended,
   saveInvitedCoach,
   savePlans,
   saveStripeAccountId,
@@ -172,4 +174,24 @@ export const openPayoutDashboardAction = async (): Promise<void> => {
     redirect('/coach/settings')
   }
   redirect(await createDashboardLink(accountId))
+}
+
+/** 管理者がコーチの受付を止める・再開する */
+export const setCoachSuspendedAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  if (!(await isAdminRequest())) {
+    return actionError('権限がありません')
+  }
+  const suspended = formString(formData, 'suspended') === 'true'
+  const result = await setCoachSuspended(
+    { coachUserId: formString(formData, 'coachUserId'), suspended, now: new Date() },
+    { isCoach, saveCoachSuspended }
+  )
+  if (!result.ok) {
+    return actionError('コーチが見つかりません')
+  }
+  revalidatePath('/admin')
+  return actionSuccess(suspended ? '受付を止めました' : '受付を再開しました')
 }

@@ -57,6 +57,42 @@ describe('deliverNotification', () => {
     )
   })
 
+  it('申し込みが入ったら、コーチにメールで添削画面の URL を送る', async () => {
+    const { deps, sendEmail } = setup()
+    await deliverNotification(
+      { kind: 'thread_started', threadId: 't1', coachUserId: 'coach-1' },
+      deps
+    )
+    expect(sendEmail.mock.calls[0]?.[0]).toMatchObject({
+      to: 'coach@example.com',
+      subject: '佐藤さんから申し込みがありました',
+    })
+    expect(sendEmail.mock.calls[0]?.[0].text).toContain(
+      'https://swingpost.example/coach/threads/t1'
+    )
+  })
+
+  it('生徒の名前が空なら「生徒さん」と呼ぶ', async () => {
+    const { deps, sendEmail } = setup({ findContext: async () => ({ ...ctx, studentName: '' }) })
+    await deliverNotification(
+      { kind: 'thread_started', threadId: 't1', coachUserId: 'coach-1' },
+      deps
+    )
+    expect(sendEmail.mock.calls[0]?.[0].subject).toBe('生徒さんから申し込みがありました')
+  })
+
+  it('返信が遅れていたら、コーチにメールで知らせる', async () => {
+    const { deps, sendEmail } = setup()
+    await deliverNotification(
+      { kind: 'reply_overdue', threadId: 't1', coachUserId: 'coach-1' },
+      deps
+    )
+    expect(sendEmail.mock.calls[0]?.[0]).toMatchObject({
+      to: 'coach@example.com',
+      subject: '佐藤さんの動画が添削を待っています',
+    })
+  })
+
   it('コーチを招待したら、ログイン画面の URL をメールで送る', async () => {
     const { deps, sendEmail } = setup()
     await deliverNotification({ kind: 'coach_invited', coachUserId: 'coach-1' }, deps)

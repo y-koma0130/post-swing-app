@@ -5,5 +5,7 @@ export type AdminCoachRowDto = {
   name: string
   slug: string
   chargesEnabled: boolean
+  /** 管理者が受付を止めている */
+  suspended: boolean
   invitedAt: Date
 }

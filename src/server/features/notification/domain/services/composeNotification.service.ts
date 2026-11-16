@@ -34,7 +34,16 @@ export type ComposeNotification = (
  * - コーチにはメールで知らせる
  * - 本文には、開くページの URL を入れる（LINE のトーク画面からそのまま開ける）
  */
-export const composeNotification: ComposeNotification = (message, ctx) => {
+/** 名前が空のとき（LINE の表示名を消している人など）は「生徒」と呼ぶ */
+const nameOrDefault = (name: string, fallback: string): string =>
+  name.trim() === '' ? fallback : name
+
+export const composeNotification: ComposeNotification = (message, rawCtx) => {
+  const ctx = {
+    ...rawCtx,
+    studentName: nameOrDefault(rawCtx.studentName, '生徒'),
+    coachName: nameOrDefault(rawCtx.coachName, 'コーチ'),
+  }
   const studentThreadUrl = (threadId: string) => `${ctx.appUrl}/t/${threadId}`
   const coachThreadUrl = (threadId: string) => `${ctx.appUrl}/coach/threads/${threadId}`
 
@@ -80,6 +89,20 @@ export const composeNotification: ComposeNotification = (message, ctx) => {
         recipientUserId: ctx.studentUserId,
         subject: '受付に空きが出ました',
         text: `${ctx.coachName}さんの受付に空きが出ました。\n${ctx.appUrl}/c/${ctx.coachSlug}/apply`,
+      }
+    case 'thread_started':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `${ctx.studentName}さんから申し込みがありました`,
+        text: `${ctx.studentName}さんの申し込み（支払い済み）が入りました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
+      }
+    case 'reply_overdue':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `${ctx.studentName}さんの動画が添削を待っています`,
+        text: `${ctx.studentName}さんから届いた動画に、まだ返信していません。生徒が待っているので、添削をお願いします。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'coach_invited':
       return {

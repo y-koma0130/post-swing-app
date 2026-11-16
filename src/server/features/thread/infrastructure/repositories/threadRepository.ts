@@ -220,6 +220,31 @@ export const findThreadsExpiringBetween: FindThreadsExpiringBetween = async (fro
     .where(and(ne(thread.status, 'closed'), gt(thread.expiresAt, from), lte(thread.expiresAt, to)))
     .all()
 
+export type FindThreadsWithUnrepliedVideosBetween = (
+  from: Date,
+  to: Date
+) => Promise<Array<{ id: string; coachUserId: string }>>
+/** from〜to に届いて、まだ返信していない動画があるスレッド（終了していないもの。1スレッド1件） */
+export const findThreadsWithUnrepliedVideosBetween: FindThreadsWithUnrepliedVideosBetween = async (
+  from,
+  to
+) =>
+  getDb()
+    .selectDistinct({ id: thread.id, coachUserId: thread.coachUserId })
+    .from(video)
+    .innerJoin(thread, eq(thread.id, video.threadId))
+    .leftJoin(reply, eq(reply.videoId, video.id))
+    .where(
+      and(
+        ne(thread.status, 'closed'),
+        isNull(reply.id),
+        isNull(video.deletedAt),
+        gt(video.uploadedAt, from),
+        lte(video.uploadedAt, to)
+      )
+    )
+    .all()
+
 export type FindVideosToDelete = (
   closedBefore: Date
 ) => Promise<Array<{ id: string; r2Key: string }>>
@@ -255,4 +280,42 @@ export const createThread: CreateThread = async (t) => {
   await getDb()
     .insert(thread)
     .values({ ...t, createdAt: now, updatedAt: now })
+}
+
+export type ThreadPayment = Readonly<{
+  threadId: string
+  purchaseId: string
+  /** 月額の請求。都度払いなら null（申し込みの Checkout で払っている） */
+  stripeInvoiceId: string | null
+  refunded: boolean
+}>
+export type FindThreadPayment = (threadId: string) => Promise<ThreadPayment | null>
+/** スレッドを作った支払い（返金のときに使う） */
+export const findThreadPayment: FindThreadPayment = async (threadId) => {
+  const row = await getDb()
+    .select({
+      purchaseId: thread.purchaseId,
+      stripeInvoiceId: thread.stripeInvoiceId,
+      refundedAt: thread.refundedAt,
+    })
+    .from(thread)
+    .where(eq(thread.id, threadId))
+    .get()
+  return row
+    ? {
+        threadId,
+        purchaseId: row.purchaseId,
+        stripeInvoiceId: row.stripeInvoiceId,
+        refunded: row.refundedAt !== null,
+      }
+    : null
+}
+
+export type MarkThreadRefunded = (threadId: string, refundedAt: Date) => Promise<void>
+/** 返金したスレッドを終了する */
+export const markThreadRefunded: MarkThreadRefunded = async (threadId, refundedAt) => {
+  await getDb()
+    .update(thread)
+    .set({ status: 'closed', closedAt: refundedAt, refundedAt, updatedAt: refundedAt })
+    .where(eq(thread.id, threadId))
 }
