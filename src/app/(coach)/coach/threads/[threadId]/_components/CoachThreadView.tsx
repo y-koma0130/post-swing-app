@@ -8,6 +8,7 @@ import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
+import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import {
   ANGLE_LABEL,
@@ -18,13 +19,17 @@ import {
   videoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
+import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
 import { formatDateTime } from '@/app/utils/format'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import { ReviewWorkspace } from './ReviewWorkspace'
 
 type Props = {
-  thread: Pick<ThreadDetailDto, 'id' | 'status' | 'submissions' | 'messages' | 'notices' | 'limits'>
+  thread: Pick<
+    ThreadDetailDto,
+    'id' | 'status' | 'submissions' | 'messages' | 'notices' | 'limits' | 'lastReadAt'
+  >
   drills: DrillDto[]
 }
 
@@ -57,6 +62,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
 
   return (
     <>
+      <ScrollToLatest />
       {submissions.length === 0 && (
         <p className="rounded-card text-muted bg-white p-6 text-sm shadow-sm">
           まだ動画が届いていません。届いたらメールでお知らせします。
@@ -67,6 +73,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
         messages={thread.messages}
         notices={thread.notices}
         viewer="coach"
+        lastReadAt={thread.lastReadAt.coach}
         noticeText={(n) => `不在中に送られました（${formatShortDate(n.absenceEndDate)}まで不在）`}
         renderSubmission={(submission, index) => (
           <Card
@@ -100,27 +107,11 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                       id={quoteAnchorId('video', video.id)}
                       className="w-40 scroll-mt-20 space-y-1"
                     >
-                      <button
-                        type="button"
-                        onClick={() => open(index, videoIndex)}
-                        className="relative block w-full overflow-hidden rounded-lg bg-black"
-                        aria-label={`${label}を開く`}
-                      >
-                        {/* 最初のコマだけを読み、サムネイルにする */}
-                        <video
-                          src={`${video.url}#t=0.1`}
-                          preload="metadata"
-                          muted
-                          playsInline
-                          className="aspect-video w-full object-contain"
-                        />
-                        <span className="text-caption absolute top-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
-                          {label}
-                        </span>
-                        <span className="absolute inset-0 flex items-center justify-center text-xl text-white/90">
-                          ▶︎
-                        </span>
-                      </button>
+                      <VideoThumbnail
+                        src={video.url}
+                        label={label}
+                        onOpen={() => open(index, videoIndex)}
+                      />
                       <div className="flex justify-end">
                         <QuoteButton
                           target={{

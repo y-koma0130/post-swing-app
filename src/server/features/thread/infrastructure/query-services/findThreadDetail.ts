@@ -10,6 +10,7 @@ import {
   reviewCard,
   thread,
   threadNotice,
+  threadRead,
   user,
   video,
 } from '@/server/db/schema'
@@ -96,7 +97,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   if (!people) {
     return null
   }
-  const [facts, notices, acks] = await Promise.all([
+  const [facts, notices, acks, reads] = await Promise.all([
     findCoachAvailabilityFacts(t.coachUserId),
     db
       .select()
@@ -109,7 +110,13 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       .from(absenceAck)
       .where(and(eq(absenceAck.threadId, threadId), eq(absenceAck.studentUserId, t.studentUserId)))
       .all(),
+    db
+      .select({ userId: threadRead.userId, lastReadAt: threadRead.lastReadAt })
+      .from(threadRead)
+      .where(eq(threadRead.threadId, threadId))
+      .all(),
   ])
+  const readAtOf = (userId: string) => reads.find((r) => r.userId === userId)?.lastReadAt ?? null
   const now = new Date()
   const availability = calcCoachAvailability({ ...facts, now })
   const expiry = calcEffectiveExpiry(t, facts.absences)
@@ -143,6 +150,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     submissionBlocker: checkSubmission({ ...t, expiresAt: expiry.expiresAt }, now),
     remainingStudentMessages: countRemainingStudentMessages(t),
     studentChatBlocker: studentChatBlocker(t),
+    lastReadAt: { coach: readAtOf(t.coachUserId), student: readAtOf(t.studentUserId) },
     review: reviewRow ?? null,
     submissions: t.submissions.map((s) => {
       const r = replies.find((x) => x.submissionId === s.id)

@@ -72,3 +72,31 @@ export const latestTimelineAt = (
     ]),
     ...input.messages.map((m) => m.sentAt.getTime())
   )
+
+/**
+ * 「ここから新着」の線を引く位置：最後に開いたあとの、相手の最初の出来事。
+ * 開いたことがなければ線は引かない（全部が新しいので）
+ */
+export const firstNewItemKey = <S, M extends { from: 'coach' | 'student' }, N>(
+  items: ReadonlyArray<TimelineItem<S, M, N>>,
+  input: Readonly<{ lastReadAt: Date | null; counterpart: 'coach' | 'student' }>
+): string | null => {
+  const { lastReadAt, counterpart } = input
+  if (!lastReadAt) return null
+  const fromCounterpart = (item: TimelineItem<S, M, N>): boolean => {
+    switch (item.kind) {
+      case 'submission':
+        return counterpart === 'student'
+      case 'reply':
+        return counterpart === 'coach'
+      case 'message':
+        return item.message.from === counterpart
+      case 'notice':
+        return false
+    }
+  }
+  const first = items.find(
+    (item) => item.at.getTime() > lastReadAt.getTime() && fromCounterpart(item)
+  )
+  return first?.key ?? null
+}
