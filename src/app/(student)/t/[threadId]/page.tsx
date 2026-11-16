@@ -10,6 +10,7 @@ import {
   replyTargetMessage,
   sendConfirmMessage,
 } from '@/app/features/coach-availability/utils/availabilityText'
+import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
@@ -44,7 +45,10 @@ const ThreadViewPage = async ({ params }: Props) => {
   return (
     <main className="space-y-8 px-6 py-10">
       <header className="space-y-1">
-        <p className="text-sm text-gray-500">{thread.coachName} さんの添削</p>
+        <p className="flex items-center gap-2 text-sm text-gray-500">
+          <CoachAvatar name={thread.coachName} url={thread.coachAvatarUrl} size={28} />
+          {thread.coachName} さんの添削
+        </p>
         <h1 className="text-xl font-bold">
           {thread.theme === '' ? '動画を送りましょう' : thread.theme}
         </h1>

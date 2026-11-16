@@ -64,6 +64,13 @@
       "when": 1794795966972,
       "tag": "0008_coach_absence",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794803096058,
+      "tag": "0009_coach_avatar",
+      "breakpoints": true
     }
   ]
 }

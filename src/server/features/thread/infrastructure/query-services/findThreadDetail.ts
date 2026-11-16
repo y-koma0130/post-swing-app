@@ -14,7 +14,11 @@ import {
   video,
 } from '@/server/db/schema'
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
-import { findCoachAvailabilityFacts, toAvailabilityDto } from '@/server/features/coach/public'
+import {
+  findCoachAvailabilityFacts,
+  toAvailabilityDto,
+  toAvatarUrl,
+} from '@/server/features/coach/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
@@ -49,6 +53,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     db
       .select({
         coachName: coachProfile.displayName,
+        coachAvatarKey: coachProfile.avatarR2Key,
         coachSlug: coachProfile.slug,
         studentName: user.name,
       })
@@ -105,6 +110,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     id: t.id,
     coachName: people.coachName,
     coachSlug: people.coachSlug,
+    coachAvatarUrl: toAvatarUrl(people.coachSlug, people.coachAvatarKey),
     studentName: people.studentName,
     planKind: t.planKind,
     theme: t.theme,

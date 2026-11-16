@@ -11,6 +11,8 @@ export type CoachProfileDto = {
   title: string
   bio: string
   instagram: string
+  /** プロフィール画像。なければ null（名前の頭文字を出す） */
+  avatarUrl: string | null
   remainingCapacity: number
   /** 申し込みを受けられるか（Stripe の口座ができていて、受付中のプランがある） */
   acceptingApplications: boolean
