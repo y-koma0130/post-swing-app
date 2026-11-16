@@ -15,6 +15,7 @@ import {
   ordinalLabel,
   quoteAnchorId,
   submissionLabel,
+  videoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { formatDateTime } from '@/app/utils/format'
@@ -39,11 +40,13 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
   const { submissions } = thread
   /** ドロワーで開いている提出。閉じていれば null */
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  // 閉じても作業中のカードを残すため、最後に開いた提出を覚えておく
+  // 閉じても作業中のカードを残すため、最後に開いた提出と動画を覚えておく
   const [workIndex, setWorkIndex] = useState(0)
+  const [videoIndex, setVideoIndex] = useState(0)
 
-  const open = (index: number) => {
+  const open = (index: number, video = 0) => {
     setWorkIndex(index)
+    setVideoIndex(video)
     setOpenIndex(index)
   }
 
@@ -75,23 +78,49 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                 {formatDateTime(submission.submittedAt)}
               </span>
             </div>
-            <ul className="flex flex-wrap gap-2">
-              {submission.videos.map((video) => (
-                <li
-                  key={video.id}
-                  id={quoteAnchorId('video', video.id)}
-                  className="group bg-surface flex scroll-mt-20 items-center gap-2 rounded-full py-1 pr-2 pl-3 text-sm"
-                >
-                  {ANGLE_LABEL[video.angle]}の動画
-                  <QuoteButton
-                    target={{
-                      kind: 'video',
-                      targetId: video.id,
-                      label: `${ordinalLabel(index)}・${ANGLE_LABEL[video.angle]}の動画`,
-                    }}
-                  />
-                </li>
-              ))}
+            {/* 動画は小さく並べ、押すとドロワーで大きく開く */}
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {submission.videos.map((video, videoIndex) => {
+                const label = videoLabel(video.angle, submission.videos.length)
+                return (
+                  <li
+                    key={video.id}
+                    id={quoteAnchorId('video', video.id)}
+                    className="group scroll-mt-20 space-y-1"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => open(index, videoIndex)}
+                      className="relative block w-full overflow-hidden rounded-xl bg-black"
+                      aria-label={`${label}を開く`}
+                    >
+                      {/* 最初のコマだけを読み、サムネイルにする */}
+                      <video
+                        src={`${video.url}#t=0.1`}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        className="aspect-video w-full object-contain"
+                      />
+                      <span className="text-caption absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
+                        {label}
+                      </span>
+                      <span className="absolute inset-0 flex items-center justify-center text-2xl text-white/90">
+                        ▶︎
+                      </span>
+                    </button>
+                    <div className="flex justify-end">
+                      <QuoteButton
+                        target={{
+                          kind: 'video',
+                          targetId: video.id,
+                          label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
             {submission.note && (
               <p className="text-body text-sm whitespace-pre-wrap">{submission.note}</p>
@@ -160,6 +189,8 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
             submissions={submissions}
             index={workIndex}
             onIndexChange={setWorkIndex}
+            videoIndex={videoIndex}
+            onVideoIndexChange={setVideoIndex}
             drills={drills}
             onSent={() => setOpenIndex(null)}
           />

@@ -28,6 +28,9 @@ type Props = {
   /** 開いている提出（ドロワーを開いた提出）。中のタブで切り替えられる */
   index: number
   onIndexChange: (index: number) => void
+  /** 開いている動画（提出の中の何本目か） */
+  videoIndex: number
+  onVideoIndexChange: (index: number) => void
   drills: DrillDto[]
   /** 添削を送れたとき（ドロワーを閉じる） */
   onSent: () => void
@@ -53,6 +56,8 @@ export const ReviewWorkspace = ({
   submissions,
   index,
   onIndexChange,
+  videoIndex,
+  onVideoIndexChange,
   drills,
   onSent,
 }: Props) => {
@@ -60,7 +65,6 @@ export const ReviewWorkspace = ({
   const editor = useAnnotationEditor()
   const cards = useCardDrafts()
   const videoElement = useRef<HTMLVideoElement | null>(null)
-  const [videoIndex, setVideoIndex] = useState(0)
   const [comparing, setComparing] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,13 +95,13 @@ export const ReviewWorkspace = ({
 
   const selectSubmission = (next: number) => {
     onIndexChange(next)
-    setVideoIndex(0)
+    onVideoIndexChange(0)
     // 別の動画に引いた線は持ち越さない
     editor.reset()
   }
 
   const selectVideo = (next: number) => {
-    setVideoIndex(next)
+    onVideoIndexChange(next)
     editor.reset()
   }
 
