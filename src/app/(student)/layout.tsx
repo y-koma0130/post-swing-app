@@ -18,13 +18,13 @@ const StudentLayout = async ({ children }: Props) => {
 
   return (
     <div className="mx-auto min-h-dvh max-w-md bg-white">
-      <header className="flex items-center justify-between border-b border-gray-100 px-6 py-3">
+      <header className="border-line-soft flex items-center justify-between border-b px-6 py-3">
         <Link href={actor ? '/me' : '/'} aria-label="SwingPost">
           <Logo height={28} />
         </Link>
         <Link
           href={actor ? '/me' : '/login?next=/me'}
-          className="text-sm text-gray-600 hover:text-gray-900"
+          className="text-muted hover:text-ink text-sm"
         >
           {actor ? 'マイページ' : 'ログイン'}
         </Link>

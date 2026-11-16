@@ -25,7 +25,7 @@ export const WaitlistForm = ({ coachSlug, onWaitlist }: Props) => {
     <form action={action} className="space-y-3">
       <input type="hidden" name="coachSlug" value={coachSlug} />
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" disabled={pending} size="lg" className="w-full">
         キャンセル待ちに登録する
       </Button>
     </form>

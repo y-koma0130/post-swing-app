@@ -10,7 +10,7 @@ export const FormMessage = ({ state }: Props) => {
   return (
     <p
       role={state.status === 'error' ? 'alert' : 'status'}
-      className={`text-sm ${state.status === 'error' ? 'text-red-600' : 'text-ink'}`}
+      className={`text-sm ${state.status === 'error' ? 'text-danger' : 'text-ink'}`}
     >
       {state.message}
     </p>

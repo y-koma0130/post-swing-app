@@ -19,7 +19,7 @@ export const PlansForm = ({ plans }: Props) => {
   return (
     <form action={action} className="space-y-6">
       {plans.map((plan) => (
-        <fieldset key={plan.kind} className="space-y-3 rounded-xl border border-gray-100 p-4">
+        <fieldset key={plan.kind} className="border-line-soft space-y-3 rounded-xl border p-4">
           <legend className="px-1 font-bold">{plan.name}</legend>
           <label className="flex items-center gap-2 text-sm">
             <input

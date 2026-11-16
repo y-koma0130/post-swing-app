@@ -13,7 +13,7 @@ export const SignOutButton = ({ redirectTo }: Props) => {
   }
 
   return (
-    <button type="button" onClick={signOut} className="text-sm text-gray-500 hover:text-gray-800">
+    <button type="button" onClick={signOut} className="text-muted hover:text-ink text-sm">
       ログアウト
     </button>
   )

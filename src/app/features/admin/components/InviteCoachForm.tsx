@@ -28,7 +28,7 @@ export const InviteCoachForm = () => {
           placeholder="yamada-golf"
           className={inputClass}
         />
-        <span className="block text-xs text-gray-500">
+        <span className="text-caption text-muted block">
           /c/ のあとに付く文字。空欄なら自動で決まり、コーチがあとで変えられます
         </span>
       </label>

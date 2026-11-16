@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLinks'
 import { uniqueCoaches } from '@/app/features/coach-profile/utils/uniqueCoaches'
 import { LineFriendPrompt } from '@/app/features/notification/components/LineFriendPrompt'
@@ -31,8 +32,8 @@ const MyPage = async ({ searchParams }: Props) => {
   const { checkout } = await searchParams
 
   return (
-    <main className="space-y-6 px-6 py-10">
-      <h1 className="text-xl font-bold">マイページ</h1>
+    <Page layout="student">
+      <PageHeader title="マイページ" />
       {linePrompt && <LineFriendPrompt addFriendUrl={linePrompt.addFriendUrl} />}
       {checkout === 'success' && (
         <p className="bg-mint-soft text-ink rounded-xl p-4 text-sm">
@@ -40,23 +41,23 @@ const MyPage = async ({ searchParams }: Props) => {
         </p>
       )}
       <section className="space-y-3">
-        <h2 className="font-bold">スレッド</h2>
+        <h2 className="text-heading">スレッド</h2>
         {threads.length === 0 ? (
-          <p className="text-sm text-gray-500">まだスレッドはありません。</p>
+          <p className="text-muted text-sm">まだスレッドはありません。</p>
         ) : (
           <ThreadList threads={threads} viewer="student" />
         )}
       </section>
       {purchases.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-bold">コーチ</h2>
+          <h2 className="text-heading">コーチ</h2>
           <MyCoachLinks coaches={uniqueCoaches(purchases)} />
         </section>
       )}
       <section className="space-y-3">
-        <h2 className="font-bold">申し込み</h2>
+        <h2 className="text-heading">申し込み</h2>
         {purchases.length === 0 ? (
-          <p className="text-sm text-gray-500">まだ申し込みはありません。</p>
+          <p className="text-muted text-sm">まだ申し込みはありません。</p>
         ) : (
           purchases.map((p) => (
             <Card key={p.id} className="space-y-2">
@@ -64,7 +65,7 @@ const MyPage = async ({ searchParams }: Props) => {
                 <Link href={`/c/${p.coachSlug}`} className="font-bold">
                   {p.coachName}
                 </Link>
-                <span className="text-sm text-gray-500">
+                <span className="text-muted text-sm">
                   {PLAN_LABEL[p.planKind]}・{formatYen(p.priceYen)}
                   {p.status === 'canceled' && '（解約済み）'}
                 </span>
@@ -72,7 +73,7 @@ const MyPage = async ({ searchParams }: Props) => {
               {p.canManage && p.status === 'paid' && (
                 <form action={openBillingPortalAction}>
                   <input type="hidden" name="purchaseId" value={p.id} />
-                  <button type="submit" className="text-sm text-gray-600 underline">
+                  <button type="submit" className="text-muted text-sm underline">
                     月額の解約・カードの変更
                   </button>
                 </form>
@@ -81,7 +82,7 @@ const MyPage = async ({ searchParams }: Props) => {
           ))
         )}
       </section>
-    </main>
+    </Page>
   )
 }
 

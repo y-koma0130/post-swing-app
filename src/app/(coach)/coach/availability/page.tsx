@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AbsenceForm } from '@/app/features/coach-availability/components/AbsenceForm'
 import { AbsenceList } from '@/app/features/coach-availability/components/AbsenceList'
 import { DelayFlagToggle } from '@/app/features/coach-availability/components/DelayFlagToggle'
@@ -21,20 +22,17 @@ const CoachAvailabilityPage = async () => {
   const coachName = current.settings.name
 
   return (
-    <main className="mx-auto max-w-2xl space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold">不在・返信の設定</h1>
-        <p className="text-sm text-gray-600">
-          動画の添削は{settings.replyTargetHours}
-          時間以内に返すのが基本の約束です。守れない期間は、生徒に前もって知らせましょう。
-        </p>
-      </div>
+    <Page layout="form">
+      <PageHeader
+        title="不在・返信の設定"
+        description={`動画の添削は${settings.replyTargetHours}時間以内に返すのが基本の約束です。守れない期間は、生徒に前もって知らせましょう。`}
+      />
       <Card className="space-y-4">
-        <h2 className="font-bold">不在期間</h2>
+        <h2 className="text-heading">不在期間</h2>
         <AbsenceList coachName={coachName} settings={settings} />
       </Card>
       <Card className="space-y-4">
-        <h2 className="font-bold">不在期間を追加</h2>
+        <h2 className="text-heading">不在期間を追加</h2>
         <AbsenceForm
           coachName={coachName}
           absence={null}
@@ -43,8 +41,8 @@ const CoachAvailabilityPage = async () => {
         />
       </Card>
       <Card className="space-y-4">
-        <h2 className="font-bold">返信が遅れる場合があります</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-heading">返信が遅れる場合があります</h2>
+        <p className="text-muted text-sm">
           期間を決めずに、少し返信が遅れそうなときに使います。受付ページと動画を送る前に表示されます。
         </p>
         <DelayFlagToggle
@@ -52,7 +50,7 @@ const CoachAvailabilityPage = async () => {
           expiresAt={settings.delayFlag.expiresAt}
         />
       </Card>
-    </main>
+    </Page>
   )
 }
 

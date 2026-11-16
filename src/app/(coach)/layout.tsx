@@ -13,24 +13,24 @@ const CoachLayout = async ({ children }: Props) => {
   const actor = await getActor()
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      <header className="border-b border-gray-100 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div className="bg-surface min-h-dvh">
+      <header className="border-line-soft border-b bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
           <Link href="/coach">
             <Logo height={36} />
           </Link>
           {actor && (
-            <nav className="flex items-center gap-5 text-sm">
-              <Link href="/coach" className="text-gray-700 hover:text-gray-900">
+            <nav className="-mx-1 flex items-center gap-5 overflow-x-auto px-1 text-sm whitespace-nowrap">
+              <Link href="/coach" className="text-body hover:text-ink">
                 ホーム
               </Link>
-              <Link href="/coach/drills" className="text-gray-700 hover:text-gray-900">
+              <Link href="/coach/drills" className="text-body hover:text-ink">
                 ドリル
               </Link>
-              <Link href="/coach/availability" className="text-gray-700 hover:text-gray-900">
+              <Link href="/coach/availability" className="text-body hover:text-ink">
                 不在・返信
               </Link>
-              <Link href="/coach/settings" className="text-gray-700 hover:text-gray-900">
+              <Link href="/coach/settings" className="text-body hover:text-ink">
                 設定
               </Link>
               <SignOutButton redirectTo="/coach/login" />

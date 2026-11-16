@@ -18,7 +18,7 @@ export const KEY_POSITION_LABEL = {
 export const ReviewCardList = ({ cards }: Props) => (
   <ol className="space-y-4">
     {cards.map((card, index) => (
-      <li key={card.id} className="rounded-card overflow-hidden border border-gray-100 bg-white">
+      <li key={card.id} className="rounded-card border-line-soft overflow-hidden border bg-white">
         <img
           src={card.imageUrl}
           alt={`${KEY_POSITION_LABEL[card.position]}の添削画像`}
@@ -26,16 +26,14 @@ export const ReviewCardList = ({ cards }: Props) => (
           loading="lazy"
         />
         <div className="space-y-2 p-4">
-          <p className="text-mint text-xs font-bold">
+          <p className="text-mint text-caption font-bold">
             {index + 1}. {KEY_POSITION_LABEL[card.position]}
           </p>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-800">
-            {card.comment}
-          </p>
+          <p className="text-body text-sm leading-relaxed whitespace-pre-wrap">{card.comment}</p>
           {card.drill && (
             <div className="bg-mint-soft rounded-xl p-3">
-              <p className="text-ink text-xs font-bold">ドリル：{card.drill.title}</p>
-              <p className="mt-1 text-xs whitespace-pre-wrap text-gray-700">
+              <p className="text-ink text-caption font-bold">ドリル：{card.drill.title}</p>
+              <p className="text-caption text-body mt-1 whitespace-pre-wrap">
                 {card.drill.description}
               </p>
             </div>

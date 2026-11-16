@@ -12,13 +12,13 @@ export const MyCoachLinks = ({ coaches }: Props) => (
       <li key={coach.slug}>
         <Link
           href={`/c/${coach.slug}`}
-          className="rounded-card flex items-center justify-between border border-gray-200 px-4 py-3 hover:bg-gray-50"
+          className="rounded-card border-line hover:bg-surface flex items-center justify-between border px-4 py-3"
         >
           <span className="flex items-center gap-3">
             <CoachAvatar name={coach.name} url={coach.avatarUrl} size={36} />
             <span className="font-bold">{coach.name}</span>
           </span>
-          <span className="text-sm text-gray-600">受付ページへ →</span>
+          <span className="text-muted text-sm">受付ページへ →</span>
         </Link>
       </li>
     ))}

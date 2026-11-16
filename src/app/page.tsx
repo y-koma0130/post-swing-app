@@ -10,10 +10,10 @@ const HomePage = () => (
       <br />
       スイング添削を届けよう。
     </h1>
-    <p className="mt-4 text-sm leading-relaxed text-gray-600">
+    <p className="text-muted mt-4 text-sm leading-relaxed">
       動画を受け取り、コマ送りと線引きで添削し、集金まで。ゴルフのレッスンプロのためのサービスです。
     </p>
-    <ButtonLink href="/coach" className="mt-10 w-full">
+    <ButtonLink href="/coach" size="lg" className="mt-10 w-full">
       コーチのログイン
     </ButtonLink>
   </main>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Page } from '@/app/components/ui/Page'
 import { EmailCodeLoginForm } from '@/app/features/auth/components/EmailCodeLoginForm'
 import { LineLoginButton } from '@/app/features/auth/components/LineLoginButton'
 import { getLoginOptions } from '@/server/auth/loginOptions'
@@ -23,25 +24,25 @@ const StudentLoginPage = async ({ searchParams }: Props) => {
   const options = getLoginOptions()
 
   return (
-    <main className="space-y-8 px-6 py-12">
+    <Page layout="student">
       <div className="space-y-2">
-        <h1 className="text-xl font-bold">ログイン</h1>
-        <p className="text-sm text-gray-600">
+        <h1 className="text-title">ログイン</h1>
+        <p className="text-muted text-sm">
           添削が届いたら LINE でお知らせします。LINE のアカウントでログインしてください。
         </p>
       </div>
       {options.line ? (
         <LineLoginButton redirectTo={redirectTo} />
       ) : (
-        <p className="text-sm text-gray-500">LINE ログインは準備中です。</p>
+        <p className="text-muted text-sm">LINE ログインは準備中です。</p>
       )}
       {options.devEmail && (
-        <section className="space-y-4 rounded-xl border border-dashed border-gray-300 p-4">
-          <p className="text-xs font-bold text-gray-500">開発用：メールのコードでログイン</p>
+        <section className="border-line space-y-4 rounded-xl border border-dashed p-4">
+          <p className="text-caption text-muted font-bold">開発用：メールのコードでログイン</p>
           <EmailCodeLoginForm redirectTo={redirectTo} turnstileSiteKey={getTurnstileSiteKey()} />
         </section>
       )}
-    </main>
+    </Page>
   )
 }
 

@@ -15,7 +15,7 @@ type Props = {
 type Step = { kind: 'email' } | { kind: 'code'; email: string }
 
 const inputClass =
-  'w-full rounded-xl border border-gray-200 px-4 py-3 text-base outline-none focus:border-mint'
+  'w-full rounded-xl border border-line px-4 py-3 text-base outline-none focus:border-mint'
 
 /**
  * メールに届く6桁のコードでログインする
@@ -85,14 +85,14 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
         action="login-code"
         onToken={setCaptchaToken}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" disabled={pending || !captchaToken} className="w-full">
+      {error && <p className="text-danger text-sm">{error}</p>}
+      <Button type="submit" disabled={pending || !captchaToken} size="lg" className="w-full">
         ログインコードを送る
       </Button>
     </form>
   ) : (
     <form onSubmit={verifyCode} className="space-y-4">
-      <p className="text-sm text-gray-600">{step.email} に届いた6桁のコードを入れてください。</p>
+      <p className="text-muted text-sm">{step.email} に届いた6桁のコードを入れてください。</p>
       <label className="block space-y-2">
         <span className="text-sm font-bold">ログインコード</span>
         <input
@@ -105,14 +105,14 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
           className={`${inputClass} tracking-[0.5em]`}
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" disabled={pending} className="w-full">
+      {error && <p className="text-danger text-sm">{error}</p>}
+      <Button type="submit" disabled={pending} size="lg" className="w-full">
         ログイン
       </Button>
       <button
         type="button"
         onClick={() => setStep({ kind: 'email' })}
-        className="w-full text-sm text-gray-500"
+        className="text-muted w-full text-sm"
       >
         メールアドレスを入れ直す
       </button>

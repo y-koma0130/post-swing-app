@@ -25,7 +25,7 @@ export const DelayFlagToggle = ({ active, expiresAt }: Props) => {
           aria-checked={active}
           disabled={pending}
           className={`relative h-7 w-12 rounded-full transition-colors disabled:opacity-40 ${
-            active ? 'bg-mint' : 'bg-gray-300'
+            active ? 'bg-mint' : 'bg-subtle'
           }`}
         >
           <span className="sr-only">返信が遅れる場合があることを表示する</span>
@@ -39,7 +39,7 @@ export const DelayFlagToggle = ({ active, expiresAt }: Props) => {
           {active ? '「返信が遅れる場合があります」と表示中' : 'オフ'}
         </span>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-caption text-muted">
         {active && expiresAt
           ? `${formatDateTime(expiresAt)}に自動で解除されます`
           : 'オンにすると、7日後に自動で解除されます'}

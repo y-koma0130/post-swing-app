@@ -89,10 +89,10 @@ export const VideoUploadForm = ({
           className="block w-full text-sm"
         />
         {analysis.kind === 'reading' && (
-          <span className="block text-xs text-gray-500">動画を読み込んでいます…</span>
+          <span className="text-caption text-muted block">動画を読み込んでいます…</span>
         )}
         {sendsAsIs && file && (
-          <span className={`block text-xs ${tooLarge ? 'text-red-600' : 'text-gray-500'}`}>
+          <span className={`text-caption block ${tooLarge ? 'text-danger' : 'text-muted'}`}>
             {(file.size / MB).toFixed(1)}MB
             {tooLarge &&
               `（${Math.floor(maxBytes / MB)}MBまでです。スイングの前後を切って短くしてください）`}
@@ -124,7 +124,7 @@ export const VideoUploadForm = ({
         <textarea name="note" rows={3} maxLength={1000} className={inputClass} />
       </label>
       {(convertError ?? (state.kind === 'error' ? state.message : null)) && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-danger text-sm">
           {convertError ?? (state.kind === 'error' ? state.message : '')}
         </p>
       )}
@@ -132,10 +132,10 @@ export const VideoUploadForm = ({
         <Progress value={converting} label="動画を変換中…（この画面のままお待ちください）" />
       )}
       {uploading && <Progress value={state.progress} label="送信中…" />}
-      <Button type="submit" disabled={busy || !file || tooLarge} className="w-full">
+      <Button type="submit" disabled={busy || !file || tooLarge} size="lg" className="w-full">
         動画を送る
       </Button>
-      {replyHint && <p className="text-center text-xs text-gray-500">{replyHint}</p>}
+      {replyHint && <p className="text-caption text-muted text-center">{replyHint}</p>}
       <ConfirmDialog
         open={confirming}
         message={confirmMessage ?? ''}
@@ -153,13 +153,13 @@ export const VideoUploadForm = ({
 
 const Progress = ({ value, label }: { value: number; label: string }) => (
   <div className="space-y-1">
-    <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+    <div className="bg-line-soft h-2 overflow-hidden rounded-full">
       <div
         className="bg-mint h-full transition-[width]"
         style={{ width: `${Math.round(value * 100)}%` }}
       />
     </div>
-    <p className="text-xs text-gray-500">
+    <p className="text-caption text-muted">
       {label} {Math.round(value * 100)}%
     </p>
   </div>

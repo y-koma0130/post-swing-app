@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
 import { formatMonthDay } from '@/app/utils/format'
@@ -23,27 +24,30 @@ const ReviewPage = async ({ params }: Props) => {
   if (!thread) notFound()
 
   return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-xl font-bold">
-          {thread.studentName}：{thread.theme === '' ? '（動画待ち）' : thread.theme}
-        </h1>
-        <p className="text-sm text-gray-500">
-          動画 {thread.videos.length}/{thread.maxVideos}本・期限 {formatMonthDay(thread.expiresAt)}
-          {extensionNote(thread.extendedDays)}
-          {thread.status === 'closed' && '・終了'}
-        </p>
-      </header>
+    <Page layout="wide">
+      <PageHeader
+        back={{ href: '/coach', label: 'ホーム' }}
+        eyebrow={thread.studentName || '（名前なし）'}
+        title={thread.theme === '' ? '（動画待ち）' : thread.theme}
+        description={
+          <>
+            動画 {thread.videos.length}/{thread.maxVideos}本・期限{' '}
+            {formatMonthDay(thread.expiresAt)}
+            {extensionNote(thread.extendedDays)}
+            {thread.status === 'closed' && '・終了'}
+          </>
+        }
+      />
       {thread.review && (
         <Card className="space-y-2">
           <p className="font-bold">
             レビュー <span className="text-mint">{'★'.repeat(thread.review.rating)}</span>
           </p>
           {thread.review.comment && (
-            <p className="text-sm whitespace-pre-wrap text-gray-700">{thread.review.comment}</p>
+            <p className="text-body text-sm whitespace-pre-wrap">{thread.review.comment}</p>
           )}
           {thread.review.coachReply ? (
-            <p className="text-sm text-gray-500">返信：{thread.review.coachReply}</p>
+            <p className="text-muted text-sm">返信：{thread.review.coachReply}</p>
           ) : (
             <CoachReviewReplyForm threadId={thread.id} />
           )}
@@ -55,7 +59,7 @@ const ReviewPage = async ({ params }: Props) => {
         videos={thread.videos}
         drills={drills}
       />
-    </main>
+    </Page>
   )
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvatarUploader } from '@/app/features/coach-settings/components/AvatarUploader'
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
@@ -28,22 +29,22 @@ const CoachSettingsPage = async () => {
       : current.settings
 
   return (
-    <main className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-xl font-bold">設定</h1>
+    <Page layout="form">
+      <PageHeader title="設定" />
       <Card className="space-y-4">
-        <h2 className="font-bold">売上の受け取り</h2>
+        <h2 className="text-heading">売上の受け取り</h2>
         <PayoutSection settings={settings} />
       </Card>
       <Card className="space-y-4">
-        <h2 className="font-bold">プロフィール</h2>
+        <h2 className="text-heading">プロフィール</h2>
         <AvatarUploader name={settings.name} avatarUrl={settings.avatarUrl} />
         <CoachProfileForm settings={settings} siteUrl={getSiteUrl().origin} />
       </Card>
       <Card className="space-y-4">
-        <h2 className="font-bold">プラン</h2>
+        <h2 className="text-heading">プラン</h2>
         <PlansForm plans={settings.plans} />
       </Card>
-    </main>
+    </Page>
   )
 }
 

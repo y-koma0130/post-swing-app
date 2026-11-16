@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { formatYen } from '@/app/utils/format'
 import { refundThreadAction } from '@/server/features/purchase/presentation/actions'
@@ -29,13 +30,9 @@ export const RefundThreadButton = ({ threadId, studentName, priceYen }: Props) =
       className="space-y-1"
     >
       <input type="hidden" name="threadId" value={threadId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-700 disabled:opacity-40"
-      >
+      <Button type="submit" variant="danger" size="sm" disabled={pending}>
         返金する
-      </button>
+      </Button>
       <FormMessage state={state} />
     </form>
   )

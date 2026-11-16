@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
 import {
   absenceNoticeMessage,
@@ -44,38 +44,39 @@ const ThreadViewPage = async ({ params }: Props) => {
   const banner = availabilityBanner(thread.coachName, availability)
 
   return (
-    <main className="space-y-8 px-6 py-10">
-      <Link href="/me" className="inline-block text-sm text-gray-500 hover:text-gray-800">
-        ← マイページ
-      </Link>
-      <header className="space-y-1">
-        <p className="flex items-center gap-2 text-sm text-gray-500">
-          <CoachAvatar name={thread.coachName} url={thread.coachAvatarUrl} size={28} />
-          {thread.coachName} さんの添削
-        </p>
-        <h1 className="text-xl font-bold">
-          {thread.theme === '' ? '動画を送りましょう' : thread.theme}
-        </h1>
-        <p className="text-xs text-gray-500">
-          動画 {thread.videos.length}/{thread.maxVideos}本・期限 {formatMonthDay(thread.expiresAt)}
-          {extensionNote(thread.extendedDays)}
-        </p>
-      </header>
+    <Page layout="student">
+      <PageHeader
+        back={{ href: '/me', label: 'マイページ' }}
+        eyebrow={
+          <span className="flex items-center gap-2">
+            <CoachAvatar name={thread.coachName} url={thread.coachAvatarUrl} size={24} />
+            {thread.coachName} さんの添削
+          </span>
+        }
+        title={thread.theme === '' ? '動画を送りましょう' : thread.theme}
+        description={
+          <>
+            動画 {thread.videos.length}/{thread.maxVideos}本・期限{' '}
+            {formatMonthDay(thread.expiresAt)}
+            {extensionNote(thread.extendedDays)}
+          </>
+        }
+      />
       {banner && thread.status !== 'closed' && (
-        <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-gray-800">
+        <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
           {banner}
         </p>
       )}
 
       {thread.videos.map((video, index) => (
         <section key={video.id} className="space-y-4">
-          <h2 className="font-bold">{index + 1}本目</h2>
+          <h2 className="text-heading">{index + 1}本目</h2>
           <VideoPlayer src={video.url} frameRate={video.frameRate} />
-          {video.note && <p className="text-sm whitespace-pre-wrap text-gray-600">{video.note}</p>}
+          {video.note && <p className="text-muted text-sm whitespace-pre-wrap">{video.note}</p>}
           {video.reply ? (
             <ReviewCardList cards={video.reply.cards} />
           ) : (
-            <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">添削を待っています。</p>
+            <p className="bg-surface text-muted rounded-xl p-4 text-sm">添削を待っています。</p>
           )}
           <div className="space-y-2">
             <h3 className="text-sm font-bold">コーチとのチャット</h3>
@@ -101,9 +102,9 @@ const ThreadViewPage = async ({ params }: Props) => {
 
       {thread.status === 'closed' && (
         <section className="space-y-3">
-          <h2 className="font-bold">{thread.coachName} さんのレビュー</h2>
+          <h2 className="text-heading">{thread.coachName} さんのレビュー</h2>
           {thread.review ? (
-            <p className="text-sm text-gray-600">
+            <p className="text-muted text-sm">
               ★{thread.review.rating} を送りました。ありがとうございました。
             </p>
           ) : (
@@ -115,7 +116,7 @@ const ThreadViewPage = async ({ params }: Props) => {
       )}
 
       <section className="space-y-4">
-        <h2 className="font-bold">
+        <h2 className="text-heading">
           {thread.videos.length === 0 ? '動画を送る' : '撮り直して送る'}
         </h2>
         {thread.videoSubmissionBlocker === null ? (
@@ -137,12 +138,12 @@ const ThreadViewPage = async ({ params }: Props) => {
             />
           </Card>
         ) : (
-          <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p className="bg-surface text-muted rounded-xl p-4 text-sm">
             {BLOCKER_MESSAGE[thread.videoSubmissionBlocker]}
           </p>
         )}
       </section>
-    </main>
+    </Page>
   )
 }
 

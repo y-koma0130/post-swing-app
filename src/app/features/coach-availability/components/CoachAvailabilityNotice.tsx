@@ -19,20 +19,20 @@ type Props = {
 export const CoachAvailabilityNotice = ({ coachName, availability, upcomingAbsence }: Props) => {
   if (availability.kind === 'absent') {
     return (
-      <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-gray-800">
+      <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
         {absentMessage(coachName, availability)}
       </p>
     )
   }
   if (availability.kind === 'delayed') {
     return (
-      <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-gray-800">
+      <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
         {delayedMessage(coachName)}
       </p>
     )
   }
   return (
-    <div className="space-y-1 text-sm text-gray-600">
+    <div className="text-muted space-y-1 text-sm">
       <p>{replyTargetMessage(availability.replyTargetHours)}</p>
       {upcomingAbsence && (
         <p>

@@ -7,7 +7,7 @@ type Props = {
 
 const LegalLayout = ({ children }: Props) => (
   <div className="mx-auto max-w-2xl">
-    <main className="space-y-6 px-6 py-12 text-sm leading-relaxed text-gray-800 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:font-bold [&_li]:ml-5 [&_li]:list-disc">
+    <main className="text-body space-y-6 px-6 py-12 text-sm leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:font-bold [&_li]:ml-5 [&_li]:list-disc">
       {children}
     </main>
     <SiteFooter />

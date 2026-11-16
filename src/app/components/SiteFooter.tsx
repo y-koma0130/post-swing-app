@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 /** 規約などへのリンク。生徒向けの画面と申し込みの画面に出す */
 export const SiteFooter = () => (
-  <footer className="space-x-4 px-6 py-10 text-center text-xs text-gray-400">
+  <footer className="text-caption text-subtle space-x-4 px-6 py-10 text-center">
     <Link href="/legal/terms">利用規約</Link>
     <Link href="/legal/privacy">プライバシーポリシー</Link>
     <Link href="/legal/commerce">特定商取引法に基づく表記</Link>

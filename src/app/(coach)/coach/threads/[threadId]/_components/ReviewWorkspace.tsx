@@ -54,7 +54,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
 
   if (!current) {
     return (
-      <p className="rounded-card bg-white p-6 text-sm text-gray-500 shadow-sm">
+      <p className="rounded-card text-muted bg-white p-6 text-sm shadow-sm">
         まだ動画が届いていません。届いたらメールでお知らせします。
       </p>
     )
@@ -113,7 +113,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
               aria-pressed={i === index}
               onClick={() => select(i)}
               className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-                i === index ? 'bg-ink text-white' : 'bg-white text-gray-700 shadow-sm'
+                i === index ? 'bg-ink text-white' : 'text-body bg-white shadow-sm'
               }`}
             >
               {i + 1}本目{video.reply ? '（返信済み）' : ''}
@@ -151,7 +151,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
           )}
         </div>
         {current.note && (
-          <p className="rounded-card bg-white p-4 text-sm whitespace-pre-wrap text-gray-700 shadow-sm">
+          <p className="rounded-card text-body bg-white p-4 text-sm whitespace-pre-wrap shadow-sm">
             {current.note}
           </p>
         )}
@@ -160,27 +160,27 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
       <aside className="space-y-4">
         {current.reply ? (
           <Card className="space-y-3">
-            <h2 className="font-bold">送った添削</h2>
+            <h2 className="text-heading">送った添削</h2>
             <ReviewCardList cards={current.reply.cards} />
           </Card>
         ) : (
           <Card className="space-y-4">
             <div className="space-y-2">
-              <h2 className="font-bold">添削カード</h2>
-              <p className="text-xs text-gray-500">
+              <h2 className="text-heading">添削カード</h2>
+              <p className="text-caption text-muted">
                 動画を止めて線を引き、キー位置を押すと、そのコマがカードになります。
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {KEY_POSITIONS.map((position) => (
-                  <button
+                  <Button
                     key={position}
-                    type="button"
+                    variant="secondary"
+                    size="sm"
                     disabled={closed}
                     onClick={() => capture(position)}
-                    className="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-bold disabled:opacity-40"
                   >
                     {KEY_POSITION_LABEL[position]}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -191,13 +191,14 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
               onRemove={cards.remove}
             />
             {error && (
-              <p role="alert" className="text-sm text-red-600">
+              <p role="alert" className="text-danger text-sm">
                 {error}
               </p>
             )}
             <Button
               onClick={send}
               disabled={sending || closed || cards.drafts.length === 0}
+              size="lg"
               className="w-full"
             >
               {cards.drafts.length === 0
@@ -207,7 +208,7 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
           </Card>
         )}
         <Card className="space-y-3">
-          <h2 className="font-bold">チャット</h2>
+          <h2 className="text-heading">チャット</h2>
           <ChatPanel
             threadId={threadId}
             video={current}

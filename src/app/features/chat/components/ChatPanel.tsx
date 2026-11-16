@@ -79,7 +79,7 @@ export const ChatPanel = ({
             if (item.kind === 'notice') {
               return (
                 <li key={item.notice.id} className="text-center">
-                  <p className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                  <p className="bg-line-soft text-caption text-muted inline-block rounded-full px-3 py-1">
                     {item.notice.text}
                   </p>
                 </li>
@@ -91,11 +91,11 @@ export const ChatPanel = ({
               <li key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-                    mine ? 'bg-mint-soft text-ink' : 'bg-gray-100 text-gray-800'
+                    mine ? 'bg-mint-soft text-ink' : 'bg-line-soft text-body'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{m.body}</p>
-                  <p className="mt-1 text-[10px] text-gray-500">{formatDateTime(m.sentAt)}</p>
+                  <p className="text-muted mt-1 text-[10px]">{formatDateTime(m.sentAt)}</p>
                 </div>
               </li>
             )
@@ -107,7 +107,7 @@ export const ChatPanel = ({
           <input type="hidden" name="threadId" value={threadId} />
           <input type="hidden" name="videoId" value={video.id} />
           <input ref={hideRef} type="hidden" name="hideAbsenceNotice" disabled />
-          {inputHint && <p className="text-xs text-gray-500">{inputHint}</p>}
+          {inputHint && <p className="text-caption text-muted">{inputHint}</p>}
           <textarea
             name="body"
             required
@@ -117,7 +117,7 @@ export const ChatPanel = ({
             className={inputClass}
           />
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-gray-500">
+            <span className="text-caption text-muted">
               {viewer === 'student' && `あと${video.remainingStudentMessages}通送れます`}
             </span>
             <Button type="submit" disabled={pending} className="px-5 py-2">
@@ -127,7 +127,7 @@ export const ChatPanel = ({
           {state.status === 'error' && <FormMessage state={state} />}
         </form>
       ) : (
-        <p className="text-xs text-gray-500">
+        <p className="text-caption text-muted">
           {closed
             ? 'このスレッドは終了しました'
             : 'この動画へのメッセージは送り終わりました。撮り直して送ってください'}
