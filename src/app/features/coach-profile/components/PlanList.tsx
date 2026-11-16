@@ -12,7 +12,7 @@ export const PlanList = ({ plans }: Props) => (
       <li key={plan.kind}>
         <Card>
           <div className="flex items-baseline justify-between">
-            <h2 className="text-heading">{plan.name}</h2>
+            <h3 className="text-heading">{plan.name}</h3>
             <p className="font-bold">
               {formatYen(plan.priceYen)}
               {plan.kind === 'monthly' && <span className="text-sm font-normal">/月</span>}
