@@ -2,6 +2,7 @@
 
 import 'server-only'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
@@ -9,6 +10,7 @@ import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { findThreadPayment, markThreadRefunded } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formString } from '@/server/utils/formData'
+import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
 import { refundThread } from '../application/usecases/refundThread.usecase'
 import {
@@ -53,6 +55,16 @@ export const startCheckoutAction = async (
   const planKind = planKindSchema.safeParse(formString(formData, 'planKind'))
   if (!planKind.success) {
     return actionError('プランを選んでください')
+  }
+  // ボットが申し込みと Stripe の支払い画面を大量に作れないようにする
+  const human = await verifyTurnstile(formString(formData, 'cf-turnstile-response'), {
+    action: TURNSTILE_ACTIONS.checkout,
+    remoteIp: (await headers()).get('cf-connecting-ip'),
+  })
+  if (!human) {
+    return actionError(
+      '確認できませんでした。少し待ってから、もう一度「お支払いへ進む」を押してください'
+    )
   }
 
   const result = await startCheckout(

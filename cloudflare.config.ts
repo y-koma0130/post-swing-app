@@ -62,6 +62,9 @@ export default defineConfig({
         // 管理画面を守る Cloudflare Access（https://<チーム名>.cloudflareaccess.com と、アプリの AUD）
         ACCESS_TEAM_DOMAIN: bindings.secret(),
         ACCESS_AUD: bindings.secret(),
+        // ボット対策の Cloudflare Turnstile（ログインコードの送信と申し込み）。サイトキーは公開してよい値
+        TURNSTILE_SITE_KEY: bindings.secret(),
+        TURNSTILE_SECRET_KEY: bindings.secret(),
       },
     }
   }),
