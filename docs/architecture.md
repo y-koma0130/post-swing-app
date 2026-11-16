@@ -55,7 +55,7 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | 用途 | サービス | 備考 |
 |---|---|---|
 | アプリ本体 | Workers ＋ Static Assets | vinext のビルド結果をそのまま載せる |
-| DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
+| DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・提出・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
 | 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
 | 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
 | 定期処理 | Cron Triggers（毎日4:00・9:00 JST） | 4:00：期限切れの終了、期限前のお知らせ、返信の期限（48時間）を過ぎたコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡。9:00：不在が明けたコーチへ、不在中に届いた件数のお知らせ。どちらの処理かは `src/worker.ts` が cron の値で見分ける |
@@ -160,14 +160,14 @@ src/
 |---|---|---|
 | server | `coach` | コーチ・プラン・受付枠・招待・売上の口座（Stripe Connect） |
 | server | `purchase` | 申し込み・決済（Checkout・Webhook）・キャンセル待ち |
-| server | `thread` | スレッド・動画・添削カード・チャット・毎日の処理 |
+| server | `thread` | スレッド・提出（動画1〜2本）・添削カード・チャット・毎日の処理 |
 | server | `drill` | ドリル |
 | server | `coach-review` | コーチへのレビュー |
 | server | `notification` | 通知（キュー・LINE・メール） |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |
 | app | `apply` | プランの選択・キャンセル待ち |
-| app | `thread`・`video-upload` | スレッド一覧・動画の送信 |
+| app | `thread`・`video-upload` | スレッド一覧・時系列・提出（動画の変換と送信） |
 | app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
 | app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
 

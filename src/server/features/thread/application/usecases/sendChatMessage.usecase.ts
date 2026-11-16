@@ -14,7 +14,6 @@ import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 export type NewChatMessage = Readonly<{
   id: string
   threadId: string
-  videoId: string
   senderRole: ChatSender
   senderUserId: string
   body: string
@@ -27,7 +26,6 @@ export type NewChatMessage = Readonly<{
 export type SendChatMessageParams = Readonly<{
   actor: Actor
   threadId: string
-  videoId: string
   body: string
   /** 生徒が確認で「この不在期間中は次から表示しない」を選んだ */
   hideAbsenceNoticeFromNow: boolean
@@ -67,21 +65,16 @@ export type SendChatMessage = (
 ) => Promise<Result<{ messageId: string }, SendChatMessageError>>
 
 /**
- * チャットを送る（動画ごと）。送れるのはスレッドのコーチと生徒だけで、
+ * チャットを送る（スレッドに1本の流れ）。送れるのはスレッドのコーチと生徒だけで、
  * 送れるかは checkChatMessage で決める
  */
 export const sendChatMessage: SendChatMessage = async (params, deps) => {
   const thread = await deps.findThread(params.threadId)
   const role = thread ? roleInThread(thread, params.actor.userId) : null
-  if (!thread || role === null || !thread.videos.some((v) => v.id === params.videoId)) {
+  if (!thread || role === null) {
     return err('not_found')
   }
-  const checked = checkChatMessage({
-    thread,
-    videoId: params.videoId,
-    sender: role,
-    body: params.body,
-  })
+  const checked = checkChatMessage({ thread, sender: role, body: params.body })
   if (!checked.ok) {
     return err(checked.error)
   }
@@ -97,7 +90,6 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
   await deps.saveChatMessage({
     id: messageId,
     threadId: thread.id,
-    videoId: params.videoId,
     senderRole: role,
     senderUserId: params.actor.userId,
     body,
@@ -105,13 +97,14 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
     nextStatus: nextStatusAfter(thread, role === 'coach' ? 'coach_chatted' : 'student_chatted'),
     sentDuringAbsenceId: role === 'student' ? (absence?.absenceId ?? null) : null,
   })
-  // コーチ自身の発言では、不在のお知らせは出さない
-  if (absence && role === 'student') {
+  // コーチ自身の発言では、不在のお知らせは出さない。生徒は提出のあとにしか送れないので、直近の提出に付ける
+  const latestSubmission = thread.submissions.at(-1)
+  if (absence && role === 'student' && latestSubmission) {
     await deps.saveThreadNotice({
       ...absence,
       id: deps.generateId(),
       threadId: thread.id,
-      videoId: params.videoId,
+      submissionId: latestSubmission.id,
       createdAt: params.now,
     })
     if (params.hideAbsenceNoticeFromNow) {

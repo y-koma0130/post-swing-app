@@ -13,5 +13,8 @@ export type ThreadSummaryDto = {
   status: ThreadStatus
   /** 実際の期限（コーチの不在の分だけ延びる） */
   expiresAt: Date
-  videoCount: number
+  /** 提出した回数 */
+  submissionCount: number
+  /** 提出できる回数 */
+  maxSubmissions: number
 }

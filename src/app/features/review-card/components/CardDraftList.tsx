@@ -8,12 +8,14 @@ import { KEY_POSITION_LABEL } from './ReviewCardList'
 type Props = {
   drafts: CardDraft[]
   drills: DrillDto[]
+  /** カードを作った動画の呼び方（「正面」など）。動画が1本なら null */
+  videoLabel?: ((videoId: string) => string | null) | undefined
   onChange: (localId: string, patch: Partial<Pick<CardDraft, 'comment' | 'drillId'>>) => void
   onRemove: (localId: string) => void
 }
 
 /** 作りかけの添削カード。理由を書き、ドリルを添える */
-export const CardDraftList = ({ drafts, drills, onChange, onRemove }: Props) => (
+export const CardDraftList = ({ drafts, drills, videoLabel, onChange, onRemove }: Props) => (
   <ol className="space-y-3">
     {drafts.map((draft, index) => (
       <li key={draft.localId} className="border-line-soft space-y-2 rounded-xl border bg-white p-3">
@@ -25,7 +27,8 @@ export const CardDraftList = ({ drafts, drills, onChange, onRemove }: Props) => 
           />
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-bold">
-              {index + 1}. {KEY_POSITION_LABEL[draft.position]}
+              {index + 1}. {videoLabel?.(draft.videoId) ? `${videoLabel(draft.videoId)}・` : ''}
+              {KEY_POSITION_LABEL[draft.position]}
               <span className="text-caption text-muted ml-2 font-mono font-normal">
                 {draft.timeSec.toFixed(2)}秒
               </span>

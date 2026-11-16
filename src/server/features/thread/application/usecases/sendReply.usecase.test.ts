@@ -5,7 +5,16 @@ import { sendReply } from './sendReply.usecase'
 
 type Deps = Parameters<typeof sendReply>[1]
 const now = new Date('2026-11-20T00:00:00Z')
-const video = (id: string, replied: boolean) => ({ id, uploadedAt: now, note: '', replied })
+const submission = (id: string, replied: boolean) => ({
+  id,
+  submittedAt: now,
+  note: '',
+  videos: [
+    { id: `${id}-front`, angle: 'front' as const },
+    { id: `${id}-back`, angle: 'back' as const },
+  ],
+  replied,
+})
 
 const thread: Thread = {
   id: threadIdSchema.parse('thread-1'),
@@ -17,7 +26,7 @@ const thread: Thread = {
   startedAt: now,
   expiresAt: new Date('2026-12-20T00:00:00Z'),
   closedAt: null,
-  videos: [video('v1', false)],
+  submissions: [submission('s1', false)],
   messages: [],
 }
 const card = {
@@ -27,11 +36,12 @@ const card = {
   comment: '右ひざの角度を保ちましょう',
   drillId: null,
   imageBytes: 200_000,
+  videoId: 's1-front',
 }
 const params = {
   actor: { userId: 'coach-1', name: '山田' },
   threadId: 'thread-1',
-  videoId: 'v1',
+  submissionId: 's1',
   cards: [card],
   now,
 }
@@ -53,15 +63,19 @@ const setup = (t: Thread = thread, ownDrills: string[] = []) => {
 }
 
 describe('sendReply', () => {
-  it('カードを保存し、生徒の番にして、生徒に知らせる', async () => {
+  it('正面と後方のカードをまとめて保存し、生徒の番にして、生徒に知らせる', async () => {
     const { deps, saveReply, storeCardImage, notifyReplySent } = setup()
-    const result = await sendReply(params, deps)
+    const back = { ...card, videoId: 's1-back' }
+    const result = await sendReply({ ...params, cards: [card, back] }, deps)
     expect(result.ok).toBe(true)
-    expect(storeCardImage).toHaveBeenCalledOnce()
+    expect(storeCardImage).toHaveBeenCalledTimes(2)
     expect(saveReply.mock.calls[0]?.[0]).toMatchObject({
-      videoId: 'v1',
+      submissionId: 's1',
       nextStatus: 'waiting_student',
-      cards: [{ sortOrder: 0, position: 'top', comment: card.comment }],
+      cards: [
+        { sortOrder: 0, position: 'top', comment: card.comment, videoId: 's1-front' },
+        { sortOrder: 1, videoId: 's1-back' },
+      ],
     })
     expect(notifyReplySent).toHaveBeenCalledWith({
       threadId: 'thread-1',
@@ -76,9 +90,15 @@ describe('sendReply', () => {
     expect(saveReply).not.toHaveBeenCalled()
   })
 
-  it('返信済みの動画には返信できない', async () => {
-    const { deps } = setup({ ...thread, videos: [video('v1', true)] })
+  it('添削済みの提出には返せない', async () => {
+    const { deps } = setup({ ...thread, submissions: [submission('s1', true)] })
     expect(await sendReply(params, deps)).toEqual({ ok: false, error: 'already_replied' })
+  })
+
+  it('ほかの提出の動画から作ったカードは送れない', async () => {
+    const { deps } = setup()
+    const result = await sendReply({ ...params, cards: [{ ...card, videoId: 'x' }] }, deps)
+    expect(result).toEqual({ ok: false, error: 'invalid_video' })
   })
 
   it('カードがなければ送れない', async () => {
@@ -100,10 +120,10 @@ describe('sendReply', () => {
     expect((await sendReply(params, deps)).ok).toBe(true)
   })
 
-  it('返信していない動画が残っていれば、コーチの番のまま', async () => {
+  it('添削していない提出が残っていれば、コーチの番のまま', async () => {
     const { deps, saveReply } = setup({
       ...thread,
-      videos: [video('v1', false), video('v2', false)],
+      submissions: [submission('s1', false), submission('s2', false)],
     })
     await sendReply(params, deps)
     expect(saveReply.mock.calls[0]?.[0].nextStatus).toBe('waiting_coach')

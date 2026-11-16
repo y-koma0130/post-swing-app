@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { Page, PageHeader } from '@/app/components/ui/Page'
-import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
+import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import {
   absenceNoticeMessage,
   availabilityBanner,
@@ -14,11 +14,19 @@ import {
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
+import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
+import {
+  ANGLE_LABEL,
+  ordinalLabel,
+  STUDENT_CHAT_BLOCKER_MESSAGE,
+  SUBMISSION_BLOCKER_MESSAGE,
+  submissionLabel,
+  threadUsageText,
+} from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
-import { VideoUploadForm } from '@/app/features/video-upload/components/VideoUploadForm'
-import { formatMonthDay } from '@/app/utils/format'
+import { SubmissionForm } from '@/app/features/video-upload/components/SubmissionForm'
+import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
-import type { VideoSubmissionBlocker } from '@/server/features/thread/domain/services/checkVideoSubmission.service'
 import { getStudentThread } from '@/server/features/thread/presentation/queries'
 
 export const metadata: Metadata = { title: 'スレッド' }
@@ -27,14 +35,7 @@ type Props = {
   params: Promise<{ threadId: string }>
 }
 
-const BLOCKER_MESSAGE = {
-  awaiting_reply: 'コーチの添削を待っています。届いたら LINE でお知らせします。',
-  video_limit: 'このスレッドで送れる動画は、すべて送りました。',
-  expired: 'このスレッドは期限が切れました。',
-  closed: 'このスレッドは終了しました。',
-} as const satisfies Record<VideoSubmissionBlocker, string>
-
-/** 生徒の閲覧ページ：動画を送り、添削カードを見る */
+/** 生徒の閲覧ページ：提出・添削・チャットを時系列で見て、次を提出する */
 const ThreadViewPage = async ({ params }: Props) => {
   const { threadId } = await params
   if (!(await getActor())) redirect(`/login?next=${encodeURIComponent(`/t/${threadId}`)}`)
@@ -42,6 +43,7 @@ const ThreadViewPage = async ({ params }: Props) => {
   if (!thread) notFound()
   const availability = thread.coachAvailability
   const banner = availabilityBanner(thread.coachName, availability)
+  const { limits } = thread
 
   return (
     <Page layout="student">
@@ -53,11 +55,15 @@ const ThreadViewPage = async ({ params }: Props) => {
             {thread.coachName} さんの添削
           </span>
         }
-        title={thread.theme === '' ? '動画を送りましょう' : thread.theme}
+        title={thread.theme === '' ? '動画を提出しましょう' : thread.theme}
         description={
           <>
-            動画 {thread.videos.length}/{thread.maxVideos}本・期限{' '}
-            {formatMonthDay(thread.expiresAt)}
+            {threadUsageText({
+              submissionCount: thread.submissions.length,
+              maxSubmissions: limits.maxSubmissions,
+              remainingStudentMessages: thread.remainingStudentMessages,
+            })}
+            ・期限 {formatMonthDay(thread.expiresAt)}
             {extensionNote(thread.extendedDays)}
           </>
         }
@@ -68,37 +74,75 @@ const ThreadViewPage = async ({ params }: Props) => {
         </p>
       )}
 
-      {thread.videos.map((video, index) => (
-        <section key={video.id} className="space-y-4">
-          <h2 className="text-heading">{index + 1}本目</h2>
-          <VideoPlayer src={video.url} frameRate={video.frameRate} />
-          {video.note && <p className="text-muted text-sm whitespace-pre-wrap">{video.note}</p>}
-          {video.reply ? (
-            <ReviewCardList cards={video.reply.cards} />
-          ) : (
-            <p className="bg-surface text-muted rounded-xl p-4 text-sm">添削を待っています。</p>
-          )}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold">コーチとのチャット</h3>
-            <ChatPanel
+      <ThreadTimeline
+        submissions={thread.submissions}
+        messages={thread.messages}
+        notices={thread.notices}
+        viewer="student"
+        noticeText={(n) => absenceNoticeMessage(thread.coachName, n.absenceEndDate)}
+        renderSubmission={(submission, index) => (
+          <section className="space-y-3">
+            <h2 className="text-heading flex items-baseline justify-between gap-2">
+              {submissionLabel(index)}
+              <span className="text-caption text-muted font-normal">
+                {formatDateTime(submission.submittedAt)}
+              </span>
+            </h2>
+            {submission.videos.map((video) => (
+              <div key={video.id} className="space-y-1">
+                {submission.videos.length > 1 && (
+                  <p className="text-caption text-muted font-bold">{ANGLE_LABEL[video.angle]}</p>
+                )}
+                <VideoPlayer src={video.url} frameRate={video.frameRate} />
+              </div>
+            ))}
+            {submission.note && (
+              <p className="text-muted text-sm whitespace-pre-wrap">{submission.note}</p>
+            )}
+          </section>
+        )}
+        renderReply={(submission, index) =>
+          submission.reply && (
+            <section className="space-y-3">
+              <h2 className="text-heading">
+                {thread.coachName} さんの添削
+                <span className="text-caption text-muted ml-2 font-normal">
+                  {submissionLabel(index)}へ
+                </span>
+              </h2>
+              <ReviewCardList
+                cards={submission.reply.cards}
+                videoLabel={(videoId) => {
+                  const video = submission.videos.find((v) => v.id === videoId)
+                  return video && submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
+                }}
+              />
+            </section>
+          )
+        }
+      />
+
+      {thread.submissions.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold">コーチに質問する</h2>
+          {thread.studentChatBlocker === null ? (
+            <ChatComposer
               threadId={thread.id}
-              video={video}
               viewer="student"
-              closed={thread.status === 'closed'}
-              notices={video.notices.map((n) => ({
-                id: n.id,
-                text: absenceNoticeMessage(thread.coachName, n.absenceEndDate),
-                createdAt: n.createdAt,
-              }))}
+              remaining={thread.remainingStudentMessages}
               inputHint={chatReplyHint(thread.coachName, availability)}
               guard={thread.sendGuard.chat}
               confirmMessage={
                 sendConfirmMessage('chat', thread.coachName, availability) ?? undefined
               }
             />
-          </div>
+          ) : (
+            <p className="text-caption text-muted">
+              {STUDENT_CHAT_BLOCKER_MESSAGE[thread.studentChatBlocker]}
+            </p>
+          )}
         </section>
-      ))}
+      )}
 
       {thread.status === 'closed' && (
         <section className="space-y-3">
@@ -117,14 +161,18 @@ const ThreadViewPage = async ({ params }: Props) => {
 
       <section className="space-y-4">
         <h2 className="text-heading">
-          {thread.videos.length === 0 ? '動画を送る' : '撮り直して送る'}
+          {thread.submissions.length === 0
+            ? '動画を提出する'
+            : `${ordinalLabel(thread.submissions.length)}を提出する`}
         </h2>
-        {thread.videoSubmissionBlocker === null ? (
+        {thread.submissionBlocker === null ? (
           <Card>
-            <VideoUploadForm
+            <SubmissionForm
               threadId={thread.id}
-              needsTheme={thread.videos.length === 0}
-              maxBytes={thread.maxVideoBytes}
+              needsTheme={thread.submissions.length === 0}
+              maxVideos={limits.maxVideosPerSubmission}
+              maxBytes={limits.maxVideoBytes}
+              maxSeconds={limits.maxVideoSeconds}
               confirmMessage={
                 thread.sendGuard.video === 'none'
                   ? null
@@ -139,7 +187,7 @@ const ThreadViewPage = async ({ params }: Props) => {
           </Card>
         ) : (
           <p className="bg-surface text-muted rounded-xl p-4 text-sm">
-            {BLOCKER_MESSAGE[thread.videoSubmissionBlocker]}
+            {SUBMISSION_BLOCKER_MESSAGE[thread.submissionBlocker]}
           </p>
         )}
       </section>

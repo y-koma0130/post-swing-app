@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { chatMessageSchema } from './ChatMessage'
-import { swingVideoSchema } from './SwingVideo'
+import { submissionSchema } from './Submission'
 import { threadIdSchema } from './ThreadId'
 import { type ThreadStatus, threadStatusSchema } from './ThreadStatus'
 
@@ -10,8 +10,9 @@ import { type ThreadStatus, threadStatusSchema } from './ThreadStatus'
  *
  * ドメインルール:
  * - 期間は開始から30日
- * - 動画はお試し1本、それ以外は3本まで
- * - テーマは最初の動画を送るときに生徒が書く
+ * - 提出はお試し1回、それ以外は3回まで（1回に動画2本まで）
+ * - チャットはスレッドに1本の流れ
+ * - テーマは最初の提出のときに生徒が書く
  */
 export const threadSchema = z.object({
   id: threadIdSchema,
@@ -23,7 +24,7 @@ export const threadSchema = z.object({
   startedAt: z.coerce.date(),
   expiresAt: z.coerce.date(),
   closedAt: z.coerce.date().nullable(),
-  videos: z.array(swingVideoSchema),
+  submissions: z.array(submissionSchema),
   messages: z.array(chatMessageSchema),
 })
 

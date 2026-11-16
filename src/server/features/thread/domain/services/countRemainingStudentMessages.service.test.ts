@@ -1,24 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { countRemainingStudentMessages } from './countRemainingStudentMessages.service'
 
-const message = (videoId: string, from: 'student' | 'coach') => ({
-  id: crypto.randomUUID(),
-  videoId,
+const message = (from: 'coach' | 'student') => ({
+  id: 'm',
   from,
-  body: 'テスト',
+  body: 'はい',
   sentAt: new Date(),
 })
 
 describe('countRemainingStudentMessages', () => {
-  it('生徒の送信だけを数え、動画ごとに3通から引く', () => {
-    const thread = {
-      messages: [message('v1', 'student'), message('v1', 'coach'), message('v2', 'student')],
-    }
-    expect(countRemainingStudentMessages(thread, 'v1')).toBe(2)
+  it('生徒はスレッド全体で30通。コーチの分は数えない', () => {
+    expect(countRemainingStudentMessages({ planKind: 'single', messages: [] })).toBe(30)
+    const messages = [message('student'), message('coach'), message('student')]
+    expect(countRemainingStudentMessages({ planKind: 'monthly', messages })).toBe(28)
   })
 
-  it('3通を超えても0未満にならない', () => {
-    const thread = { messages: Array.from({ length: 5 }, () => message('v1', 'student')) }
-    expect(countRemainingStudentMessages(thread, 'v1')).toBe(0)
+  it('お試しは10通', () => {
+    expect(countRemainingStudentMessages({ planKind: 'trial', messages: [] })).toBe(10)
+  })
+
+  it('使い切ったら0（マイナスにしない）', () => {
+    const messages = Array.from({ length: 12 }, () => message('student'))
+    expect(countRemainingStudentMessages({ planKind: 'trial', messages })).toBe(0)
   })
 })

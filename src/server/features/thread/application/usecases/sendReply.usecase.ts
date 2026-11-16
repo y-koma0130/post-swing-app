@@ -12,18 +12,21 @@ import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 
 export type NewReply = Readonly<{
   id: string
-  videoId: string
+  submissionId: string
   threadId: string
   sentAt: Date
   nextStatus: ThreadStatus
-  cards: ReadonlyArray<ReviewCard & { id: string; sortOrder: number; imageR2Key: string }>
+  cards: ReadonlyArray<
+    ReviewCard & { id: string; videoId: string; sortOrder: number; imageR2Key: string }
+  >
 }>
 
 export type SendReplyParams = Readonly<{
   actor: Actor
   threadId: string
-  videoId: string
-  cards: ReadonlyArray<ReviewCard & { imageBytes: number }>
+  submissionId: string
+  /** videoId：カードを作った動画（その提出の正面・後方など） */
+  cards: ReadonlyArray<ReviewCard & { imageBytes: number; videoId: string }>
   now: Date
 }>
 
@@ -47,18 +50,24 @@ export type SendReply = (
 ) => Promise<Result<{ replyId: string }, SendReplyError>>
 
 /**
- * コーチが動画に添削カードを返す（カードをまとめて1通で送る。返せるかは checkReplySubmission で決める）
+ * コーチが提出に添削カードを返す（提出の動画すべてについて、カードをまとめて1通で送る。
+ * 返せるかは checkReplySubmission で決める）
  */
 export const sendReply: SendReply = async (params, deps) => {
   const thread = await deps.findThread(params.threadId)
-  const video = thread?.videos.find((v) => v.id === params.videoId)
-  if (!thread || !video || thread.coachUserId !== params.actor.userId) {
+  const submission = thread?.submissions.find((s) => s.id === params.submissionId)
+  if (!thread || !submission || thread.coachUserId !== params.actor.userId) {
     return err('not_found')
   }
   const drillIds = requestedDrillIds(params.cards)
   const ownDrillIds =
     drillIds.length > 0 ? await deps.findOwnDrillIds(thread.coachUserId, drillIds) : []
-  const blocker = checkReplySubmission({ thread, video, cards: params.cards, ownDrillIds })
+  const blocker = checkReplySubmission({
+    thread,
+    submission,
+    cards: params.cards,
+    ownDrillIds,
+  })
   if (blocker) {
     return err(blocker)
   }
@@ -71,6 +80,7 @@ export const sendReply: SendReply = async (params, deps) => {
       await deps.storeCardImage(imageR2Key, index)
       return {
         id,
+        videoId: card.videoId,
         sortOrder: index,
         imageR2Key,
         position: card.position,
@@ -83,7 +93,7 @@ export const sendReply: SendReply = async (params, deps) => {
   )
   await deps.saveReply({
     id: replyId,
-    videoId: video.id,
+    submissionId: submission.id,
     threadId: thread.id,
     sentAt: params.now,
     nextStatus: nextStatusAfter(thread, 'coach_replied'),

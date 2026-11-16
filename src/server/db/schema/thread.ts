@@ -49,7 +49,26 @@ export const thread = sqliteTable(
   ]
 )
 
-/** 生徒が送った動画。本体は R2 に置き、ここには場所だけを持つ */
+/** 生徒の提出（1回に動画1〜2本とメモ）。コーチは提出ごとに1回添削を返す */
+export const submission = sqliteTable(
+  'submission',
+  {
+    id: text().primaryKey(),
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    note: text().notNull(),
+    submittedAt: integer({ mode: 'timestamp_ms' }).notNull(),
+    /** 提出したとき、コーチが不在中だったか（あとで返信時間を集計するときに除く） */
+    sentDuringAbsenceId: text(),
+  },
+  (t) => [index('submission_thread_idx').on(t.threadId)]
+)
+
+/**
+ * 生徒が上げた動画。本体は R2 に置き、ここには場所だけを持つ。
+ * 上げた時点では下書き（submission_id が null）で、提出したときにひも付ける
+ */
 export const video = sqliteTable(
   'video',
   {
@@ -57,28 +76,36 @@ export const video = sqliteTable(
     threadId: text()
       .notNull()
       .references(() => thread.id),
+    /** null なら下書き（コーチには見せない。24時間で消す） */
+    submissionId: text().references(() => submission.id),
+    uploaderUserId: text()
+      .notNull()
+      .references(() => user.id),
+    angle: text({ enum: ['front', 'back', 'other'] }).notNull(),
     r2Key: text().notNull(),
     contentType: text().notNull(),
     sizeBytes: integer().notNull(),
-    note: text().notNull(),
+    /** 送る前にブラウザで測った長さ（秒）。測れなかったときは null */
+    durationSec: real(),
     /** 送る前にブラウザで測ったフレームレート。分からない（変換せずに送った）ときは null */
     frameRate: real(),
-    /** 送られたとき、コーチが不在中だったか（あとで返信時間を集計するときに除く） */
-    sentDuringAbsenceId: text(),
     uploadedAt: integer({ mode: 'timestamp_ms' }).notNull(),
     /** 保存期間を過ぎて R2 から消した日時 */
     deletedAt: integer({ mode: 'timestamp_ms' }),
   },
-  (t) => [index('video_thread_idx').on(t.threadId)]
+  (t) => [
+    index('video_thread_idx').on(t.threadId),
+    index('video_submission_idx').on(t.submissionId),
+  ]
 )
 
-/** 動画1本へのコーチの返信（添削カードをまとめて1通で送る） */
+/** 提出へのコーチの添削（添削カードをまとめて1通で送る） */
 export const reply = sqliteTable('reply', {
   id: text().primaryKey(),
-  videoId: text()
+  submissionId: text()
     .notNull()
     .unique()
-    .references(() => video.id),
+    .references(() => submission.id),
   sentAt: integer({ mode: 'timestamp_ms' }).notNull(),
 })
 
@@ -90,6 +117,10 @@ export const reviewCard = sqliteTable(
     replyId: text()
       .notNull()
       .references(() => reply.id),
+    /** どの動画（正面・後方など）から作ったカードか */
+    videoId: text()
+      .notNull()
+      .references(() => video.id),
     sortOrder: integer().notNull(),
     position: text({ enum: ['address', 'top', 'impact', 'finish'] }).notNull(),
     timeSec: real().notNull(),
@@ -103,7 +134,7 @@ export const reviewCard = sqliteTable(
   (t) => [index('review_card_reply_idx').on(t.replyId)]
 )
 
-/** チャット。動画ごとに数える（生徒は動画1本につき3通まで） */
+/** チャット。スレッドに1本の流れ（生徒はスレッド全体で上限まで） */
 export const chatMessage = sqliteTable(
   'chat_message',
   {
@@ -111,9 +142,6 @@ export const chatMessage = sqliteTable(
     threadId: text()
       .notNull()
       .references(() => thread.id),
-    videoId: text()
-      .notNull()
-      .references(() => video.id),
     senderRole: text({ enum: ['coach', 'student'] }).notNull(),
     senderUserId: text()
       .notNull()
@@ -155,10 +183,10 @@ export const threadNotice = sqliteTable(
     threadId: text()
       .notNull()
       .references(() => thread.id),
-    /** どの動画のやりとりの中で出すか */
-    videoId: text()
+    /** どの提出のときに出したか */
+    submissionId: text()
       .notNull()
-      .references(() => video.id),
+      .references(() => submission.id),
     absenceId: text().notNull(),
     absenceEndDate: text().notNull(),
     createdAt: integer({ mode: 'timestamp_ms' }).notNull(),

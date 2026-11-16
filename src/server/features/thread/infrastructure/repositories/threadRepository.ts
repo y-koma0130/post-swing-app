@@ -1,11 +1,12 @@
 import 'server-only'
-import { and, asc, eq, gt, inArray, isNull, lt, lte, ne } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import {
   absenceAck,
   chatMessage,
   reply,
   reviewCard,
+  submission,
   thread,
   threadNotice,
   video,
@@ -13,7 +14,9 @@ import {
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
-import type { NewVideo } from '../../application/usecases/submitVideo.usecase'
+import type { NewSubmission } from '../../application/usecases/submitSubmission.usecase'
+import type { NewDraftVideo } from '../../application/usecases/uploadVideo.usecase'
+import type { DraftVideo } from '../../domain/values/Submission'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
 import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
 
@@ -24,17 +27,23 @@ export const findThread: FindThread = async (threadId) => {
   if (!row) {
     return null
   }
-  const [videos, messages] = await Promise.all([
+  const [submissions, videos, messages] = await Promise.all([
     db
       .select({
-        id: video.id,
-        uploadedAt: video.uploadedAt,
-        note: video.note,
+        id: submission.id,
+        submittedAt: submission.submittedAt,
+        note: submission.note,
         replyId: reply.id,
       })
+      .from(submission)
+      .leftJoin(reply, eq(reply.submissionId, submission.id))
+      .where(eq(submission.threadId, threadId))
+      .orderBy(asc(submission.submittedAt))
+      .all(),
+    db
+      .select({ id: video.id, submissionId: video.submissionId, angle: video.angle })
       .from(video)
-      .leftJoin(reply, eq(reply.videoId, video.id))
-      .where(eq(video.threadId, threadId))
+      .where(and(eq(video.threadId, threadId), isNotNull(video.submissionId)))
       .orderBy(asc(video.uploadedAt))
       .all(),
     db
@@ -46,46 +55,78 @@ export const findThread: FindThread = async (threadId) => {
   ])
   return threadSchema.parse({
     ...row,
-    videos: videos.map((v) => ({
-      id: v.id,
-      uploadedAt: v.uploadedAt,
-      note: v.note,
-      replied: v.replyId !== null,
+    submissions: submissions.map((s) => ({
+      id: s.id,
+      submittedAt: s.submittedAt,
+      note: s.note,
+      videos: videos
+        .filter((v) => v.submissionId === s.id)
+        .map((v) => ({ id: v.id, angle: v.angle })),
+      replied: s.replyId !== null,
     })),
     messages: messages.map((m) => ({
       id: m.id,
-      videoId: m.videoId,
       from: m.senderRole,
       body: m.body,
       sentAt: m.sentAt,
-      sentDuringAbsenceId: m.sentDuringAbsenceId,
     })),
   })
 }
 
-export type SaveVideo = (v: NewVideo) => Promise<void>
-export const saveVideo: SaveVideo = async (v) => {
+export type SaveDraftVideo = (v: NewDraftVideo) => Promise<void>
+/** 提出前の動画（下書き）を記録する。スレッドの状態は変えない */
+export const saveDraftVideo: SaveDraftVideo = async (v) => {
+  await getDb()
+    .insert(video)
+    .values({ ...v, submissionId: null })
+}
+
+export type FindDraftVideos = (videoIds: ReadonlyArray<string>) => Promise<DraftVideo[]>
+export const findDraftVideos: FindDraftVideos = async (videoIds) => {
+  if (videoIds.length === 0) return []
+  return getDb()
+    .select({
+      id: video.id,
+      threadId: video.threadId,
+      uploaderUserId: video.uploaderUserId,
+      submissionId: video.submissionId,
+      angle: video.angle,
+    })
+    .from(video)
+    .where(and(inArray(video.id, [...videoIds]), isNull(video.deletedAt)))
+    .all()
+}
+
+export type SaveSubmission = (s: NewSubmission) => Promise<void>
+/** 提出を作り、動画をひも付け、スレッドの状態（と最初ならテーマ）を変える。まとめて1回で書く */
+export const saveSubmission: SaveSubmission = async (s) => {
   const db = getDb()
   await db.batch([
-    db.insert(video).values({
-      id: v.id,
-      threadId: v.threadId,
-      r2Key: v.r2Key,
-      contentType: v.contentType,
-      sizeBytes: v.sizeBytes,
-      note: v.note,
-      frameRate: v.frameRate,
-      sentDuringAbsenceId: v.sentDuringAbsenceId,
-      uploadedAt: v.uploadedAt,
+    db.insert(submission).values({
+      id: s.id,
+      threadId: s.threadId,
+      note: s.note,
+      submittedAt: s.submittedAt,
+      sentDuringAbsenceId: s.sentDuringAbsenceId,
     }),
+    db
+      .update(video)
+      .set({ submissionId: s.id })
+      .where(
+        and(
+          inArray(video.id, [...s.videoIds]),
+          eq(video.threadId, s.threadId),
+          isNull(video.submissionId)
+        )
+      ),
     db
       .update(thread)
       .set({
-        status: v.nextStatus,
-        ...(v.theme === null ? {} : { theme: v.theme }),
-        updatedAt: v.uploadedAt,
+        status: s.nextStatus,
+        ...(s.theme === null ? {} : { theme: s.theme }),
+        updatedAt: s.submittedAt,
       })
-      .where(eq(thread.id, v.threadId)),
+      .where(eq(thread.id, s.threadId)),
   ])
 }
 
@@ -96,6 +137,7 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
       r2Key: video.r2Key,
       contentType: video.contentType,
       deletedAt: video.deletedAt,
+      submissionId: video.submissionId,
       coachUserId: thread.coachUserId,
       studentUserId: thread.studentUserId,
     })
@@ -110,17 +152,20 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
     r2Key: row.r2Key,
     contentType: row.contentType,
     deleted: row.deletedAt !== null,
+    draft: row.submissionId === null,
     members: { coachUserId: row.coachUserId, studentUserId: row.studentUserId },
   }
 }
 
-/** 複数のスレッドの動画の本数（一覧用） */
-export const countVideosByThread = async (threadIds: string[]): Promise<Map<string, number>> => {
+/** 複数のスレッドの提出の回数（一覧用） */
+export const countSubmissionsByThread = async (
+  threadIds: string[]
+): Promise<Map<string, number>> => {
   if (threadIds.length === 0) return new Map()
   const rows = await getDb()
-    .select({ threadId: video.threadId })
-    .from(video)
-    .where(inArray(video.threadId, threadIds))
+    .select({ threadId: submission.threadId })
+    .from(submission)
+    .where(inArray(submission.threadId, threadIds))
     .all()
   const counts = new Map<string, number>()
   for (const row of rows) {
@@ -136,6 +181,7 @@ export const saveReply: SaveReply = async (r) => {
     db.insert(reviewCard).values({
       id: card.id,
       replyId: r.id,
+      videoId: card.videoId,
       sortOrder: card.sortOrder,
       position: card.position,
       timeSec: card.timeSec,
@@ -147,7 +193,7 @@ export const saveReply: SaveReply = async (r) => {
   )
   if (!firstCard) return
   await db.batch([
-    db.insert(reply).values({ id: r.id, videoId: r.videoId, sentAt: r.sentAt }),
+    db.insert(reply).values({ id: r.id, submissionId: r.submissionId, sentAt: r.sentAt }),
     firstCard,
     ...restCards,
     db
@@ -164,7 +210,6 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
     db.insert(chatMessage).values({
       id: m.id,
       threadId: m.threadId,
-      videoId: m.videoId,
       senderRole: m.senderRole,
       senderUserId: m.senderUserId,
       body: m.body,
@@ -188,8 +233,8 @@ export const findStoredCardImage: FindStoredCardImage = async (cardId) => {
     })
     .from(reviewCard)
     .innerJoin(reply, eq(reply.id, reviewCard.replyId))
-    .innerJoin(video, eq(video.id, reply.videoId))
-    .innerJoin(thread, eq(thread.id, video.threadId))
+    .innerJoin(submission, eq(submission.id, reply.submissionId))
+    .innerJoin(thread, eq(thread.id, submission.threadId))
     .where(eq(reviewCard.id, cardId))
     .get()
   if (!row) return null
@@ -197,92 +242,9 @@ export const findStoredCardImage: FindStoredCardImage = async (cardId) => {
     r2Key: row.r2Key,
     contentType: 'image/png',
     deleted: false,
+    draft: false,
     members: { coachUserId: row.coachUserId, studentUserId: row.studentUserId },
   }
-}
-
-export type FindExpiredOpenThreads = (now: Date) => Promise<Thread[]>
-export const findExpiredOpenThreads: FindExpiredOpenThreads = async (now) => {
-  const rows = await getDb()
-    .select({ id: thread.id })
-    .from(thread)
-    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, now)))
-    .all()
-  const threads = await Promise.all(rows.map((row) => findThread(row.id)))
-  return threads.filter((t): t is Thread => t !== null)
-}
-
-export type CloseThreads = (threadIds: string[], closedAt: Date) => Promise<void>
-export const closeThreads: CloseThreads = async (threadIds, closedAt) => {
-  await getDb()
-    .update(thread)
-    .set({ status: 'closed', closedAt, updatedAt: closedAt })
-    .where(inArray(thread.id, threadIds))
-}
-
-export type FindOpenThreadsExpiringBy = (to: Date) => Promise<
-  Array<{
-    id: string
-    coachUserId: string
-    studentUserId: string
-    startedAt: Date
-    expiresAt: Date
-  }>
->
-/** 保存した期限が to より前の、終了していないスレッド（実際の期限は domain が不在の分だけ延ばして判定する） */
-export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =>
-  getDb()
-    .select({
-      id: thread.id,
-      coachUserId: thread.coachUserId,
-      studentUserId: thread.studentUserId,
-      startedAt: thread.startedAt,
-      expiresAt: thread.expiresAt,
-    })
-    .from(thread)
-    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, to)))
-    .all()
-
-export type FindUnrepliedVideosSince = (
-  since: Date
-) => Promise<Array<{ threadId: string; coachUserId: string; uploadedAt: Date }>>
-/** since より後に届き、まだ返信していない動画（終了していないスレッド） */
-export const findUnrepliedVideosSince: FindUnrepliedVideosSince = async (since) =>
-  getDb()
-    .select({
-      threadId: video.threadId,
-      coachUserId: thread.coachUserId,
-      uploadedAt: video.uploadedAt,
-    })
-    .from(video)
-    .innerJoin(thread, eq(thread.id, video.threadId))
-    .leftJoin(reply, eq(reply.videoId, video.id))
-    .where(
-      and(
-        ne(thread.status, 'closed'),
-        isNull(reply.id),
-        isNull(video.deletedAt),
-        gt(video.uploadedAt, since)
-      )
-    )
-    .all()
-
-export type FindVideosToDelete = (
-  closedBefore: Date
-) => Promise<Array<{ id: string; r2Key: string }>>
-export const findVideosToDelete: FindVideosToDelete = async (closedBefore) =>
-  getDb()
-    .select({ id: video.id, r2Key: video.r2Key })
-    .from(video)
-    .innerJoin(thread, eq(thread.id, video.threadId))
-    .where(
-      and(eq(thread.status, 'closed'), lt(thread.closedAt, closedBefore), isNull(video.deletedAt))
-    )
-    .all()
-
-export type MarkVideosDeleted = (videoIds: string[], deletedAt: Date) => Promise<void>
-export const markVideosDeleted: MarkVideosDeleted = async (videoIds, deletedAt) => {
-  await getDb().update(video).set({ deletedAt }).where(inArray(video.id, videoIds))
 }
 
 /** 都度払いは申し込み、月額は請求で、すでにスレッドがあるか（Webhook が二重に届いても1つだけ作る） */
@@ -364,36 +326,4 @@ export const saveAbsenceAck: SaveAbsenceAck = async ({
     .insert(absenceAck)
     .values({ studentUserId, threadId, absenceId, createdAt: at })
     .onConflictDoNothing()
-}
-
-export type CountAbsenceBacklog = (
-  absenceId: string
-) => Promise<{ videoCount: number; chatCount: number }>
-/** 不在中に届いて、まだ返信していない動画と、生徒からの質問（チャット）の数 */
-export const countAbsenceBacklog: CountAbsenceBacklog = async (absenceId) => {
-  const db = getDb()
-  const [videos, chats] = await Promise.all([
-    db
-      .select({ id: video.id })
-      .from(video)
-      .innerJoin(thread, eq(thread.id, video.threadId))
-      .leftJoin(reply, eq(reply.videoId, video.id))
-      .where(
-        and(
-          eq(video.sentDuringAbsenceId, absenceId),
-          isNull(reply.id),
-          isNull(video.deletedAt),
-          ne(thread.status, 'closed')
-        )
-      )
-      .all(),
-    db
-      .select({ id: chatMessage.id })
-      .from(chatMessage)
-      .where(
-        and(eq(chatMessage.sentDuringAbsenceId, absenceId), eq(chatMessage.senderRole, 'student'))
-      )
-      .all(),
-  ])
-  return { videoCount: videos.length, chatCount: chats.length }
 }

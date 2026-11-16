@@ -1,28 +1,24 @@
 import { err, ok, type Result } from '@/server/utils/result'
 import { VIDEO_RULES } from '../rules'
-import { type Thread, threadThemeSchema } from '../values/Thread'
+import { type VideoAngle, videoAngleSchema } from '../values/VideoAngle'
 
-export type VideoUploadBlocker =
-  | 'unsupported_type'
-  | 'too_large'
-  | 'note_too_long'
-  | 'theme_required'
+export type VideoUploadBlocker = 'unsupported_type' | 'too_large' | 'too_long' | 'invalid_angle'
 
 export type AcceptedVideoUpload = Readonly<{
-  note: string
-  /** 最初の動画のときだけ。スレッドのテーマになる */
-  theme: string | null
+  angle: VideoAngle
   /** 範囲外の値は記録しない */
   frameRate: number | null
+  /** 測れなかったときは null */
+  durationSec: number | null
 }>
 
 export type CheckVideoUpload = (
   input: Readonly<{
-    thread: Pick<Thread, 'videos'>
     contentType: string
     sizeBytes: number
-    note: string
-    theme: string
+    angle: string
+    /** 生徒のブラウザが測った長さ（秒）。測れなければ null */
+    durationSec: number | null
     frameRate: number | null
   }>
 ) => Result<AcceptedVideoUpload, VideoUploadBlocker>
@@ -39,25 +35,27 @@ const acceptFrameRate = (frameRate: number | null): number | null =>
     : null
 
 /**
- * 送られてきた動画ファイルと、添えられた内容を受け付けられるか
- * （スレッドがいま動画を受け付ける状態かは checkVideoSubmission で確かめる）
+ * 上げられた動画1本を受け付けられるか（スレッドがいま提出を受け付けるかは checkSubmission で確かめる）
  *
  * ドメインルール:
  * - 動画の形式は mp4・mov・webm、大きさは100MBまで
- * - メモは1000文字まで
- * - 最初の動画ではテーマ（直したいところ）を書く。2本目以降はテーマを変えない
- * - 生徒のブラウザが測ったフレームレートは、ありえない値なら記録しない（送信は止めない）
+ * - 長さは60秒まで（生徒のブラウザが測った値。測れなかったときは止めない）
+ * - 角度（正面・後方・その他）を選ぶ
+ * - フレームレートは、ありえない値なら記録しない（送信は止めない）
  */
 export const checkVideoUpload: CheckVideoUpload = (input) => {
   if (!isAllowedContentType(input.contentType)) return err('unsupported_type')
   if (input.sizeBytes <= 0 || input.sizeBytes > VIDEO_RULES.maxBytes) return err('too_large')
-  if (input.note.length > VIDEO_RULES.maxNoteLength) return err('note_too_long')
-  const isFirst = input.thread.videos.length === 0
-  const theme = isFirst ? threadThemeSchema.safeParse(input.theme) : null
-  if (theme && !theme.success) return err('theme_required')
+  const duration =
+    input.durationSec !== null && Number.isFinite(input.durationSec) && input.durationSec > 0
+      ? input.durationSec
+      : null
+  if (duration !== null && duration > VIDEO_RULES.maxDurationSeconds) return err('too_long')
+  const angle = videoAngleSchema.safeParse(input.angle)
+  if (!angle.success) return err('invalid_angle')
   return ok({
-    note: input.note.trim(),
-    theme: theme?.success ? theme.data : null,
+    angle: angle.data,
     frameRate: acceptFrameRate(input.frameRate),
+    durationSec: duration,
   })
 }

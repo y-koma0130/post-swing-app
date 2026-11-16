@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { checkReplySubmission, requestedDrillIds } from './checkReplySubmission.service'
 
 const MB = 1024 * 1024
-const card = { imageBytes: MB, drillId: null }
+const card = { imageBytes: MB, drillId: null, videoId: 'v1' }
 const base = {
   thread: { status: 'waiting_coach' as const },
-  video: { replied: false },
+  submission: {
+    replied: false,
+    videos: [
+      { id: 'v1', angle: 'front' as const },
+      { id: 'v2', angle: 'back' as const },
+    ],
+  },
   cards: [card],
   ownDrillIds: [],
 }
@@ -15,9 +21,19 @@ describe('checkReplySubmission', () => {
     expect(checkReplySubmission(base)).toBeNull()
   })
 
-  it('終了したスレッド・返信済みの動画には返せない', () => {
+  it('終了したスレッド・返信済みの提出には返せない', () => {
     expect(checkReplySubmission({ ...base, thread: { status: 'closed' } })).toBe('closed')
-    expect(checkReplySubmission({ ...base, video: { replied: true } })).toBe('already_replied')
+    expect(
+      checkReplySubmission({ ...base, submission: { ...base.submission, replied: true } })
+    ).toBe('already_replied')
+  })
+
+  it('カードは、その提出のどちらの動画からも作れる。ほかの動画からは作れない', () => {
+    const cards = [card, { ...card, videoId: 'v2' }]
+    expect(checkReplySubmission({ ...base, cards })).toBeNull()
+    expect(checkReplySubmission({ ...base, cards: [{ ...card, videoId: 'x' }] })).toBe(
+      'invalid_video'
+    )
   })
 
   it('カードは1〜8枚', () => {

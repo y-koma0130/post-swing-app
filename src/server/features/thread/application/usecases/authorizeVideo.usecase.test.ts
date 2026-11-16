@@ -5,6 +5,7 @@ const stored: StoredVideo = {
   r2Key: 'videos/t1/v1',
   contentType: 'video/mp4',
   deleted: false,
+  draft: false,
   members: { coachUserId: 'coach-1', studentUserId: 'student-1' },
 }
 
@@ -37,6 +38,16 @@ describe('authorizeVideo', () => {
         { actor: { userId: 'student-1', name: '' }, videoId: 'v1' },
         deps({ ...stored, deleted: true })
       )
+    ).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('提出前の下書きは、上げた生徒だけが見られる（コーチにも見せない）', async () => {
+    const draft = deps({ ...stored, draft: true })
+    expect(
+      (await authorizeVideo({ actor: { userId: 'student-1', name: '' }, videoId: 'v1' }, draft)).ok
+    ).toBe(true)
+    expect(
+      await authorizeVideo({ actor: { userId: 'coach-1', name: '' }, videoId: 'v1' }, draft)
     ).toEqual({ ok: false, error: 'not_found' })
   })
 

@@ -27,12 +27,14 @@ describe('notifyAbsenceEnded', () => {
       {
         findAbsencesEndingOn,
         countAbsenceBacklog: async (id) =>
-          id === 'a1' ? { videoCount: 2, chatCount: 1 } : { videoCount: 0, chatCount: 0 },
+          id === 'a1' ? { submissionCount: 2, chatCount: 1 } : { submissionCount: 0, chatCount: 0 },
         notifyAbsenceEnded: notify,
       }
     )
     expect(findAbsencesEndingOn).toHaveBeenCalledWith('2026-11-23')
-    expect(notify.mock.calls).toEqual([[{ coachUserId: 'coach-1', videoCount: 2, chatCount: 1 }]])
+    expect(notify.mock.calls).toEqual([
+      [{ coachUserId: 'coach-1', submissionCount: 2, chatCount: 1 }],
+    ])
     expect(result).toEqual({ ok: true, value: { notified: 1 } })
   })
 })

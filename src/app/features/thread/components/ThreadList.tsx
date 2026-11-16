@@ -37,7 +37,7 @@ export const ThreadList = ({ threads, viewer }: Props) => (
             <div className="flex shrink-0 flex-col items-end gap-1">
               <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
               <p className="text-caption text-muted">
-                動画 {t.videoCount}本・期限 {formatMonthDay(t.expiresAt)}
+                提出 {t.submissionCount}/{t.maxSubmissions}回・期限 {formatMonthDay(t.expiresAt)}
               </p>
             </div>
           </Card>

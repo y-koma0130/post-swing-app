@@ -26,26 +26,40 @@ type Dependencies = Readonly<{
     }>
   >
   notifyThreadExpiring: (input: { threadId: string; studentUserId: string }) => Promise<void>
-  /** since より後に届き、まだ返信していない動画（終了していないスレッド） */
-  findUnrepliedVideosSince: (
+  /** since より後に届き、まだ添削していない提出（終了していないスレッド） */
+  findUnrepliedSubmissionsSince: (
     since: Date
-  ) => Promise<Array<{ threadId: string; coachUserId: string; uploadedAt: Date }>>
+  ) => Promise<Array<{ threadId: string; coachUserId: string; submittedAt: Date }>>
   notifyReplyOverdue: (input: { threadId: string; coachUserId: string }) => Promise<void>
   /** closedBefore より前に終了したスレッドの、まだ消していない動画 */
   findVideosToDelete: (closedBefore: Date) => Promise<Array<{ id: string; r2Key: string }>>
   deleteMediaObject: (r2Key: string) => Promise<void>
   markVideosDeleted: (videoIds: string[], deletedAt: Date) => Promise<void>
+  /** createdBefore より前に上げて、提出に使われなかった動画（下書き） */
+  findDraftVideosToDelete: (createdBefore: Date) => Promise<Array<{ id: string; r2Key: string }>>
+  /** 下書きの動画の記録を消す（提出に使われていないので、残す理由がない） */
+  deleteDraftVideos: (videoIds: string[]) => Promise<void>
 }>
 
 export type RunThreadMaintenance = (
   params: Readonly<{ now: Date }>,
   dependencies: Dependencies
 ) => Promise<
-  Result<{ closed: number; reminded: number; overdue: number; deletedVideos: number }, never>
+  Result<
+    {
+      closed: number
+      reminded: number
+      overdue: number
+      deletedVideos: number
+      deletedDrafts: number
+    },
+    never
+  >
 >
 
 /**
- * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、返信の遅れのお知らせ、古い動画の削除
+ * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、返信の遅れのお知らせ、古い動画と
+ * 提出されなかった動画（下書き）の削除
  *
  * 判定は domain に任せる：期限は calcEffectiveExpiry（不在の分だけ延びる）、終了は shouldCloseThread、
  * 返信の期限は calcReplyDueAt、日付は calcMaintenanceDates
@@ -55,12 +69,12 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
   const [expired, expiring, unreplied] = await Promise.all([
     deps.findExpiredOpenThreads(now),
     deps.findOpenThreadsExpiringBy(dates.remindExpiringTo),
-    deps.findUnrepliedVideosSince(dates.unrepliedSince),
+    deps.findUnrepliedSubmissionsSince(dates.unrepliedSince),
   ])
   const absences = await deps.findAbsencesForCoaches([
     ...expired.map((t) => t.coachUserId),
     ...expiring.map((t) => t.coachUserId),
-    ...unreplied.map((v) => v.coachUserId),
+    ...unreplied.map((s) => s.coachUserId),
   ])
   const absencesOf = (coachUserId: string) => absences.get(coachUserId) ?? []
 
@@ -82,11 +96,11 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     await deps.notifyThreadExpiring({ threadId: t.id, studentUserId: t.studentUserId })
   }
 
-  // 1スレッドに遅れた動画が何本あっても、知らせるのは1回
+  // 1スレッドに遅れた提出がいくつあっても、知らせるのは1回
   const overdue = new Map<string, string>()
-  for (const v of unreplied) {
-    if (isReplyDuePassedToday(calcReplyDueAt(v.uploadedAt, absencesOf(v.coachUserId)), now)) {
-      overdue.set(v.threadId, v.coachUserId)
+  for (const s of unreplied) {
+    if (isReplyDuePassedToday(calcReplyDueAt(s.submittedAt, absencesOf(s.coachUserId)), now)) {
+      overdue.set(s.threadId, s.coachUserId)
     }
   }
   for (const [threadId, coachUserId] of overdue) {
@@ -104,10 +118,19 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     )
   }
 
+  const drafts = await deps.findDraftVideosToDelete(dates.deleteDraftsCreatedBefore)
+  for (const v of drafts) {
+    await deps.deleteMediaObject(v.r2Key)
+  }
+  if (drafts.length > 0) {
+    await deps.deleteDraftVideos(drafts.map((v) => v.id))
+  }
+
   return ok({
     closed: toClose.length,
     reminded: toRemind.length,
     overdue: overdue.size,
     deletedVideos: videos.length,
+    deletedDrafts: drafts.length,
   })
 }

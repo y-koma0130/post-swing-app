@@ -1,12 +1,14 @@
+import { VIDEO_RULES } from '@/server/features/thread/domain/rules'
+
 /**
  * 送る前の動画の切り出しと変換の決め方（ブラウザでもネイティブアプリでも使えるよう、DOM に依存しない）
  *
- * - スイングは数秒なので、送るのは前後を含めて最大20秒まで
+ * - 送るのは1本60秒まで（スレッドのルール VIDEO_RULES.maxDurationSeconds に合わせる）
  * - 長辺は 1920px まで縮める（4K は添削に要らず、容量と変換時間だけが増える）
  * - フレームレートは元のまま（スロー撮影の 120・240fps はコマ送りで効く）
  */
 export const CLIP_RULES = {
-  maxSeconds: 20,
+  maxSeconds: VIDEO_RULES.maxDurationSeconds,
   /** 短すぎる範囲は送れない（スイングが入らない） */
   minSeconds: 0.5,
   maxLongSide: 1920,
@@ -18,7 +20,7 @@ export const CLIP_RULES = {
 
 export type ClipRange = Readonly<{ start: number; end: number }>
 
-/** 最初に選ばれている範囲。長い動画は先頭から20秒 */
+/** 最初に選ばれている範囲。長い動画は先頭から上限の秒数まで */
 export const defaultClipRange = (duration: number): ClipRange => ({
   start: 0,
   end: Math.min(duration, CLIP_RULES.maxSeconds),

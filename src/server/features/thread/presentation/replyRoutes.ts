@@ -18,27 +18,28 @@ import {
 } from '../infrastructure/repositories/threadRepository'
 
 const REPLY_ERROR = {
-  not_found: { status: 404, message: '動画が見つかりません' },
+  not_found: { status: 404, message: '提出が見つかりません' },
   closed: { status: 409, message: 'このスレッドは終了しています' },
   already_replied: {
     status: 409,
-    message: 'この動画にはもう返信しています。追加の説明はチャットで送ってください',
+    message: 'この提出にはもう添削を返しています。追加の説明はチャットで送ってください',
   },
   no_cards: { status: 400, message: 'カードを1枚以上作ってください' },
   too_many_cards: { status: 400, message: 'カードは8枚までです' },
   image_too_large: { status: 413, message: 'カードの画像が大きすぎます' },
   invalid_drill: { status: 400, message: '選んだドリルが見つかりません' },
+  invalid_video: { status: 400, message: 'この提出の動画から作ったカードだけを送れます' },
 } as const satisfies Record<SendReplyError, { status: number; message: string }>
 
 /**
  * 添削カードをまとめて受け取る（multipart）
- * - cards: カードの中身（JSON）
+ * - cards: カードの中身（JSON）。videoId はカードを作った動画（その提出の正面・後方など）
  * - image-0, image-1, …: カードごとの PNG（動画のコマと線を重ねたもの。ブラウザで作る）
  */
 export const handleReplySubmit = async (
   request: Request,
   threadId: string,
-  videoId: string
+  submissionId: string
 ): Promise<Response> => {
   const actor = await getActor()
   if (!actor) {
@@ -47,7 +48,7 @@ export const handleReplySubmit = async (
   const form = await request.formData()
   const rawCards = form.get('cards')
   const cards = z
-    .array(reviewCardSchema)
+    .array(reviewCardSchema.extend({ videoId: z.string().min(1) }))
     .safeParse(typeof rawCards === 'string' ? parseJson(rawCards) : null)
   if (!cards.success) {
     return Response.json(
@@ -67,7 +68,7 @@ export const handleReplySubmit = async (
     {
       actor,
       threadId,
-      videoId,
+      submissionId,
       cards: cards.data.map((card, index) => ({ ...card, imageBytes: files[index]?.size ?? 0 })),
       now: new Date(),
     },

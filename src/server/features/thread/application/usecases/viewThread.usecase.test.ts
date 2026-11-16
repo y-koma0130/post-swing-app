@@ -17,11 +17,20 @@ const detail: ThreadDetailDto = {
   extendedDays: 0,
   coachAvailability: { kind: 'available', replyTargetHours: 48 },
   sendGuard: { video: 'none', chat: 'none' },
-  maxVideos: 3,
-  maxVideoBytes: 100,
-  videoSubmissionBlocker: null,
+  limits: {
+    maxSubmissions: 3,
+    maxVideosPerSubmission: 2,
+    maxVideoBytes: 100,
+    maxVideoSeconds: 60,
+    maxStudentMessages: 30,
+  },
+  submissionBlocker: null,
+  remainingStudentMessages: 30,
+  studentChatBlocker: 'no_submission',
   review: null,
-  videos: [],
+  submissions: [],
+  messages: [],
+  notices: [],
 }
 const members = { coachUserId: 'coach-1', studentUserId: 'student-1' }
 const deps = {
@@ -63,7 +72,13 @@ describe('viewThread', () => {
 })
 
 describe('authorizeVideo', () => {
-  const stored = { r2Key: 'videos/t/v', contentType: 'video/mp4', deleted: false, members }
+  const stored = {
+    r2Key: 'videos/t/v',
+    contentType: 'video/mp4',
+    deleted: false,
+    draft: false,
+    members,
+  }
   const run = (userId: string, video = stored) =>
     authorizeVideo(
       { actor: { userId, name: '' }, videoId: 'v' },

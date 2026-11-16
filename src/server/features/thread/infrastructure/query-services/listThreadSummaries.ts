@@ -4,10 +4,14 @@ import { getDb } from '@/server/db/client'
 import { coachProfile, thread, user } from '@/server/db/schema'
 import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
 import type { ThreadSummaryDto } from '../../application/dto/ThreadSummary.dto'
+import { THREAD_RULES } from '../../domain/rules'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
-import { countVideosByThread } from '../repositories/threadRepository'
+import { countSubmissionsByThread } from '../repositories/threadRepository'
 
-type SummaryRow = Omit<ThreadSummaryDto, 'videoCount'> & { startedAt: Date; coachUserId: string }
+type SummaryRow = Omit<ThreadSummaryDto, 'submissionCount' | 'maxSubmissions'> & {
+  startedAt: Date
+  coachUserId: string
+}
 
 /** 期限を、コーチの不在の分だけ延びた実際の期限にする */
 const withEffectiveExpiries = async (rows: SummaryRow[]): Promise<Date[]> => {
@@ -21,7 +25,12 @@ const toSummary = (
   { startedAt: _startedAt, coachUserId: _coachUserId, ...row }: SummaryRow,
   expiresAt: Date,
   counts: Map<string, number>
-): ThreadSummaryDto => ({ ...row, expiresAt, videoCount: counts.get(row.id) ?? 0 })
+): ThreadSummaryDto => ({
+  ...row,
+  expiresAt,
+  submissionCount: counts.get(row.id) ?? 0,
+  maxSubmissions: THREAD_RULES.maxSubmissionsByPlan[row.planKind],
+})
 
 const STATUS_PRIORITY = { waiting_coach: 0, waiting_student: 1, closed: 2 } as const
 
@@ -43,7 +52,7 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
     .innerJoin(user, eq(user.id, thread.studentUserId))
     .where(eq(thread.coachUserId, coachUserId))
     .all()
-  const counts = await countVideosByThread(rows.map((r) => r.id))
+  const counts = await countSubmissionsByThread(rows.map((r) => r.id))
   const effective = await withEffectiveExpiries(rows)
   return rows
     .map((row, i) => toSummary(row, effective[i] ?? row.expiresAt, counts))
@@ -73,7 +82,7 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
     .where(eq(thread.studentUserId, studentUserId))
     .orderBy(desc(thread.startedAt))
     .all()
-  const counts = await countVideosByThread(rows.map((r) => r.id))
+  const counts = await countSubmissionsByThread(rows.map((r) => r.id))
   const effective = await withEffectiveExpiries(rows)
   return rows.map((row, i) => toSummary(row, effective[i] ?? row.expiresAt, counts))
 }
