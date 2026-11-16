@@ -18,8 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "deploy:staging": "vinext-cloudflare deploy --env staging",
-    "deploy:production": "vinext-cloudflare deploy",
+    "deploy:staging": "cf deploy --mode staging",
+    "deploy:production": "cf deploy --mode production",
     "db:migrate:remote": "cf d1 migrations apply $D1_DATABASE_ID"
   },
   "dependencies": {

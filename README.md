@@ -89,7 +89,18 @@ stripe listen --forward-to localhost:5173/api/webhooks/stripe --forward-connect-
 
 ## デプロイ
 
-GitHub Actions の「Deploy」を手動で動かす（`.github/workflows/deploy.yml`）。環境は `staging` と `production` で、Worker・D1・R2・キューは環境ごとに別（`cloudflare.config.ts`）。
+ブランチは `main`（本番）・`develop`（開発の統合先）・作業用の `feat/…`。作業は `develop` から切り、PR で `develop` に入れる。
+
+- **staging**（https://staging.swingpost.app）：`develop` に入ると GitHub Actions の「Deploy」が自動で動き、マイグレーションを当ててからデプロイする
+- **production**：「Deploy」を手動で動かし、`production` を選ぶ
+
+設定は `.github/workflows/deploy.yml`。Worker・D1・R2・キューは環境ごとに別（`cloudflare.config.ts`）。GitHub の Environments（`staging`・`production`）に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID`・`D1_DATABASE_ID` を入れる。
+
+最初の1回だけは、手元から秘密情報と一緒にデプロイする（以降のデプロイでは秘密情報は消えない）。秘密情報を変えるときも同じ。
+
+```bash
+grep -E "^[A-Z_]+=" .secrets.staging > .secrets.staging.deploy && pnpm exec cf deploy --mode staging --secrets-file .secrets.staging.deploy; rm -f .secrets.staging.deploy
+```
 
 Workers Secrets に、`.dev.vars.example` にある名前で値を入れる。本番では次も必要。
 
