@@ -28,7 +28,7 @@ jobs:
       group: deploy-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
       cancel-in-progress: false
     env:
-      CF_SEND_TELEMETRY: 'false'
+      CF_SEND_TELEMETRY: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
