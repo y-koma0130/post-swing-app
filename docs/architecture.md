@@ -58,7 +58,7 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
 | 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
 | 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
-| 定期処理 | Cron Triggers（毎日4:00 JST） | 期限切れの終了、期限前のお知らせ、返信が遅れているコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡 |
+| 定期処理 | Cron Triggers（毎日4:00・9:00 JST） | 4:00：期限切れの終了、期限前のお知らせ、返信の期限（48時間）を過ぎたコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡。9:00：不在が明けたコーチへ、不在中に届いた件数のお知らせ。どちらの処理かは `src/worker.ts` が cron の値で見分ける |
 | メール | Email Service（`send_email`） | コーチのログインコードとお知らせ。届きにくければ Resend に切り替え |
 | 秘密情報 | Workers Secrets | 一覧は `.dev.vars.example` |
 | ログ | Workers Logs | Sentry は未導入 |
@@ -77,6 +77,14 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | 通知 | LINE Messaging API（共通公式アカウント） | **プッシュ通知は通数で課金される**。無料枠は月200通で、超えると有料プラン。原価に入れる。友だち追加は `/api/webhooks/line` で記録 |
 | CI/CD | GitHub Actions | `ci.yml`（check・build）、`deploy.yml`（手動。マイグレーション → デプロイ） |
 | エラー監視 | Sentry | 未導入 |
+
+### 返信目安と不在
+
+コーチの返信目安は48時間。守れない期間は、コーチが不在期間（日付。日本時間）か返信遅れフラグ（7日で自動で外れる）を登録する。
+
+- 判定はすべて domain：コーチの今の状態は coach の `calcCoachAvailability`、申し込みの扱いは `decideSignupGuard`、送る前の確認は thread の `decideSendGuard`、スレッドの期限は `calcEffectiveExpiry`（保存値は書き換えず、不在日数だけ延ばして計算）、返信の期限は `calcReplyDueAt`
+- 数値（48時間・7日など）は coach の `AVAILABILITY_RULES` にまとめる。画面の文言は `app/features/coach-availability/utils/availabilityText.ts`
+- 不在中に届いた動画・チャットには `sent_during_absence_id` を残す（あとで返信時間を集計するとき除くため）
 
 ### 認証
 
