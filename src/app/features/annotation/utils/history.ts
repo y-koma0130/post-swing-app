@@ -12,6 +12,10 @@ export type AnnotationHistory = Readonly<{
 
 export type AnnotationHistoryAction =
   | { type: 'add'; annotation: Annotation }
+  /** 置いた図形を直す（角度・長さ・大きさ・位置・色） */
+  | { type: 'update'; index: number; annotation: Annotation }
+  /** 置いた図形を1つだけ消す */
+  | { type: 'remove'; index: number }
   | { type: 'undo' }
   | { type: 'clear' }
   /** 動画を差し替えたときなど、履歴ごと捨てる */
@@ -36,6 +40,18 @@ export const reduceAnnotationHistory: ReduceAnnotationHistory = (history, action
   switch (action.type) {
     case 'add':
       return push(history, [...history.present, action.annotation])
+    case 'update':
+      if (!history.present[action.index]) return history
+      return push(
+        history,
+        history.present.map((a, i) => (i === action.index ? action.annotation : a))
+      )
+    case 'remove':
+      if (!history.present[action.index]) return history
+      return push(
+        history,
+        history.present.filter((_, i) => i !== action.index)
+      )
     case 'undo': {
       const previous = history.past.at(-1)
       if (!previous) return history
