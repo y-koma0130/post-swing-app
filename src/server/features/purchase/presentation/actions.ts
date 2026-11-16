@@ -62,7 +62,9 @@ export const startCheckoutAction = async (
     remoteIp: (await headers()).get('cf-connecting-ip'),
   })
   if (!human) {
-    return actionError('確認できませんでした。少し待ってから、もう一度「お支払いへ進む」を押してください')
+    return actionError(
+      '確認できませんでした。少し待ってから、もう一度「お支払いへ進む」を押してください'
+    )
   }
 
   const result = await startCheckout(
