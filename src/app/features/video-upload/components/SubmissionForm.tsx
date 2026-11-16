@@ -21,6 +21,8 @@ type Props = {
   confirmMessage: string | null
   /** 送るボタンの近くに出す一行（「通常48時間以内に添削が届きます」） */
   replyHint: string | null
+  /** 提出できたとき（ドロワーを閉じるなど） */
+  onSubmitted?: (() => void) | undefined
 }
 
 const IDLE_STATUS: VideoSlotStatus = { selected: false, ready: false, busy: false }
@@ -40,6 +42,7 @@ export const SubmissionForm = ({
   maxSeconds,
   confirmMessage,
   replyHint,
+  onSubmitted,
 }: Props) => {
   const router = useRouter()
   const slots = useRef<Array<VideoSlotHandle | null>>([])
@@ -98,6 +101,7 @@ export const SubmissionForm = ({
       setError(result.message)
       return
     }
+    onSubmitted?.()
     router.refresh()
   }
 

@@ -1,6 +1,14 @@
 'use client'
 
-import { type FormEvent, useActionState, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type FormEvent,
+  type ReactNode,
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
@@ -31,6 +39,8 @@ type Props = {
   confirmMessage?: string | undefined
   /** コーチなら、ドリルと動画を添えられる */
   coach?: CoachAttachments | undefined
+  /** 入力欄の下の段の左に置く操作（生徒の「スイング動画を送る」など） */
+  actions?: ReactNode
 }
 
 type Panel = 'none' | 'drill' | 'video'
@@ -48,6 +58,7 @@ export const ChatComposer = ({
   guard = 'none',
   confirmMessage,
   coach,
+  actions,
 }: Props) => {
   const [state, action, pending] = useActionState(sendChatMessageAction, IDLE_ACTION_STATE)
   const { quote, setQuote } = useQuote()
@@ -137,7 +148,6 @@ export const ChatComposer = ({
             </div>
           </>
         )}
-        {inputHint && <p className="text-caption text-muted">{inputHint}</p>}
         {coach && panel === 'drill' && (
           <select
             value={drillId}
@@ -169,17 +179,23 @@ export const ChatComposer = ({
             onStatusChange={onSlotStatus}
           />
         )}
-        <textarea
-          id={CHAT_INPUT_ID}
-          name="body"
-          required={!attaching}
-          rows={2}
-          maxLength={1000}
-          placeholder={viewer === 'coach' ? '補足を送る' : 'コーチに質問する'}
-          className={inputClass}
-        />
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-end gap-2">
+          <textarea
+            id={CHAT_INPUT_ID}
+            name="body"
+            required={!attaching}
+            rows={1}
+            maxLength={1000}
+            placeholder={viewer === 'coach' ? '補足を送る' : 'コーチに質問する'}
+            className={`${inputClass} field-sizing-content max-h-40 min-h-11 resize-none`}
+          />
+          <Button type="submit" disabled={pending || videoBusy} className="shrink-0">
+            送る
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <div className="flex items-center gap-1">
+            {actions}
             {coach &&
               (['drill', 'video'] as const).map((p) => (
                 <Button
@@ -193,13 +209,12 @@ export const ChatComposer = ({
                   ＋{p === 'drill' ? 'ドリル' : '動画'}
                 </Button>
               ))}
-            {remaining !== undefined && (
-              <span className="text-caption text-muted">あと{remaining}通送れます</span>
-            )}
           </div>
-          <Button type="submit" disabled={pending || videoBusy}>
-            送る
-          </Button>
+          <p className="text-caption text-muted">
+            {[remaining !== undefined ? `あと${remaining}通` : null, inputHint]
+              .filter(Boolean)
+              .join('・')}
+          </p>
         </div>
         {state.status === 'error' && <FormMessage state={state} />}
       </form>
