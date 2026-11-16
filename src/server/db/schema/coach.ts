@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth'
 
 const timestamps = {
@@ -23,8 +23,29 @@ export const coachProfile = sqliteTable('coach_profile', {
   chargesEnabled: integer({ mode: 'boolean' }).notNull().default(false),
   /** 管理者が受付を止めた日時。止めている間は新しい申し込みを受けない（進行中のスレッドは続く） */
   suspendedAt: integer({ mode: 'timestamp_ms' }),
+  /** 返信遅れフラグを立てた日時（7日で自動で外れる。判定は domain の isDelayFlagActive） */
+  delayFlagSetAt: integer({ mode: 'timestamp_ms' }),
   ...timestamps,
 })
+
+/** コーチの不在期間。日付は日本時間の YYYY-MM-DD（終了日も不在に含む） */
+export const coachAbsence = sqliteTable(
+  'coach_absence',
+  {
+    id: text().primaryKey(),
+    coachUserId: text()
+      .notNull()
+      .references(() => coachProfile.userId, { onDelete: 'cascade' }),
+    startDate: text().notNull(),
+    endDate: text().notNull(),
+    /** 生徒に見せる一言 */
+    note: text().notNull().default(''),
+    /** 不在中は受付ページからの新規申し込みを止める */
+    pauseNewSignups: integer({ mode: 'boolean' }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('coach_absence_coach_idx').on(t.coachUserId, t.endDate)]
+)
 
 /** コーチごとのプラン。種類ごとに1行 */
 export const plan = sqliteTable(

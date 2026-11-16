@@ -1,6 +1,14 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { user } from './auth'
-import { coachProfile } from './coach'
+import { coachAbsence, coachProfile } from './coach'
 import { purchase } from './purchase'
 
 const timestamps = {
@@ -55,6 +63,8 @@ export const video = sqliteTable(
     note: text().notNull(),
     /** 送る前にブラウザで測ったフレームレート。分からない（変換せずに送った）ときは null */
     frameRate: real(),
+    /** 送られたとき、コーチが不在中だったか（あとで返信時間を集計するときに除く） */
+    sentDuringAbsenceId: text(),
     uploadedAt: integer({ mode: 'timestamp_ms' }).notNull(),
     /** 保存期間を過ぎて R2 から消した日時 */
     deletedAt: integer({ mode: 'timestamp_ms' }),
@@ -110,8 +120,50 @@ export const chatMessage = sqliteTable(
       .references(() => user.id),
     body: text().notNull(),
     sentAt: integer({ mode: 'timestamp_ms' }).notNull(),
+    /** 送られたとき、コーチが不在中だったか（あとで返信時間を集計するときに除く） */
+    sentDuringAbsenceId: text(),
   },
   (t) => [index('chat_message_thread_idx').on(t.threadId)]
+)
+
+/** 生徒がチャットで「この不在期間中は次から表示しない」を選んだ記録 */
+export const absenceAck = sqliteTable(
+  'absence_ack',
+  {
+    studentUserId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    absenceId: text()
+      .notNull()
+      .references(() => coachAbsence.id, { onDelete: 'cascade' }),
+    createdAt: integer({ mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.studentUserId, t.threadId, t.absenceId] })]
+)
+
+/**
+ * スレッドに出すシステムメッセージ（不在中に動画・チャットが送られたとき）
+ * 同じ不在・同じスレッドでは1回だけ（一意制約でも守る）。不在を消しても残るよう、終了日を写して持つ
+ */
+export const threadNotice = sqliteTable(
+  'thread_notice',
+  {
+    id: text().primaryKey(),
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    /** どの動画のやりとりの中で出すか */
+    videoId: text()
+      .notNull()
+      .references(() => video.id),
+    absenceId: text().notNull(),
+    absenceEndDate: text().notNull(),
+    createdAt: integer({ mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [uniqueIndex('thread_notice_absence_idx').on(t.threadId, t.absenceId)]
 )
 
 /** コーチが登録するドリル。添削カードに添えて使い回す */

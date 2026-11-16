@@ -1,7 +1,15 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { toLocalDate } from '@/server/utils/localDate'
+import type { AvailabilitySettingsDto } from '../application/dto/AvailabilitySettings.dto'
 import { refreshPayoutStatus } from '../application/usecases/refreshPayoutStatus.usecase'
+import { AVAILABILITY_RULES } from '../domain/rules'
+import {
+  calcCoachAvailability,
+  delayFlagExpiresAt,
+  isDelayFlagActive,
+} from '../domain/services/calcCoachAvailability.service'
 import { fetchChargesEnabled } from '../infrastructure/external-services/stripeConnect'
 import { findCoachProfileBySlug } from '../infrastructure/query-services/findCoachProfileBySlug'
 import { findCoachSettings } from '../infrastructure/query-services/findCoachSettings'
@@ -10,6 +18,7 @@ import {
   findStripeAccountId,
   saveChargesEnabled,
 } from '../infrastructure/repositories/coachRepository'
+import { findCoachAvailabilityFacts, toAvailabilityDto } from './availability'
 
 /** 受付ページ */
 export const getCoachProfile = (slug: string) => findCoachProfileBySlug(slug)
@@ -50,3 +59,37 @@ export const refreshCurrentCoachPayout = async () => {
     { findStripeAccountId, fetchChargesEnabled, saveChargesEnabled }
   )
 }
+
+/** ログイン中のコーチの「不在・返信の設定」。コーチでなければ null */
+export const getCurrentCoachAvailabilitySettings =
+  async (): Promise<AvailabilitySettingsDto | null> => {
+    const actor = await getActor()
+    if (!actor) return null
+    const settings = await findCoachSettings(actor.userId)
+    if (!settings) return null
+    const now = new Date()
+    const today = toLocalDate(now)
+    const facts = await findCoachAvailabilityFacts(actor.userId)
+    const flagActive = isDelayFlagActive(facts.delayFlagSetAt, now)
+    return {
+      availability: toAvailabilityDto(calcCoachAvailability({ ...facts, now })),
+      absences: facts.absences
+        .filter((a) => a.endDate >= today)
+        .map((a) => ({
+          id: a.id,
+          startDate: a.startDate,
+          endDate: a.endDate,
+          note: a.note,
+          pauseNewSignups: a.pauseNewSignups,
+          current: a.startDate <= today,
+        })),
+      delayFlag: {
+        active: flagActive,
+        expiresAt:
+          flagActive && facts.delayFlagSetAt ? delayFlagExpiresAt(facts.delayFlagSetAt) : null,
+      },
+      replyTargetHours: AVAILABILITY_RULES.replyTargetHours,
+      noteMaxLength: AVAILABILITY_RULES.absenceNoteMaxLength,
+      today,
+    }
+  }

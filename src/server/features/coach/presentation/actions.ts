@@ -9,12 +9,16 @@ import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import { deleteAbsence } from '../application/usecases/deleteAbsence.usecase'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
+import { saveAbsence } from '../application/usecases/saveAbsence.usecase'
 import { setCoachSuspended } from '../application/usecases/setCoachSuspended.usecase'
+import { setDelayFlag } from '../application/usecases/setDelayFlag.usecase'
 import { startPayoutOnboarding } from '../application/usecases/startPayoutOnboarding.usecase'
 import { updateCoachProfile } from '../application/usecases/updateCoachProfile.usecase'
 import { updatePlans } from '../application/usecases/updatePlans.usecase'
 import { coachProfileSchema } from '../domain/values/Coach'
+import { absenceInputSchema } from '../domain/values/CoachAbsence'
 import { coachSlugSchema } from '../domain/values/CoachSlug'
 import { planKindSchema, planSchema } from '../domain/values/Plan'
 import {
@@ -22,6 +26,12 @@ import {
   createDashboardLink,
   createOnboardingLink,
 } from '../infrastructure/external-services/stripeConnect'
+import {
+  findAbsences,
+  deleteAbsence as removeAbsence,
+  saveDelayFlag,
+  saveAbsence as storeAbsence,
+} from '../infrastructure/repositories/absenceRepository'
 import {
   findCoachSlug,
   findPayoutAccount,
@@ -194,4 +204,84 @@ export const setCoachSuspendedAction = async (
   }
   revalidatePath('/admin')
   return actionSuccess(suspended ? '受付を止めました' : '受付を再開しました')
+}
+
+const ABSENCE_ERROR_MESSAGE = {
+  not_found: '不在期間が見つかりません',
+  invalid_range: '開始日は終了日より前にしてください',
+  past: '終わった期間は登録できません',
+  overlap: 'ほかの不在期間と重なっています',
+} as const
+
+/** コーチが不在期間を追加・編集する */
+export const saveAbsenceAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const input = absenceInputSchema.safeParse({
+    startDate: formString(formData, 'startDate'),
+    endDate: formString(formData, 'endDate'),
+    note: formString(formData, 'note'),
+    pauseNewSignups: formChecked(formData, 'pauseNewSignups'),
+  })
+  if (!input.success) {
+    return actionError(firstIssue(input.error))
+  }
+  const absenceId = formString(formData, 'absenceId')
+  const result = await saveAbsence(
+    { actor, absenceId: absenceId === '' ? null : absenceId, input: input.data, now: new Date() },
+    {
+      isCoach,
+      findAbsences,
+      saveAbsence: storeAbsence,
+      generateId: () => crypto.randomUUID(),
+    }
+  )
+  if (!result.ok) {
+    return actionError(ABSENCE_ERROR_MESSAGE[result.error])
+  }
+  revalidatePath('/coach', 'layout')
+  return actionSuccess('不在期間を保存しました')
+}
+
+/** コーチが不在期間を消す */
+export const deleteAbsenceAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const result = await deleteAbsence(
+    { actor, absenceId: formString(formData, 'absenceId') },
+    { findAbsences, deleteAbsence: removeAbsence }
+  )
+  if (!result.ok) {
+    return actionError(ABSENCE_ERROR_MESSAGE[result.error])
+  }
+  revalidatePath('/coach', 'layout')
+  return actionSuccess('不在期間を消しました')
+}
+
+/** コーチが返信遅れフラグを立てる・下ろす */
+export const setDelayFlagAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const on = formString(formData, 'on') === 'true'
+  const result = await setDelayFlag({ actor, on, now: new Date() }, { isCoach, saveDelayFlag })
+  if (!result.ok) {
+    return actionError('コーチとして登録されていません')
+  }
+  revalidatePath('/coach', 'layout')
+  return actionSuccess(on ? '返信遅れの表示をオンにしました' : '返信遅れの表示をオフにしました')
 }
