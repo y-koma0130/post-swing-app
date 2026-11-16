@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { EmptyState } from '@/app/components/ui/EmptyState'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLinks'
 import { uniqueCoaches } from '@/app/features/coach-profile/utils/uniqueCoaches'
@@ -40,26 +41,31 @@ const MyPage = async ({ searchParams }: Props) => {
           お支払いが完了しました。スレッドの準備ができたら、ここから動画を送れます。
         </p>
       )}
-      <section className="space-y-3">
-        <h2 className="text-heading">スレッド</h2>
-        {threads.length === 0 ? (
-          <p className="text-muted text-sm">まだスレッドはありません。</p>
-        ) : (
-          <ThreadList threads={threads} viewer="student" />
-        )}
-      </section>
+      {purchases.length === 0 && threads.length === 0 ? (
+        <EmptyState
+          title="まだ申し込みはありません"
+          description="コーチの受付ページ（インスタのプロフィールなどにあるリンク）から申し込むと、ここに添削のスレッドができます。"
+        />
+      ) : (
+        <section className="space-y-3">
+          <h2 className="text-heading">スレッド</h2>
+          {threads.length === 0 ? (
+            <p className="text-muted text-sm">スレッドの準備ができると、ここに表示されます。</p>
+          ) : (
+            <ThreadList threads={threads} viewer="student" />
+          )}
+        </section>
+      )}
       {purchases.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-heading">コーチ</h2>
           <MyCoachLinks coaches={uniqueCoaches(purchases)} />
         </section>
       )}
-      <section className="space-y-3">
-        <h2 className="text-heading">申し込み</h2>
-        {purchases.length === 0 ? (
-          <p className="text-muted text-sm">まだ申し込みはありません。</p>
-        ) : (
-          purchases.map((p) => (
+      {purchases.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-heading">申し込み</h2>
+          {purchases.map((p) => (
             <Card key={p.id} className="space-y-2">
               <div className="flex items-baseline justify-between">
                 <Link href={`/c/${p.coachSlug}`} className="font-bold">
@@ -79,9 +85,9 @@ const MyPage = async ({ searchParams }: Props) => {
                 </form>
               )}
             </Card>
-          ))
-        )}
-      </section>
+          ))}
+        </section>
+      )}
     </Page>
   )
 }
