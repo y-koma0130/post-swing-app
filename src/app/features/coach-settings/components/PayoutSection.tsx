@@ -14,7 +14,7 @@ export const PayoutSection = ({ settings }: Props) => {
   if (settings.chargesEnabled) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-gray-700">
+        <p className="text-body text-sm">
           口座の設定が済んでいます。受付ページから申し込みを受けられます。
         </p>
         <form action={openPayoutDashboardAction}>
@@ -27,7 +27,7 @@ export const PayoutSection = ({ settings }: Props) => {
   }
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-700">
+      <p className="text-body text-sm">
         {settings.hasStripeAccount
           ? '口座の設定が途中です。続きを入力すると、申し込みを受けられるようになります。'
           : '売上を受け取る口座を設定すると、受付ページから申し込みを受けられるようになります。決済と入金は Stripe が行います。'}

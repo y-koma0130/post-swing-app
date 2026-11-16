@@ -85,7 +85,7 @@ export const AbsenceForm = ({ coachName, absence, today, noteMaxLength, onDone }
         不在中は新規の申し込みを止める
       </label>
       {startDate && endDate && startDate <= endDate && (
-        <p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
+        <p className="bg-surface text-muted rounded-xl p-3 text-sm">
           {absencePreview(coachName, { startDate, endDate })}
         </p>
       )}

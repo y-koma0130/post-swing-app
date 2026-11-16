@@ -1,16 +1,54 @@
 @import "tailwindcss";
 
-/* デザイン：白ベース、余白多め、角丸大きめ。差し色ミント（ロゴと同じ）、ボタン文字は濃い緑 */
+/*
+ * デザインの決まり（ここに名前を付けた値だけを使う。画面ごとに色や大きさを決めない）
+ * 白ベース、余白多め、角丸大きめ。差し色ミント（ロゴと同じ）、ボタン文字は濃い緑
+ */
 @theme {
+  /* ブランド */
   --color-mint: #3fbf87;
   --color-mint-soft: #e6f8ef;
   --color-ink: #0b3d2c;
-  /* 本文の文字色。真っ黒より少し淡いグレー（白地で 11:1） */
+
+  /* 文字：本文（白地で 11:1）・補足（説明・日付。白地で 5.6:1）・控えめ（入力の見本・使えない状態） */
   --color-body: #3a3d3c;
+  --color-muted: #626866;
+  --color-subtle: #9aa09d;
+
+  /* 面と線：画面の地（コーチ側）・区切り線・カードの縁 */
+  --color-surface: #f6f7f6;
+  --color-line: #e3e6e4;
+  --color-line-soft: #eef0ef;
+
+  /* 状態：注意（不在・返信遅れなど）・危険（エラー・返金など） */
+  --color-warning: #7a5200;
+  --color-warning-soft: #fff6e0;
+  --color-danger: #c4302b;
+  --color-danger-soft: #fdeceb;
+
   --radius-card: 1.25rem;
   --font-sans:
     "Hiragino Sans", "Noto Sans JP", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     sans-serif;
+}
+
+/* 文字の大きさは4段だけ：ページの見出し・まとまりの見出し・本文（指定なし）・補足 */
+@utility text-title {
+  font-size: 1.375rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+@utility text-heading {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+/* 補足（説明・日付・件数）。スマホで読めるよう 13px にする */
+@utility text-caption {
+  font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
 :root {

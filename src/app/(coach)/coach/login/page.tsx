@@ -13,7 +13,7 @@ const CoachLoginPage = async () => {
   return (
     <main className="mx-auto max-w-sm">
       <Card className="space-y-6">
-        <h1 className="text-xl font-bold">コーチのログイン</h1>
+        <h1 className="text-title">コーチのログイン</h1>
         <EmailCodeLoginForm redirectTo="/coach" turnstileSiteKey={getTurnstileSiteKey()} />
       </Card>
     </main>

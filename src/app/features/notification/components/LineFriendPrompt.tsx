@@ -6,7 +6,7 @@ type Props = {
 export const LineFriendPrompt = ({ addFriendUrl }: Props) => (
   <div className="space-y-2 rounded-xl border border-[#06C755]/40 bg-[#06C755]/5 p-4">
     <p className="text-sm font-bold">添削が届いたら LINE でお知らせします</p>
-    <p className="text-xs text-gray-600">
+    <p className="text-caption text-muted">
       お知らせを受け取るには、SwingPost の公式アカウントを友だちに追加してください。
     </p>
     <a

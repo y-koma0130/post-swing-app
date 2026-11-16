@@ -48,7 +48,7 @@ export const PlanCheckoutForm = ({
           return (
             <label
               key={plan.kind}
-              className={`rounded-card has-checked:border-mint has-checked:bg-mint-soft flex cursor-pointer items-start gap-3 border border-gray-200 p-4 ${
+              className={`rounded-card has-checked:border-mint has-checked:bg-mint-soft border-line flex cursor-pointer items-start gap-3 border p-4 ${
                 reason ? 'cursor-not-allowed opacity-50' : ''
               }`}
             >
@@ -68,9 +68,7 @@ export const PlanCheckoutForm = ({
                     {plan.kind === 'monthly' && <span className="text-sm font-normal">/月</span>}
                   </span>
                 </span>
-                <span className="mt-1 block text-sm text-gray-500">
-                  {reason ?? plan.description}
-                </span>
+                <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
               </span>
             </label>
           )
@@ -85,7 +83,7 @@ export const PlanCheckoutForm = ({
         />
       )}
       {needsAck && (
-        <label className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm">
+        <label className="bg-warning-soft flex items-start gap-2 rounded-xl p-3 text-sm">
           <input
             type="checkbox"
             name="acknowledgeDelay"
@@ -100,11 +98,12 @@ export const PlanCheckoutForm = ({
       <Button
         type="submit"
         disabled={pending || !firstAvailable || (needsAck && !acknowledged)}
+        size="lg"
         className="w-full"
       >
         {student ? 'お支払いへ進む' : 'ログインして申し込む'}
       </Button>
-      <p className="text-xs text-gray-500">
+      <p className="text-caption text-muted">
         お支払いは Stripe の画面で行います。カード番号は SwingPost に保存されません。
       </p>
     </form>

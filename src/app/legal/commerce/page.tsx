@@ -27,7 +27,7 @@ const CommercePage = () => (
     <table className="w-full text-left">
       <tbody>
         {ROWS.map(([label, value]) => (
-          <tr key={label} className="border-t border-gray-100 align-top">
+          <tr key={label} className="border-line-soft border-t align-top">
             <th className="w-40 py-3 pr-4 font-bold">{label}</th>
             <td className="py-3">{value}</td>
           </tr>

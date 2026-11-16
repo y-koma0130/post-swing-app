@@ -25,7 +25,7 @@ export const CoachReviewForm = ({ threadId }: Props) => {
         {[1, 2, 3, 4, 5].map((rating) => (
           <label key={rating} className="cursor-pointer">
             <input type="radio" name="rating" value={rating} required className="peer sr-only" />
-            <span className="peer-checked:bg-mint peer-checked:text-ink block rounded-full border border-gray-200 px-3 py-1 text-sm">
+            <span className="peer-checked:bg-mint peer-checked:text-ink border-line block rounded-full border px-3 py-1 text-sm">
               ★{rating}
             </span>
           </label>
@@ -39,7 +39,7 @@ export const CoachReviewForm = ({ threadId }: Props) => {
         className={inputClass}
       />
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" disabled={pending} size="lg" className="w-full">
         レビューを送る
       </Button>
     </form>

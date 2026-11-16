@@ -23,7 +23,7 @@ export const LineLoginButton = ({ redirectTo }: Props) => {
       type="button"
       onClick={signIn}
       disabled={pending}
-      className="w-full rounded-full bg-[#06C755] px-6 py-3 text-sm font-bold text-white disabled:opacity-40"
+      className="w-full rounded-full bg-[#06C755] px-6 py-3.5 text-base font-semibold text-white disabled:opacity-40"
     >
       LINE でログイン
     </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/app/components/ui/Button'
 import { CLIP_RULES, type ClipRange } from '../utils/clipPlan'
 
 type Props = {
@@ -51,23 +52,15 @@ export const VideoClipPicker = ({ file, duration, range, onChange }: Props) => {
         />
       )}
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setFromCurrent('start')}
-          className="rounded-full border border-gray-200 px-3 py-2 text-sm"
-        >
+        <Button variant="secondary" size="sm" onClick={() => setFromCurrent('start')}>
           ここから
-        </button>
-        <button
-          type="button"
-          onClick={() => setFromCurrent('end')}
-          className="rounded-full border border-gray-200 px-3 py-2 text-sm"
-        >
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setFromCurrent('end')}>
           ここまで
-        </button>
+        </Button>
       </div>
       <label className="block space-y-1">
-        <span className="text-xs text-gray-500">開始 {formatSeconds(range.start)}</span>
+        <span className="text-caption text-muted">開始 {formatSeconds(range.start)}</span>
         <input
           type="range"
           min={0}
@@ -83,7 +76,7 @@ export const VideoClipPicker = ({ file, duration, range, onChange }: Props) => {
         />
       </label>
       <label className="block space-y-1">
-        <span className="text-xs text-gray-500">終了 {formatSeconds(range.end)}</span>
+        <span className="text-caption text-muted">終了 {formatSeconds(range.end)}</span>
         <input
           type="range"
           min={0}
@@ -98,7 +91,7 @@ export const VideoClipPicker = ({ file, duration, range, onChange }: Props) => {
           className="accent-mint w-full"
         />
       </label>
-      <p className="text-xs text-gray-500">
+      <p className="text-caption text-muted">
         送る長さ {formatSeconds(length)}（{CLIP_RULES.maxSeconds}
         秒まで）。スイングの前後を少し含めて選んでください。
       </p>

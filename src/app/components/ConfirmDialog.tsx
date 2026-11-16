@@ -1,6 +1,7 @@
 'use client'
 
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react'
+import { Button } from '@/app/components/ui/Button'
 
 type Props = {
   open: boolean
@@ -91,7 +92,7 @@ export const ConfirmDialog = ({
           {message}
         </p>
         {checkboxLabel && (
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="text-body flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={checked}
@@ -102,21 +103,12 @@ export const ConfirmDialog = ({
           </label>
         )}
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-full border border-gray-200 px-4 py-3 text-sm font-semibold"
-          >
+          <Button variant="secondary" onClick={onCancel} className="flex-1">
             {cancelLabel}
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={() => onConfirm(checked)}
-            className="bg-mint text-ink flex-1 rounded-full px-4 py-3 text-sm font-semibold"
-          >
+          </Button>
+          <Button ref={confirmRef} onClick={() => onConfirm(checked)} className="flex-1">
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

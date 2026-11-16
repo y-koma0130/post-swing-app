@@ -49,7 +49,7 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
       <label className="block space-y-1">
         <span className={labelTextClass}>受付ページのURL</span>
         <div className="flex items-center gap-2">
-          <span className="shrink-0 text-sm text-gray-500">/c/</span>
+          <span className="text-muted shrink-0 text-sm">/c/</span>
           <input
             name="slug"
             value={slug}
@@ -59,12 +59,12 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
             className={inputClass}
           />
         </div>
-        <span className="block text-xs text-gray-500">
+        <span className="text-caption text-muted block">
           生徒に案内する受付ページのURLの最後の部分です。インスタのプロフィールなどに貼って使います。
           英小文字・数字・ハイフンの3〜30文字（例：yamada-golf）。空欄にして保存すると、ランダムな文字列になります。
         </span>
         {slug && (
-          <span className="block text-xs break-all text-gray-700">
+          <span className="text-caption text-body block break-all">
             {siteUrl}/c/{slug}
           </span>
         )}

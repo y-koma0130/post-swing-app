@@ -1,6 +1,7 @@
 'use client'
 
 import { type CSSProperties, type ReactNode, useCallback, useEffect } from 'react'
+import { Button } from '@/app/components/ui/Button'
 import { useVideoPlayer, type VideoSize } from '../hooks/useVideoPlayer'
 import { formatFps, formatTimecode, PLAYBACK_RATES } from '../utils/frame'
 
@@ -86,7 +87,7 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
           {renderOverlay && state.videoSize && renderOverlay(state.videoSize)}
         </div>
         {state.probing && (
-          <p className="absolute inset-x-0 bottom-3 text-center text-xs text-white/80">
+          <p className="text-caption absolute inset-x-0 bottom-3 text-center text-white/80">
             動画を読み込んでいます…
           </p>
         )}
@@ -121,7 +122,7 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
             1コマ ▶︎
           </ControlButton>
 
-          <fieldset className="ml-2 flex rounded-full border border-gray-200 p-0.5">
+          <fieldset className="border-line ml-2 flex rounded-full border p-0.5">
             <legend className="sr-only">再生速度</legend>
             {PLAYBACK_RATES.map((rate) => (
               <button
@@ -130,8 +131,8 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
                 aria-pressed={state.rate === rate}
                 disabled={disabled}
                 onClick={() => setRate(rate)}
-                className={`rounded-full px-3 py-1 text-xs font-bold disabled:opacity-40 ${
-                  state.rate === rate ? 'bg-ink text-white' : 'text-gray-600'
+                className={`text-caption rounded-full px-3 py-1 font-bold disabled:opacity-40 ${
+                  state.rate === rate ? 'bg-ink text-white' : 'text-muted'
                 }`}
               >
                 {rate}x
@@ -139,7 +140,7 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
             ))}
           </fieldset>
 
-          <p className="ml-auto font-mono text-xs text-gray-500">
+          <p className="text-caption text-muted ml-auto font-mono">
             {formatTimecode(state.currentTimeSec)} / {formatTimecode(state.durationSec)}
             <span className="ml-2">
               {formatFps(state.frameDurationSec)}
@@ -167,15 +168,13 @@ const ControlButton = ({
   primary = false,
   children,
 }: ControlButtonProps) => (
-  <button
-    type="button"
+  <Button
     aria-label={label}
     disabled={disabled}
     onClick={onClick}
-    className={`rounded-full px-4 py-2 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-40 ${
-      primary ? 'bg-mint text-ink' : 'border border-gray-200 bg-white text-gray-800'
-    }`}
+    variant={primary ? 'primary' : 'secondary'}
+    size="sm"
   >
     {children}
-  </button>
+  </Button>
 )

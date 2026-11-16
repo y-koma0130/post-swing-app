@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { setCoachSuspendedAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -28,13 +29,9 @@ export const CoachSuspendButton = ({ coachUserId, coachName, suspended }: Props)
     >
       <input type="hidden" name="coachUserId" value={coachUserId} />
       <input type="hidden" name="suspended" value={suspended ? 'false' : 'true'} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-full border border-gray-200 px-3 py-1 text-xs disabled:opacity-40"
-      >
+      <Button type="submit" variant="secondary" size="sm" disabled={pending}>
         {suspended ? '受付を再開' : '受付を止める'}
-      </button>
+      </Button>
       <FormMessage state={state} />
     </form>
   )

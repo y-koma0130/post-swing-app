@@ -16,7 +16,7 @@ type Props = {
 export const CardDraftList = ({ drafts, drills, onChange, onRemove }: Props) => (
   <ol className="space-y-3">
     {drafts.map((draft, index) => (
-      <li key={draft.localId} className="space-y-2 rounded-xl border border-gray-100 bg-white p-3">
+      <li key={draft.localId} className="border-line-soft space-y-2 rounded-xl border bg-white p-3">
         <div className="flex items-start gap-3">
           <img
             src={draft.imageUrl}
@@ -26,14 +26,14 @@ export const CardDraftList = ({ drafts, drills, onChange, onRemove }: Props) => 
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-bold">
               {index + 1}. {KEY_POSITION_LABEL[draft.position]}
-              <span className="ml-2 font-mono text-xs font-normal text-gray-500">
+              <span className="text-caption text-muted ml-2 font-mono font-normal">
                 {draft.timeSec.toFixed(2)}秒
               </span>
             </p>
             <button
               type="button"
               onClick={() => onRemove(draft.localId)}
-              className="text-xs text-gray-500 underline"
+              className="text-caption text-muted underline"
             >
               このカードを消す
             </button>

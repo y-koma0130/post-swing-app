@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { Badge } from '@/app/components/ui/Badge'
 import { ButtonLink } from '@/app/components/ui/Button'
+import { Page } from '@/app/components/ui/Page'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
@@ -49,20 +51,22 @@ const CoachLandingPage = async ({ params }: Props) => {
   if (!coach) notFound()
 
   return (
-    <main className="px-6 py-10">
+    <Page layout="student">
       <div className="flex items-center gap-4">
         <CoachAvatar name={coach.name} url={coach.avatarUrl} size={80} />
         <div>
-          <p className="text-sm text-gray-500">{coach.title}</p>
+          <p className="text-muted text-sm">{coach.title}</p>
           <h1 className="mt-1 text-2xl font-bold">{coach.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">{coach.instagram}</p>
+          <p className="text-muted mt-1 text-sm">{coach.instagram}</p>
         </div>
       </div>
-      <p className="mt-6 leading-relaxed text-gray-700">{coach.bio}</p>
-      <p className="bg-mint-soft text-ink mt-6 inline-block rounded-full px-4 py-1 text-sm font-bold">
-        {coach.remainingCapacity > 0
-          ? `今月の受付 残り${coach.remainingCapacity}枠`
-          : '今月は満枠です（キャンセル待ち受付中）'}
+      <p className="text-body mt-6 leading-relaxed">{coach.bio}</p>
+      <p className="mt-6">
+        <Badge tone={coach.remainingCapacity > 0 ? 'mint' : 'neutral'}>
+          {coach.remainingCapacity > 0
+            ? `今月の受付 残り${coach.remainingCapacity}枠`
+            : '今月は満枠です（キャンセル待ち受付中）'}
+        </Badge>
       </p>
       <div className="mt-6">
         <CoachAvailabilityNotice
@@ -78,21 +82,21 @@ const CoachLandingPage = async ({ params }: Props) => {
         <ReviewSummary summary={reviews} />
       </div>
       {coach.acceptingApplications && coach.signupGuard === 'paused' ? (
-        <p className="mt-8 rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+        <p className="bg-surface text-muted mt-8 rounded-xl p-4 text-center text-sm">
           {coach.availability.kind === 'absent'
             ? pausedMessage(coach.availability.resumeDate)
             : 'ただいま申し込みを止めています'}
         </p>
       ) : coach.acceptingApplications ? (
-        <ButtonLink href={`/c/${coach.slug}/apply`} className="mt-8 w-full">
+        <ButtonLink href={`/c/${coach.slug}/apply`} size="lg" className="mt-8 w-full">
           動画を送って添削してもらう
         </ButtonLink>
       ) : (
-        <p className="mt-8 rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+        <p className="bg-surface text-muted mt-8 rounded-xl p-4 text-center text-sm">
           ただいま申し込みの準備中です
         </p>
       )}
-    </main>
+    </Page>
   )
 }
 

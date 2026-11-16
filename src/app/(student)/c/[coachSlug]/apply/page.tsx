@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { Page } from '@/app/components/ui/Page'
 import { PlanCheckoutForm } from '@/app/features/apply/components/PlanCheckoutForm'
 import { WaitlistForm } from '@/app/features/apply/components/WaitlistForm'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
@@ -25,12 +26,12 @@ const ApplyPage = async ({ params }: Props) => {
   const { coach, isFull, student } = page
 
   return (
-    <main className="space-y-6 px-6 py-10">
+    <Page layout="student">
       <div className="flex items-center gap-3">
         <CoachAvatar name={coach.name} url={coach.avatarUrl} size={48} />
         <div>
-          <p className="text-sm text-gray-500">{coach.name} さんの添削</p>
-          <h1 className="mt-1 text-xl font-bold">申し込み</h1>
+          <p className="text-muted text-sm">{coach.name} さんの添削</p>
+          <h1 className="text-title mt-1">申し込み</h1>
         </div>
       </div>
       <CoachAvailabilityNotice
@@ -39,16 +40,14 @@ const ApplyPage = async ({ params }: Props) => {
         upcomingAbsence={coach.upcomingAbsence}
       />
       {coach.signupGuard === 'paused' ? (
-        <p className="rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+        <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">
           {coach.availability.kind === 'absent'
             ? pausedMessage(coach.availability.resumeDate)
             : 'ただいま申し込みを止めています'}
         </p>
       ) : isFull ? (
         <div className="space-y-4">
-          <p className="text-sm text-gray-700">
-            今月は満枠です。空きが出たら LINE でお知らせします。
-          </p>
+          <p className="text-body text-sm">今月は満枠です。空きが出たら LINE でお知らせします。</p>
           {student ? (
             <WaitlistForm coachSlug={coach.slug} onWaitlist={student.onWaitlist} />
           ) : (
@@ -70,7 +69,7 @@ const ApplyPage = async ({ params }: Props) => {
           }
         />
       )}
-    </main>
+    </Page>
   )
 }
 

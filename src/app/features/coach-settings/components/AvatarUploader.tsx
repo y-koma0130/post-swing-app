@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, buttonClass } from '@/app/components/ui/Button'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
 
@@ -17,7 +18,7 @@ export const AvatarUploader = ({ name, avatarUrl }: Props) => {
       <CoachAvatar name={name} url={avatarUrl} size={72} />
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
-          <label className="cursor-pointer rounded-full border border-gray-200 px-4 py-2 text-sm">
+          <label className={buttonClass({ variant: 'secondary', size: 'sm' })}>
             {pending ? '保存中…' : avatarUrl ? '画像を変える' : '画像を選ぶ'}
             <input
               type="file"
@@ -32,21 +33,16 @@ export const AvatarUploader = ({ name, avatarUrl }: Props) => {
             />
           </label>
           {avatarUrl && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => void remove()}
-              className="rounded-full px-3 py-2 text-sm text-gray-500"
-            >
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => void remove()}>
               外す
-            </button>
+            </Button>
           )}
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-caption text-muted">
           受付ページと、SNS に貼ったときのカードに出ます。真ん中が正方形に切り抜かれます。
         </p>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-danger text-sm">
             {error}
           </p>
         )}
