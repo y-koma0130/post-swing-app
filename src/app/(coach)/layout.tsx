@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Logo } from '@/app/components/Logo'
 import { SignOutButton } from '@/app/features/auth/components/SignOutButton'
+import { CoachNav } from '@/app/features/coach-nav/components/CoachNav'
 import { getActor } from '@/server/auth/getActor'
 
 type Props = {
@@ -15,26 +16,15 @@ const CoachLayout = async ({ children }: Props) => {
   return (
     <div className="bg-surface min-h-dvh">
       <header className="border-line-soft border-b bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-3">
           <Link href="/coach">
             <Logo height={36} />
           </Link>
           {actor && (
-            <nav className="-mx-1 flex items-center gap-5 overflow-x-auto px-1 text-sm whitespace-nowrap">
-              <Link href="/coach" className="text-body hover:text-ink">
-                ホーム
-              </Link>
-              <Link href="/coach/drills" className="text-body hover:text-ink">
-                ドリル
-              </Link>
-              <Link href="/coach/availability" className="text-body hover:text-ink">
-                不在・返信
-              </Link>
-              <Link href="/coach/settings" className="text-body hover:text-ink">
-                設定
-              </Link>
+            <>
+              <CoachNav />
               <SignOutButton redirectTo="/coach/login" />
-            </nav>
+            </>
           )}
         </div>
       </header>

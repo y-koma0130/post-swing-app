@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { ButtonLink } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
-import { Page } from '@/app/components/ui/Page'
+import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
-import { ThreadList } from '@/app/features/thread/components/ThreadList'
+import { CoachThreadSections } from '@/app/features/thread/components/CoachThreadSections'
 import {
   getCurrentCoach,
   getCurrentCoachAvailabilitySettings,
@@ -46,13 +47,20 @@ const CoachHomePage = async () => {
           </p>
         </Card>
       )}
-      <h1 className="text-title">スレッド</h1>
+      <PageHeader
+        title="スレッド"
+        actions={
+          <ButtonLink href={`/c/${settings.slug}`} variant="secondary" size="sm">
+            受付ページを見る
+          </ButtonLink>
+        }
+      />
       {threads.length === 0 ? (
-        <p className="text-muted text-sm">
-          まだスレッドはありません。受付ページを生徒に案内しましょう（/c/{settings.slug}）。
+        <p className="bg-surface text-muted rounded-xl p-4 text-sm">
+          まだスレッドはありません。受付ページのリンクを、インスタのプロフィールなどで生徒に案内しましょう。
         </p>
       ) : (
-        <ThreadList threads={threads} viewer="coach" />
+        <CoachThreadSections threads={threads} />
       )}
     </Page>
   )
