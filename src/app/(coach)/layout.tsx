@@ -17,7 +17,7 @@ const CoachLayout = async ({ children }: Props) => {
       <header className="border-b border-gray-100 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/coach">
-            <Logo height={28} />
+            <Logo height={36} />
           </Link>
           {actor && (
             <nav className="flex items-center gap-5 text-sm">
