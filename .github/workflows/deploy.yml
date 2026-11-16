@@ -1,0 +1,50 @@
+name: Deploy
+
+# - develop に push されたら staging へ自動でデプロイする
+# - production は手動（Actions の「Run workflow」で production を選ぶ）
+#
+# GitHub の Environments（staging・production）に、次の秘密情報を入れておく
+# - CLOUDFLARE_API_TOKEN: Workers・D1・R2・Queues を編集できる権限だけを付けたトークン
+# - CLOUDFLARE_ACCOUNT_ID
+# - D1_DATABASE_ID: その環境の D1 の ID（マイグレーションの適用に使う）
+# Worker の秘密情報（Stripe・LINE など）は Cloudflare 側に入っていて、デプロイしても消えない
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: デプロイ先
+        type: choice
+        options: [staging, production]
+        default: production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+    # 同じ環境へのデプロイは1つずつ。新しい push が来ても、走っているものは止めない（マイグレーションの途中で止めないため）
+    concurrency:
+      group: deploy-${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+      cancel-in-progress: false
+    env:
+      CF_SEND_TELEMETRY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      # 先にマイグレーションを当ててから、新しいコードを出す（列を足す変更は古いコードでも動くように書く）
+      - run: pnpm db:migrate:remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+      - run: pnpm deploy:${{ github.event_name == 'push' && 'staging' || inputs.environment }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

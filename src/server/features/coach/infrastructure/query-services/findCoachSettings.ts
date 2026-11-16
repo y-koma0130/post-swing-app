@@ -1,0 +1,32 @@
+import 'server-only'
+import type { CoachSettingsDto } from '../../application/dto/CoachSettings.dto'
+import { PLAN_DISPLAY_ORDER } from '../../domain/rules'
+import { findCoachByUserId } from '../repositories/coachRepository'
+
+export type FindCoachSettings = (userId: string) => Promise<CoachSettingsDto | null>
+
+export const findCoachSettings: FindCoachSettings = async (userId) => {
+  const coach = await findCoachByUserId(userId)
+  if (!coach) {
+    return null
+  }
+  return {
+    slug: coach.slug,
+    name: coach.name,
+    title: coach.title,
+    bio: coach.bio,
+    instagram: coach.instagram,
+    monthlyCapacity: coach.monthlyCapacity,
+    chargesEnabled: coach.chargesEnabled,
+    hasStripeAccount: coach.stripeAccountId !== null,
+    plans: coach.plans
+      .toSorted((a, b) => PLAN_DISPLAY_ORDER[a.kind] - PLAN_DISPLAY_ORDER[b.kind])
+      .map((plan) => ({
+        kind: plan.kind,
+        name: plan.name,
+        priceYen: plan.price,
+        description: plan.description,
+        active: plan.active,
+      })),
+  }
+}

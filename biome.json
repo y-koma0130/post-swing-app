@@ -1,0 +1,213 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/dist", "!**/.vinext", "!**/.cloudflare", "!**/.wrangler", "!**/*.md"]
+  },
+  "plugins": ["./biome-plugins/no-type-assertion.grit"],
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noTsIgnore": "error",
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["info", "warn", "error"]
+          }
+        }
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "useImportType": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useConst": "error"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
+      },
+      "nursery": {
+        "useTailwindSortedClasses": {
+          "level": "error",
+          "fix": "safe"
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/app/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/server/*/**/infrastructure/**",
+                      "@/server/*/**/application/usecases/**",
+                      "@/server/db/**",
+                      "@/server/features/*/public"
+                    ],
+                    "message": "app/ からは server の presentation（実行）と dto・domain/values（型）だけを使ってください。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/**/utils/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/server/*/**/infrastructure/**",
+                      "@/server/*/**/application/usecases/**",
+                      "@/server/db/**",
+                      "@/server/features/*/public"
+                    ],
+                    "message": "app/ からは server の presentation（実行）と dto・domain/values（型）だけを使ってください。"
+                  },
+                  {
+                    "group": ["react", "react/**", "react-dom", "react-dom/**", "next", "next/**"],
+                    "message": "utils/ は React・Next.js に依存させない（ネイティブアプリで再利用するため）。React が必要なら hooks/ か components/ に置いてください。"
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "window": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "document": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "navigator": "utils/ はブラウザに依存させない。DOM が必要な処理は hooks/ か components/ に置いてください。",
+                  "localStorage": "utils/ はブラウザに依存させない。",
+                  "sessionStorage": "utils/ はブラウザに依存させない。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/server/features/*/domain/**", "src/server/features/*/application/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "react",
+                      "react/**",
+                      "react-dom",
+                      "react-dom/**",
+                      "next",
+                      "next/**",
+                      "server-only",
+                      "cloudflare:*",
+                      "@/server/db/**"
+                    ],
+                    "message": "domain・application は Next.js・React・Cloudflare・DB に依存させない（Web とアプリで同じユースケースを使うため）。"
+                  },
+                  {
+                    "group": [
+                      "@/server/features/*/infrastructure/**",
+                      "@/server/features/*/application/usecases/**",
+                      "@/server/features/*/presentation/**",
+                      "@/server/features/*/public"
+                    ],
+                    "message": "domain・application からは、ほかの feature の domain・application/dto だけを使う（public.ts は infrastructure と組み合わさっているので使わない）。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/server/features/*/presentation/**",
+        "src/server/features/*/infrastructure/**",
+        "src/server/features/*/public.ts",
+        "src/server/auth/**",
+        "src/worker.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/server/features/*/infrastructure/**",
+                      "@/server/features/*/application/usecases/**",
+                      "@/server/features/*/presentation/**"
+                    ],
+                    "message": "ほかの feature の中身は使わない。使ってよいのは、その feature の domain・application/dto と public.ts だけです（自分の feature の中は相対パスで import する）。"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
