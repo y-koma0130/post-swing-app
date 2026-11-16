@@ -21,7 +21,7 @@ const FEATURES = [
 const HomePage = () => (
   <div className="min-h-dvh bg-white">
     <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-      <Logo height={32} />
+      <Logo height={36} />
       <ButtonLink href="/coach" variant="ghost" size="sm">
         コーチのログイン
       </ButtonLink>

@@ -11,7 +11,7 @@ type Props = {
 /**
  * 生徒向け：スマホ前提の1カラム
  *
- * 受付ページはコーチのページなので、ヘッダーは控えめにする（ロゴは小さく、項目はマイページだけ）
+ * 受付ページはコーチのページなので、ヘッダーは控えめにする（項目はマイページだけ）。ロゴの高さはコーチの画面とそろえる
  */
 const StudentLayout = async ({ children }: Props) => {
   const actor = await getActor()
@@ -20,7 +20,7 @@ const StudentLayout = async ({ children }: Props) => {
     <div className="mx-auto min-h-dvh max-w-md bg-white">
       <header className="border-line-soft flex items-center justify-between border-b px-6 py-3">
         <Link href={actor ? '/me' : '/'} aria-label="SwingPost">
-          <Logo height={28} />
+          <Logo height={36} />
         </Link>
         <Link
           href={actor ? '/me' : '/login?next=/me'}
