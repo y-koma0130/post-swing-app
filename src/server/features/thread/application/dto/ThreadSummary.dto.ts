@@ -8,6 +8,8 @@ export type ThreadSummaryDto = {
   id: string
   /** コーチの一覧では生徒の名前、生徒の一覧ではコーチの名前 */
   counterpartName: string
+  /** スレッドのコーチ（生徒のコーチ詳細ページで、そのコーチのスレッドだけを出すのに使う） */
+  coachSlug: string
   planKind: PlanKind
   theme: string
   status: ThreadStatus

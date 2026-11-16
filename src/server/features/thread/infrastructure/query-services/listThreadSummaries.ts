@@ -71,9 +71,11 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
       expiresAt: thread.expiresAt,
       startedAt: thread.startedAt,
       coachUserId: thread.coachUserId,
+      coachSlug: coachProfile.slug,
     })
     .from(thread)
     .innerJoin(user, eq(user.id, thread.studentUserId))
+    .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
     .where(eq(thread.coachUserId, coachUserId))
     .all()
   const ids = rows.map((r) => r.id)
@@ -107,6 +109,7 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
       expiresAt: thread.expiresAt,
       startedAt: thread.startedAt,
       coachUserId: thread.coachUserId,
+      coachSlug: coachProfile.slug,
     })
     .from(thread)
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))

@@ -20,17 +20,21 @@ type Props = {
   threads: ThreadSummaryDto[]
   /** 見ている人。リンク先と状態の言い方が変わる */
   viewer: 'coach' | 'student'
+  /** 相手の名前を出すか（コーチ詳細ページのように相手が決まっているときは出さず、テーマを見出しにする） */
+  showCounterpart?: boolean | undefined
 }
 
-export const ThreadList = ({ threads, viewer }: Props) => (
+export const ThreadList = ({ threads, viewer, showCounterpart = true }: Props) => (
   <ul className="space-y-3">
     {threads.map((t) => (
       <li key={t.id}>
         <Link href={viewer === 'coach' ? `/coach/threads/${t.id}` : `/t/${t.id}`}>
           <Card className="hover:border-line flex items-center justify-between gap-4 transition-colors">
             <div className="min-w-0">
-              <p className="font-bold">{t.counterpartName || '（名前なし）'}</p>
-              <p className="text-muted truncate text-sm">
+              {showCounterpart && (
+                <p className="font-bold">{t.counterpartName || '（名前なし）'}</p>
+              )}
+              <p className={showCounterpart ? 'text-muted truncate text-sm' : 'truncate font-bold'}>
                 {t.theme === '' ? '（まだ動画が届いていません）' : t.theme}
               </p>
             </div>
