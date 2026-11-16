@@ -28,6 +28,13 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('thread_started'), threadId: z.string(), coachUserId: z.string() }),
   /** コーチへ：届いた動画に、しばらく返信していない（メール） */
   z.object({ kind: z.literal('reply_overdue'), threadId: z.string(), coachUserId: z.string() }),
+  /** コーチへ：不在が明けた朝に、不在中に届いた動画と質問の件数（メール） */
+  z.object({
+    kind: z.literal('absence_ended'),
+    coachUserId: z.string(),
+    videoCount: z.number().int().nonnegative(),
+    chatCount: z.number().int().nonnegative(),
+  }),
   /** 招待されたコーチへ：ログインの案内（メール） */
   z.object({ kind: z.literal('coach_invited'), coachUserId: z.string() }),
 ])

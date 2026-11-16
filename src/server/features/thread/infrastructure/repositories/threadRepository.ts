@@ -220,28 +220,40 @@ export const closeThreads: CloseThreads = async (threadIds, closedAt) => {
     .where(inArray(thread.id, threadIds))
 }
 
-export type FindThreadsExpiringBetween = (
-  from: Date,
-  to: Date
-) => Promise<Array<{ id: string; studentUserId: string }>>
-export const findThreadsExpiringBetween: FindThreadsExpiringBetween = async (from, to) =>
+export type FindOpenThreadsExpiringBy = (to: Date) => Promise<
+  Array<{
+    id: string
+    coachUserId: string
+    studentUserId: string
+    startedAt: Date
+    expiresAt: Date
+  }>
+>
+/** 保存した期限が to より前の、終了していないスレッド（実際の期限は domain が不在の分だけ延ばして判定する） */
+export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =>
   getDb()
-    .select({ id: thread.id, studentUserId: thread.studentUserId })
+    .select({
+      id: thread.id,
+      coachUserId: thread.coachUserId,
+      studentUserId: thread.studentUserId,
+      startedAt: thread.startedAt,
+      expiresAt: thread.expiresAt,
+    })
     .from(thread)
-    .where(and(ne(thread.status, 'closed'), gt(thread.expiresAt, from), lte(thread.expiresAt, to)))
+    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, to)))
     .all()
 
-export type FindThreadsWithUnrepliedVideosBetween = (
-  from: Date,
-  to: Date
-) => Promise<Array<{ id: string; coachUserId: string }>>
-/** from〜to に届いて、まだ返信していない動画があるスレッド（終了していないもの。1スレッド1件） */
-export const findThreadsWithUnrepliedVideosBetween: FindThreadsWithUnrepliedVideosBetween = async (
-  from,
-  to
-) =>
+export type FindUnrepliedVideosSince = (
+  since: Date
+) => Promise<Array<{ threadId: string; coachUserId: string; uploadedAt: Date }>>
+/** since より後に届き、まだ返信していない動画（終了していないスレッド） */
+export const findUnrepliedVideosSince: FindUnrepliedVideosSince = async (since) =>
   getDb()
-    .selectDistinct({ id: thread.id, coachUserId: thread.coachUserId })
+    .select({
+      threadId: video.threadId,
+      coachUserId: thread.coachUserId,
+      uploadedAt: video.uploadedAt,
+    })
     .from(video)
     .innerJoin(thread, eq(thread.id, video.threadId))
     .leftJoin(reply, eq(reply.videoId, video.id))
@@ -250,8 +262,7 @@ export const findThreadsWithUnrepliedVideosBetween: FindThreadsWithUnrepliedVide
         ne(thread.status, 'closed'),
         isNull(reply.id),
         isNull(video.deletedAt),
-        gt(video.uploadedAt, from),
-        lte(video.uploadedAt, to)
+        gt(video.uploadedAt, since)
       )
     )
     .all()
@@ -353,4 +364,36 @@ export const saveAbsenceAck: SaveAbsenceAck = async ({
     .insert(absenceAck)
     .values({ studentUserId, threadId, absenceId, createdAt: at })
     .onConflictDoNothing()
+}
+
+export type CountAbsenceBacklog = (
+  absenceId: string
+) => Promise<{ videoCount: number; chatCount: number }>
+/** 不在中に届いて、まだ返信していない動画と、生徒からの質問（チャット）の数 */
+export const countAbsenceBacklog: CountAbsenceBacklog = async (absenceId) => {
+  const db = getDb()
+  const [videos, chats] = await Promise.all([
+    db
+      .select({ id: video.id })
+      .from(video)
+      .innerJoin(thread, eq(thread.id, video.threadId))
+      .leftJoin(reply, eq(reply.videoId, video.id))
+      .where(
+        and(
+          eq(video.sentDuringAbsenceId, absenceId),
+          isNull(reply.id),
+          isNull(video.deletedAt),
+          ne(thread.status, 'closed')
+        )
+      )
+      .all(),
+    db
+      .select({ id: chatMessage.id })
+      .from(chatMessage)
+      .where(
+        and(eq(chatMessage.sentDuringAbsenceId, absenceId), eq(chatMessage.senderRole, 'student'))
+      )
+      .all(),
+  ])
+  return { videoCount: videos.length, chatCount: chats.length }
 }

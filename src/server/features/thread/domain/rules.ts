@@ -46,8 +46,11 @@ export const CAPACITY_COUNTED_STATUSES = ['waiting_student', 'waiting_coach'] as
 export const MAINTENANCE_RULES = {
   /** 期限の何日前に知らせるか */
   remindDaysBefore: 3,
-  /** 動画が届いてから何日返信がなければ、コーチに知らせるか（暫定） */
-  remindCoachAfterDays: 3,
+  /**
+   * 返信の遅れを調べる範囲（届いてから何日までの動画を見るか）。
+   * 期限そのものは返信目安（coach の AVAILABILITY_RULES）で決まる。不在が長くても収まるよう広めにとる
+   */
+  unrepliedLookbackDays: 60,
   /** スレッドの終了から何日で動画を消すか（暫定。利用規約で決める） */
   videoRetentionDays: 90,
 } as const
