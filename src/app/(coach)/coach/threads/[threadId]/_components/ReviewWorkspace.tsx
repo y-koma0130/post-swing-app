@@ -9,6 +9,7 @@ import { AnnotationToolbar } from '@/app/features/annotation/components/Annotati
 import { renderAnnotatedFrame } from '@/app/features/annotation/components/renderAnnotatedFrame'
 import { useAnnotationEditor } from '@/app/features/annotation/hooks/useAnnotationEditor'
 import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
+import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import {
   KEY_POSITION_LABEL,
@@ -207,7 +208,17 @@ export const ReviewWorkspace = ({ threadId, closed, videos, drills }: Props) => 
         )}
         <Card className="space-y-3">
           <h2 className="font-bold">チャット</h2>
-          <ChatPanel threadId={threadId} video={current} viewer="coach" closed={closed} />
+          <ChatPanel
+            threadId={threadId}
+            video={current}
+            viewer="coach"
+            closed={closed}
+            notices={current.notices.map((n) => ({
+              id: n.id,
+              text: `不在中に送られました（${formatShortDate(n.absenceEndDate)}まで不在）`,
+              createdAt: n.createdAt,
+            }))}
+          />
         </Card>
       </aside>
     </div>

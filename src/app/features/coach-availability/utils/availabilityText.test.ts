@@ -3,11 +3,14 @@ import {
   absenceNoticeMessage,
   absencePreview,
   absentMessage,
+  availabilityBanner,
+  chatReplyHint,
   confirmSendMessage,
   extensionNote,
   formatShortDate,
   nextDate,
   pausedMessage,
+  sendConfirmMessage,
   signupAckLabel,
   upcomingMessage,
 } from './availabilityText'
@@ -58,5 +61,33 @@ describe('availabilityText', () => {
     )
     expect(extensionNote(4)).toBe('（不在のため4日延長）')
     expect(extensionNote(0)).toBe('')
+  })
+})
+
+describe('スレッドの表示', () => {
+  const absent = {
+    kind: 'absent' as const,
+    endDate: '2026-11-23',
+    resumeDate: '2026-11-24',
+    note: '',
+  }
+  const available = { kind: 'available' as const, replyTargetHours: 48 }
+
+  it('帯は不在・返信遅れのときだけ', () => {
+    expect(availabilityBanner('山田', absent)).toBe(
+      '山田コーチは11/23まで不在です。返信は11/24以降になります'
+    )
+    expect(availabilityBanner('山田', { kind: 'delayed' })).toBe('現在、返信が遅れる場合があります')
+    expect(availabilityBanner('山田', available)).toBeNull()
+  })
+
+  it('チャットの入力欄の上：不在なら不在、ほかは返信の目安', () => {
+    expect(chatReplyHint('山田', absent)).toBe('山田コーチは11/23まで不在です')
+    expect(chatReplyHint('山田', { kind: 'delayed' })).toBe('返信の目安：1〜2日')
+  })
+
+  it('確認の文言は、通常のときは出さない', () => {
+    expect(sendConfirmMessage('video', '山田', available)).toBeNull()
+    expect(sendConfirmMessage('chat', '山田', absent)).toMatch(/送りますか？$/)
   })
 })

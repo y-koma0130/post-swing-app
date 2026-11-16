@@ -80,3 +80,37 @@ export const absencePreview = (
 /** 期限の延長 「（不在のため4日延長）」 */
 export const extensionNote = (days: number): string =>
   days > 0 ? `（不在のため${days}日延長）` : ''
+
+/** チャットの入力欄の上の一行 */
+export const chatReplyHint = (
+  coachName: string,
+  availability:
+    | Readonly<{ kind: 'absent'; endDate: string }>
+    | Readonly<{ kind: 'available' | 'delayed' }>
+): string =>
+  availability.kind === 'absent'
+    ? absentShort(coachName, availability.endDate)
+    : '返信の目安：1〜2日'
+
+type AvailabilityLike =
+  | Readonly<{ kind: 'absent'; endDate: string; resumeDate: string; note: string }>
+  | Readonly<{ kind: 'delayed' }>
+  | Readonly<{ kind: 'available'; replyTargetHours: number }>
+
+/** スレッドの上部の帯。通常のときは出さない（null） */
+export const availabilityBanner = (
+  coachName: string,
+  availability: AvailabilityLike
+): string | null => {
+  if (availability.kind === 'absent') return absentMessage(coachName, availability)
+  if (availability.kind === 'delayed') return '現在、返信が遅れる場合があります'
+  return null
+}
+
+/** 送る前の確認の文言。確認が要らない状態なら null */
+export const sendConfirmMessage = (
+  what: 'video' | 'chat',
+  coachName: string,
+  availability: AvailabilityLike
+): string | null =>
+  availability.kind === 'available' ? null : confirmSendMessage(what, coachName, availability)
