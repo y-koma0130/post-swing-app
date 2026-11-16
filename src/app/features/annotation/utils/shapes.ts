@@ -9,6 +9,9 @@ import type { Annotation, NormalizedPoint } from '@/server/features/thread/domai
 export const ANNOTATION_TOOLS = ['line', 'arrow', 'circle', 'free'] as const
 export type AnnotationTool = (typeof ANNOTATION_TOOLS)[number]
 
+/** 道具：図形を描く道具と、置いた図形を選んで直す「選択」 */
+export type EditorTool = AnnotationTool | 'select'
+
 /**
  * 線の色。芝の緑・空・室内の壁のどれの上でも見えることを優先し、ブランドのミントと喧嘩しない3色
  * - ホワイト：どの背景でも見える基本の色

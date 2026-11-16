@@ -6,19 +6,22 @@ import {
   ANNOTATION_COLORS,
   ANNOTATION_TOOLS,
   type AnnotationColor,
-  type AnnotationTool,
+  type EditorTool,
 } from '../utils/shapes'
 
 type Props = {
   editor: AnnotationEditor
 }
 
+const TOOLS = ['select', ...ANNOTATION_TOOLS] as const satisfies EditorTool[]
+
 const TOOL_LABEL = {
+  select: '選択',
   line: '直線',
   arrow: '矢印',
   circle: '円',
   free: 'フリー',
-} as const satisfies Record<AnnotationTool, string>
+} as const satisfies Record<EditorTool, string>
 
 const COLOR_LABEL = {
   '#FFFFFF': 'ホワイト',
@@ -26,12 +29,12 @@ const COLOR_LABEL = {
   '#FF6B5B': 'コーラル',
 } as const satisfies Record<AnnotationColor, string>
 
-/** 線引きの道具・色・元に戻す */
+/** 線引きの道具・色・元に戻す。「選択」で置いた図形を選ぶと、色を変えたり消したりできる */
 export const AnnotationToolbar = ({ editor }: Props) => (
   <div className="rounded-card flex flex-wrap items-center gap-3 bg-white p-3 shadow-sm">
     <fieldset className="border-line flex rounded-full border p-0.5">
       <legend className="sr-only">線の種類</legend>
-      {ANNOTATION_TOOLS.map((tool) => (
+      {TOOLS.map((tool) => (
         <button
           key={tool}
           type="button"
@@ -64,6 +67,11 @@ export const AnnotationToolbar = ({ editor }: Props) => (
     </fieldset>
 
     <div className="ml-auto flex gap-2">
+      {editor.selected !== null && (
+        <Button variant="danger" size="sm" onClick={editor.removeSelected}>
+          削除
+        </Button>
+      )}
       <Button variant="secondary" size="sm" onClick={editor.undo} disabled={!editor.canUndo}>
         元に戻す
       </Button>
