@@ -36,8 +36,12 @@ export const VIDEO_RULES = {
 
 /** 返信のルール */
 export const REPLY_RULES = {
-  /** 1通の返信に入れられるカードの枚数 */
+  /** 1回の添削に入れられる画像（キャプチャ）の枚数 */
   maxCards: 8,
+  /** 添削の説明（全体のコメント）の長さ */
+  maxCommentLength: 2000,
+  /** 添えられるおすすめのドリルの数 */
+  maxDrills: 3,
   /** カード画像（PNG）1枚の大きさの上限 */
   maxImageBytes: 5 * 1024 * 1024,
 } as const

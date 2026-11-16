@@ -5,6 +5,7 @@ import {
   absenceAck,
   chatMessage,
   reply,
+  replyDrill,
   reviewCard,
   submission,
   thread,
@@ -224,12 +225,26 @@ export const saveReply: SaveReply = async (r) => {
       annotations: card.annotations,
       comment: card.comment,
       imageR2Key: card.imageR2Key,
-      drillId: card.drillId,
+      drillId: null,
     })
   )
   if (!firstCard) return
   await db.batch([
-    db.insert(reply).values({ id: r.id, submissionId: r.submissionId, sentAt: r.sentAt }),
+    db.insert(reply).values({
+      id: r.id,
+      submissionId: r.submissionId,
+      comment: r.comment,
+      sentAt: r.sentAt,
+    }),
+    ...r.drills.map((d, sortOrder) =>
+      db.insert(replyDrill).values({
+        replyId: r.id,
+        sortOrder,
+        drillId: d.drillId,
+        title: d.title,
+        description: d.description,
+      })
+    ),
     firstCard,
     ...restCards,
     db

@@ -144,7 +144,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                 </span>
               </h2>
               <ReviewCardStrip
-                cards={submission.reply.cards}
+                reply={submission.reply}
                 videoLabel={angleOf(submission)}
                 onOpen={() => open(index)}
                 renderAction={(card) => (
