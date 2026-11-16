@@ -89,53 +89,58 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                 </Button>
               )}
             </div>
-            {/* 動画は小さく並べ、押すとドロワーで大きく開く */}
-            <ul className="flex flex-wrap gap-3">
-              {submission.videos.map((video, videoIndex) => {
-                const label = videoLabel(video.angle, submission.videos.length)
-                return (
-                  <li
-                    key={video.id}
-                    id={quoteAnchorId('video', video.id)}
-                    className="w-40 scroll-mt-20 space-y-1"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => open(index, videoIndex)}
-                      className="relative block w-full overflow-hidden rounded-lg bg-black"
-                      aria-label={`${label}を開く`}
+            {/* 左に動画（押すとドロワーで大きく開く）、右に生徒が添えた質問・メモ */}
+            <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <ul className="flex flex-wrap gap-3">
+                {submission.videos.map((video, videoIndex) => {
+                  const label = videoLabel(video.angle, submission.videos.length)
+                  return (
+                    <li
+                      key={video.id}
+                      id={quoteAnchorId('video', video.id)}
+                      className="w-40 scroll-mt-20 space-y-1"
                     >
-                      {/* 最初のコマだけを読み、サムネイルにする */}
-                      <video
-                        src={`${video.url}#t=0.1`}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        className="aspect-video w-full object-contain"
-                      />
-                      <span className="text-caption absolute top-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
-                        {label}
-                      </span>
-                      <span className="absolute inset-0 flex items-center justify-center text-xl text-white/90">
-                        ▶︎
-                      </span>
-                    </button>
-                    <div className="flex justify-end">
-                      <QuoteButton
-                        target={{
-                          kind: 'video',
-                          targetId: video.id,
-                          label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
-                        }}
-                      />
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-            {submission.note && (
-              <p className="text-caption text-body whitespace-pre-wrap">{submission.note}</p>
-            )}
+                      <button
+                        type="button"
+                        onClick={() => open(index, videoIndex)}
+                        className="relative block w-full overflow-hidden rounded-lg bg-black"
+                        aria-label={`${label}を開く`}
+                      >
+                        {/* 最初のコマだけを読み、サムネイルにする */}
+                        <video
+                          src={`${video.url}#t=0.1`}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          className="aspect-video w-full object-contain"
+                        />
+                        <span className="text-caption absolute top-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
+                          {label}
+                        </span>
+                        <span className="absolute inset-0 flex items-center justify-center text-xl text-white/90">
+                          ▶︎
+                        </span>
+                      </button>
+                      <div className="flex justify-end">
+                        <QuoteButton
+                          target={{
+                            kind: 'video',
+                            targetId: video.id,
+                            label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
+                          }}
+                        />
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="bg-surface rounded-lg p-3">
+                <p className="text-caption text-muted font-bold">生徒のメモ</p>
+                <p className="text-body mt-1 text-sm whitespace-pre-wrap">
+                  {submission.note || '（メモはありません）'}
+                </p>
+              </div>
+            </div>
           </Card>
         )}
         renderReply={(submission, index) =>
