@@ -41,6 +41,8 @@ type Props = {
   coach?: CoachAttachments | undefined
   /** 入力欄の下の段の左に置く操作（生徒の「スイング動画を送る」など） */
   actions?: ReactNode
+  /** 長押しで引用できることを案内する（生徒の画面） */
+  quoteByLongPress?: boolean | undefined
 }
 
 type Panel = 'none' | 'drill' | 'video'
@@ -59,6 +61,7 @@ export const ChatComposer = ({
   confirmMessage,
   coach,
   actions,
+  quoteByLongPress = false,
 }: Props) => {
   const [state, action, pending] = useActionState(sendChatMessageAction, IDLE_ACTION_STATE)
   const { quote, setQuote } = useQuote()
@@ -211,7 +214,11 @@ export const ChatComposer = ({
               ))}
           </div>
           <p className="text-caption text-muted">
-            {[remaining !== undefined ? `あと${remaining}通` : null, inputHint]
+            {[
+              remaining !== undefined ? `あと${remaining}通` : null,
+              inputHint,
+              quoteByLongPress && !quote ? '長押しで引用' : null,
+            ]
               .filter(Boolean)
               .join('・')}
           </p>

@@ -1,9 +1,11 @@
 import { Fragment, type ReactNode } from 'react'
+import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatDateTime } from '@/app/utils/format'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import { buildTimeline, firstNewItemKey, type TimelineItem } from '../utils/buildTimeline'
 import { quoteAnchorId } from '../utils/threadText'
+import { DrillDetails } from './DrillDetails'
 import { QuotePreview } from './QuotePreview'
 import { TIMELINE_END_ID, TIMELINE_NEW_ID } from './ScrollToLatest'
 
@@ -28,6 +30,8 @@ type Props = {
   renderMessageVideo: (video: MessageVideo) => ReactNode
   /** 見ている人が最後に開いた時刻（開く前の値）。そのあとの相手の出来事の手前に「ここから新着」を出す */
   lastReadAt?: Date | null | undefined
+  /** 引用の操作：button は「↩︎ 引用」ボタン（コーチ）、longPress は長押し（生徒） */
+  quoteMode?: 'button' | 'longPress' | undefined
 }
 
 /**
@@ -44,6 +48,7 @@ export const ThreadTimeline = ({
   renderReply,
   renderMessageVideo,
   lastReadAt = null,
+  quoteMode = 'button',
 }: Props) => {
   const items = buildTimeline({ submissions, messages, notices })
   const newKey = firstNewItemKey(items, {
@@ -68,6 +73,7 @@ export const ThreadTimeline = ({
             message={item.message}
             mine={item.message.from === viewer}
             renderVideo={renderMessageVideo}
+            quoteMode={quoteMode}
           />
         )
     }
@@ -112,10 +118,12 @@ const MessageBubble = ({
   message,
   mine,
   renderVideo,
+  quoteMode,
 }: {
   message: Message
   mine: boolean
   renderVideo: (video: MessageVideo) => ReactNode
+  quoteMode: 'button' | 'longPress'
 }) => {
   const { attachment } = message
   const excerpt =
@@ -124,23 +132,21 @@ const MessageBubble = ({
       : attachment.kind === 'drill'
         ? `ドリル：${attachment.title}`
         : '動画'
-  return (
+  const target = {
+    kind: 'message' as const,
+    targetId: message.id,
+    label: `${message.from === 'coach' ? 'コーチ' : '生徒'}：${excerpt}`,
+  }
+  const bubble = (
     <div
       id={quoteAnchorId('message', message.id)}
-      className={`group w-full max-w-[85%] scroll-mt-20 space-y-2 rounded-2xl px-4 py-2 text-sm ${
+      className={`group w-full scroll-mt-20 space-y-2 rounded-2xl px-4 py-2 text-sm ${
         mine ? 'bg-mint-soft text-ink' : 'bg-line-soft text-body'
       }`}
     >
       {message.quote && <QuotePreview quote={message.quote} />}
       {attachment.kind === 'drill' && (
-        <div className="rounded-xl bg-white p-3">
-          <p className="text-ink text-caption font-bold">ドリル：{attachment.title}</p>
-          {attachment.description && (
-            <p className="text-caption text-body mt-1 whitespace-pre-wrap">
-              {attachment.description}
-            </p>
-          )}
-        </div>
+        <DrillDetails title={attachment.title} description={attachment.description} />
       )}
       {attachment.kind === 'video' && (
         <div id={quoteAnchorId('video', attachment.videoId)} className="scroll-mt-20">
@@ -150,14 +156,15 @@ const MessageBubble = ({
       {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted text-[10px]">{formatDateTime(message.sentAt)}</p>
-        <QuoteButton
-          target={{
-            kind: 'message',
-            targetId: message.id,
-            label: `${message.from === 'coach' ? 'コーチ' : '生徒'}：${excerpt}`,
-          }}
-        />
+        {quoteMode === 'button' && <QuoteButton target={target} />}
       </div>
     </div>
+  )
+  return quoteMode === 'longPress' ? (
+    <LongPressQuote target={target} className="w-full max-w-[85%]">
+      {bubble}
+    </LongPressQuote>
+  ) : (
+    <div className="w-full max-w-[85%]">{bubble}</div>
   )
 }
