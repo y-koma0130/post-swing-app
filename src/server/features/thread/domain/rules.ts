@@ -19,6 +19,8 @@ export const VIDEO_RULES = {
   /** 受け取るフレームレートの範囲。外れた値は記録しない（スマホのスロー撮影は 240fps まで） */
   minFrameRate: 1,
   maxFrameRate: 1000,
+  /** 動画に添えるメモ */
+  maxNoteLength: 1000,
 } as const
 
 /** 返信のルール */
@@ -33,6 +35,12 @@ export const REPLY_RULES = {
 export const CHAT_RULES = {
   maxLength: 1000,
 } as const
+
+/**
+ * 受付枠に数えるスレッドの状態（終わっていないもの）。
+ * 申し込み・受付ページ・キャンセル待ちで、同じ数え方をする
+ */
+export const CAPACITY_COUNTED_STATUSES = ['waiting_student', 'waiting_coach'] as const
 
 /** 毎日の処理のルール */
 export const MAINTENANCE_RULES = {

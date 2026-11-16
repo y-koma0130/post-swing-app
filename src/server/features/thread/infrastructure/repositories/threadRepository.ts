@@ -70,7 +70,7 @@ export const saveVideo: SaveVideo = async (v) => {
     db
       .update(thread)
       .set({
-        status: 'waiting_coach',
+        status: v.nextStatus,
         ...(v.theme === null ? {} : { theme: v.theme }),
         updatedAt: v.uploadedAt,
       })
@@ -254,5 +254,5 @@ export const createThread: CreateThread = async (t) => {
   const now = new Date()
   await getDb()
     .insert(thread)
-    .values({ ...t, status: 'waiting_student', createdAt: now, updatedAt: now })
+    .values({ ...t, createdAt: now, updatedAt: now })
 }

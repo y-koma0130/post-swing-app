@@ -1,7 +1,11 @@
 import type { Thread } from '../values/Thread'
 import type { ThreadStatus } from '../values/ThreadStatus'
 
-export type ThreadEvent = 'coach_replied' | 'coach_chatted' | 'student_chatted'
+export type ThreadEvent =
+  | 'student_sent_video'
+  | 'student_chatted'
+  | 'coach_replied'
+  | 'coach_chatted'
 
 export type NextStatusAfter = (
   thread: Pick<Thread, 'status' | 'videos'>,
@@ -18,7 +22,7 @@ export type NextStatusAfter = (
  */
 export const nextStatusAfter: NextStatusAfter = (thread, event) => {
   if (thread.status === 'closed') return 'closed'
-  if (event === 'student_chatted') return 'waiting_coach'
+  if (event === 'student_sent_video' || event === 'student_chatted') return 'waiting_coach'
   const unreplied = thread.videos.filter((v) => !v.replied).length
   // 返信した動画は、この時点ではまだ replied になっていない
   const remaining = event === 'coach_replied' ? unreplied - 1 : unreplied

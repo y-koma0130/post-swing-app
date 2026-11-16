@@ -50,11 +50,19 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
   export type CalcRemainingCapacity = (coach: Pick<Coach, 'monthlyCapacity'>, active: number) => number
   export const calcRemainingCapacity: CalcRemainingCapacity = (coach, active) => ...
   ```
+- 「できるか・どうなるか」の判定はドメインサービスに置く。形は次のどれか
+  - 可否の判定：`check*`。止める理由（`'closed'` など）か `null`、または受け付けた値を `Result` で返す（例：`checkPurchaseEligibility`、`checkReplySubmission`）
+  - 状態の移り方・作り方：`nextStatusAfter`、`startThread`
+  - 計算：`calc*`（例：`calcRemainingCapacity`、`calcMaintenanceDates`）
+- 判定に要る事実（件数・有無など）は引数で受け取る。DB を引くのはユースケースの役目
+- ルールの数値は `rules.ts` の定数にまとめる。SQL の条件に使う値（受付枠に数える状態など）も、ここの定数を infrastructure が使う
+- ドメインサービスにはテストを書く（`*.service.test.ts`）
 - domain は infrastructure を import しない
 
 ### application
 
 - ユースケースは `*.usecase.ts`。`(params, dependencies)` を受け取る
+- ユースケースに書くのは「権限の確認（誰が）→ 事実を読む → ドメインサービスで判定 → 書く・知らせる」の流れだけ。if 文でルールを直書きしない
 - 依存する関数は `type Dependencies = Readonly<{ ... }>` で受け取り、**infrastructure の実装を直接 import しない**（型だけ import する）。テストでは差し替える
 - 画面に返す形は `dto/*.dto.ts` の型で定義する。ブランド型は外して素の型にする
 - ユースケースごとに `*.usecase.test.ts` を置き、権限（他人は `not_found`）とドメインのルールを Vitest で確かめる。依存は `vi.fn` で差し替える
@@ -62,7 +70,7 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 
 ### infrastructure
 
-- `repositories/`：集約を保存・取得する。戻り値は `schema.parse` でドメインの型にして返す
+- `repositories/`：集約を保存・取得する。戻り値は `schema.parse` でドメインの型にして返す。状態などの値は受け取ったものを書き、自分で決めない
 - `query-services/`：読み取り専用。ドメインを通さず DTO を直接返してよい
 - `external-services/`：Stripe・LINE・R2 などの外部 API
 - どれも関数の型を export し、同じ名前で実装する

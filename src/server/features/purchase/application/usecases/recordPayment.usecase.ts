@@ -1,4 +1,4 @@
-import { calcThreadPeriod } from '@/server/features/thread/domain/services/calcThreadPeriod.service'
+import { startThread } from '@/server/features/thread/domain/services/startThread.service'
 import type { NewThread } from '@/server/features/thread/domain/values/Thread'
 import { err, ok, type Result } from '@/server/utils/result'
 import type { Purchase } from '../../domain/values/Purchase'
@@ -56,14 +56,16 @@ export const recordPayment: RecordPayment = async (params, deps) => {
     return ok({ threadCreated: false })
   }
 
-  await deps.createThread({
-    id: deps.generateId(),
-    purchaseId: purchase.id,
-    coachUserId: purchase.coachUserId,
-    studentUserId: purchase.studentUserId,
-    planKind: purchase.planKind,
-    ...calcThreadPeriod(params.paidAt),
-    stripeInvoiceId: params.subscription?.invoiceId ?? null,
-  })
+  await deps.createThread(
+    startThread({
+      id: deps.generateId(),
+      purchaseId: purchase.id,
+      coachUserId: purchase.coachUserId,
+      studentUserId: purchase.studentUserId,
+      planKind: purchase.planKind,
+      paidAt: params.paidAt,
+      stripeInvoiceId: params.subscription?.invoiceId ?? null,
+    })
+  )
   return ok({ threadCreated: true })
 }

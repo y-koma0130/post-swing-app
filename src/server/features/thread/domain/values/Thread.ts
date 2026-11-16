@@ -3,7 +3,7 @@ import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { chatMessageSchema } from './ChatMessage'
 import { swingVideoSchema } from './SwingVideo'
 import { threadIdSchema } from './ThreadId'
-import { threadStatusSchema } from './ThreadStatus'
+import { type ThreadStatus, threadStatusSchema } from './ThreadStatus'
 
 /**
  * スレッド（1つのテーマを「送る→直す→撮り直す」で見る単位）
@@ -43,6 +43,7 @@ export type NewThread = Readonly<{
   coachUserId: string
   studentUserId: string
   planKind: Thread['planKind']
+  status: ThreadStatus
   startedAt: Date
   expiresAt: Date
   /** 月額のときの請求。請求ごとにスレッドを1つ作る */

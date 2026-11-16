@@ -1,7 +1,8 @@
 import 'server-only'
-import { and, count, eq, ne } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, thread } from '@/server/db/schema'
+import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
 import type { CoachProfileDto } from '../../application/dto/CoachProfile.dto'
 import { PLAN_DISPLAY_ORDER } from '../../domain/rules'
 import { calcRemainingCapacity } from '../../domain/services/calcRemainingCapacity.service'
@@ -31,7 +32,12 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
   const active = await getDb()
     .select({ n: count() })
     .from(thread)
-    .where(and(eq(thread.coachUserId, coach.userId), ne(thread.status, 'closed')))
+    .where(
+      and(
+        eq(thread.coachUserId, coach.userId),
+        inArray(thread.status, [...CAPACITY_COUNTED_STATUSES])
+      )
+    )
     .get()
   const activeThreadCount = active?.n ?? 0
 

@@ -1,7 +1,8 @@
 import 'server-only'
-import { and, asc, count, eq, inArray, isNull, ne } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
+import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
 import type { CheckoutCoach } from '../../application/usecases/startCheckout.usecase'
 import { type Purchase, purchaseSchema } from '../../domain/values/Purchase'
 
@@ -44,7 +45,12 @@ export const countActiveThreads: CountActiveThreads = async (coachUserId) => {
   const row = await getDb()
     .select({ n: count() })
     .from(thread)
-    .where(and(eq(thread.coachUserId, coachUserId), ne(thread.status, 'closed')))
+    .where(
+      and(
+        eq(thread.coachUserId, coachUserId),
+        inArray(thread.status, [...CAPACITY_COUNTED_STATUSES])
+      )
+    )
     .get()
   return row?.n ?? 0
 }
@@ -148,11 +154,11 @@ export const findPortalCustomer: FindPortalCustomer = async (purchaseId, student
   return row?.customerId ?? null
 }
 
-export type FindCoachesWithOpenSlots = () => Promise<
-  Array<{ coachUserId: string; openSlots: number }>
+export type FindCoachesWithWaitlist = () => Promise<
+  Array<{ coachUserId: string; monthlyCapacity: number; activeThreadCount: number }>
 >
-/** まだ知らせていないキャンセル待ちがいるコーチと、受付枠の空きの数 */
-export const findCoachesWithOpenSlots: FindCoachesWithOpenSlots = async () => {
+/** まだ知らせていないキャンセル待ちがいるコーチと、受付枠・受付中のスレッドの数 */
+export const findCoachesWithWaitlist: FindCoachesWithWaitlist = async () => {
   const db = getDb()
   const coaches = await db
     .selectDistinct({
@@ -166,7 +172,8 @@ export const findCoachesWithOpenSlots: FindCoachesWithOpenSlots = async () => {
   return Promise.all(
     coaches.map(async (c) => ({
       coachUserId: c.coachUserId,
-      openSlots: Math.max(c.capacity - (await countActiveThreads(c.coachUserId)), 0),
+      monthlyCapacity: c.capacity,
+      activeThreadCount: await countActiveThreads(c.coachUserId),
     }))
   )
 }

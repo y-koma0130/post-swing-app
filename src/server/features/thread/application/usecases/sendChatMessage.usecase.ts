@@ -1,8 +1,8 @@
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
-import { CHAT_RULES } from '../../domain/rules'
-import { countRemainingStudentMessages } from '../../domain/services/countRemainingStudentMessages.service'
+import { type ChatBlocker, checkChatMessage } from '../../domain/services/checkChatMessage.service'
 import { nextStatusAfter } from '../../domain/services/nextStatusAfter.service'
+import { roleInThread } from '../../domain/services/roleInThread.service'
 import type { ChatSender } from '../../domain/values/ChatMessage'
 import type { Thread } from '../../domain/values/Thread'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
@@ -38,7 +38,7 @@ type Dependencies = Readonly<{
   generateId: () => string
 }>
 
-export type SendChatMessageError = 'not_found' | 'closed' | 'empty' | 'too_long' | 'limit_reached'
+export type SendChatMessageError = 'not_found' | ChatBlocker
 
 export type SendChatMessage = (
   params: SendChatMessageParams,
@@ -46,31 +46,25 @@ export type SendChatMessage = (
 ) => Promise<Result<{ messageId: string }, SendChatMessageError>>
 
 /**
- * チャットを送る（動画ごと）
- *
- * ドメインルール:
- * - スレッドのコーチと生徒だけ
- * - 生徒は動画1本につき3通まで。コーチは無制限
- * - 終了したスレッドには送れない
+ * チャットを送る（動画ごと）。送れるのはスレッドのコーチと生徒だけで、
+ * 送れるかは checkChatMessage で決める
  */
 export const sendChatMessage: SendChatMessage = async (params, deps) => {
   const thread = await deps.findThread(params.threadId)
-  const role: ChatSender | null =
-    thread?.coachUserId === params.actor.userId
-      ? 'coach'
-      : thread?.studentUserId === params.actor.userId
-        ? 'student'
-        : null
+  const role = thread ? roleInThread(thread, params.actor.userId) : null
   if (!thread || role === null || !thread.videos.some((v) => v.id === params.videoId)) {
     return err('not_found')
   }
-  if (thread.status === 'closed') return err('closed')
-  const body = params.body.trim()
-  if (body.length === 0) return err('empty')
-  if (body.length > CHAT_RULES.maxLength) return err('too_long')
-  if (role === 'student' && countRemainingStudentMessages(thread, params.videoId) === 0) {
-    return err('limit_reached')
+  const checked = checkChatMessage({
+    thread,
+    videoId: params.videoId,
+    sender: role,
+    body: params.body,
+  })
+  if (!checked.ok) {
+    return err(checked.error)
   }
+  const { body } = checked.value
 
   const messageId = deps.generateId()
   await deps.saveChatMessage({

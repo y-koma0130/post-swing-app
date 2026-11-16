@@ -6,7 +6,7 @@ type Deps = Parameters<typeof notifyWaitlist>[1]
 const now = new Date('2026-11-16T19:00:00Z')
 
 const setup = (
-  coaches: Array<{ coachUserId: string; openSlots: number }>,
+  coaches: Array<{ coachUserId: string; monthlyCapacity: number; activeThreadCount: number }>,
   waiting: Record<string, string[]>
 ) => {
   const notifyWaitlistOpened = vi.fn<Deps['notifyWaitlistOpened']>(async () => undefined)
@@ -15,7 +15,7 @@ const setup = (
     (waiting[coachUserId] ?? []).slice(0, limit)
   )
   const deps: Deps = {
-    findCoachesWithOpenSlots: async () => coaches,
+    findCoachesWithWaitlist: async () => coaches,
     findWaitingStudents,
     notifyWaitlistOpened,
     markWaitlistNotified,
@@ -26,7 +26,7 @@ const setup = (
 describe('notifyWaitlist', () => {
   it('空きの数だけ、古い順に知らせて記録する', async () => {
     const { deps, notifyWaitlistOpened, markWaitlistNotified } = setup(
-      [{ coachUserId: 'coach-1', openSlots: 2 }],
+      [{ coachUserId: 'coach-1', monthlyCapacity: 5, activeThreadCount: 3 }],
       { 'coach-1': ['s1', 's2', 's3'] }
     )
     expect(await notifyWaitlist({ now }, deps)).toEqual({ ok: true, value: { notified: 2 } })
@@ -39,7 +39,7 @@ describe('notifyWaitlist', () => {
 
   it('空きがなければ誰にも知らせない', async () => {
     const { deps, notifyWaitlistOpened, findWaitingStudents } = setup(
-      [{ coachUserId: 'coach-1', openSlots: 0 }],
+      [{ coachUserId: 'coach-1', monthlyCapacity: 5, activeThreadCount: 5 }],
       { 'coach-1': ['s1'] }
     )
     expect(await notifyWaitlist({ now }, deps)).toEqual({ ok: true, value: { notified: 0 } })
@@ -48,7 +48,10 @@ describe('notifyWaitlist', () => {
   })
 
   it('キャンセル待ちがいなければ記録もしない', async () => {
-    const { deps, markWaitlistNotified } = setup([{ coachUserId: 'coach-1', openSlots: 3 }], {})
+    const { deps, markWaitlistNotified } = setup(
+      [{ coachUserId: 'coach-1', monthlyCapacity: 5, activeThreadCount: 2 }],
+      {}
+    )
     await notifyWaitlist({ now }, deps)
     expect(markWaitlistNotified).not.toHaveBeenCalled()
   })

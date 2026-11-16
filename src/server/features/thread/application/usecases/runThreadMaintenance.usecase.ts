@@ -1,9 +1,7 @@
 import { ok, type Result } from '@/server/utils/result'
-import { MAINTENANCE_RULES } from '../../domain/rules'
+import { calcMaintenanceDates } from '../../domain/services/calcMaintenanceDates.service'
 import { shouldCloseThread } from '../../domain/services/shouldCloseThread.service'
 import type { Thread } from '../../domain/values/Thread'
-
-const DAY_MS = 24 * 60 * 60 * 1000
 
 type Dependencies = Readonly<{
   /** 期限を過ぎて、まだ終了していないスレッド */
@@ -28,8 +26,7 @@ export type RunThreadMaintenance = (
 
 /**
  * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、古い動画の削除
- *
- * 毎日同じ時刻に動くので、「期限まで3日〜2日のもの」を知らせれば1スレッドにつき1回になる
+ * （終了してよいかは shouldCloseThread、日付は calcMaintenanceDates で決める）
  */
 export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) => {
   const expired = await deps.findExpiredOpenThreads(now)
@@ -38,18 +35,16 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     await deps.closeThreads(toClose, now)
   }
 
-  const days = MAINTENANCE_RULES.remindDaysBefore
+  const dates = calcMaintenanceDates(now)
   const expiring = await deps.findThreadsExpiringBetween(
-    new Date(now.getTime() + (days - 1) * DAY_MS),
-    new Date(now.getTime() + days * DAY_MS)
+    dates.remindExpiringFrom,
+    dates.remindExpiringTo
   )
   for (const t of expiring) {
     await deps.notifyThreadExpiring({ threadId: t.id, studentUserId: t.studentUserId })
   }
 
-  const videos = await deps.findVideosToDelete(
-    new Date(now.getTime() - MAINTENANCE_RULES.videoRetentionDays * DAY_MS)
-  )
+  const videos = await deps.findVideosToDelete(dates.deleteVideosClosedBefore)
   for (const v of videos) {
     await deps.deleteMediaObject(v.r2Key)
   }

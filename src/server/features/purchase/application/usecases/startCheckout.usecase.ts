@@ -2,6 +2,10 @@ import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import { calcPlatformFee } from '../../domain/services/calcPlatformFee.service'
+import {
+  checkPurchaseEligibility,
+  type PurchaseBlocker,
+} from '../../domain/services/checkPurchaseEligibility.service'
 import type { Purchase } from '../../domain/values/Purchase'
 
 export type CheckoutCoach = Readonly<{
@@ -43,13 +47,7 @@ type Dependencies = Readonly<{
   generateId: () => string
 }>
 
-export type StartCheckoutError =
-  | 'not_found'
-  | 'not_accepting'
-  | 'own_coach'
-  | 'full'
-  | 'trial_used'
-  | 'already_subscribed'
+export type StartCheckoutError = 'not_found' | PurchaseBlocker
 
 export type StartCheckout = (
   params: StartCheckoutParams,
@@ -57,35 +55,28 @@ export type StartCheckout = (
 ) => Promise<Result<{ url: string }, StartCheckoutError>>
 
 /**
- * 生徒が申し込み、Stripe の支払い画面へ進む
- *
- * ドメインルール:
- * - コーチが決済を受けられ、そのプランが受付中であること
- * - 受付枠が残っていること（満枠ならキャンセル待ちへ）
- * - お試しは同じコーチにつき1回まで
- * - 月額は同じコーチに2重に申し込めない
+ * 生徒が申し込み、Stripe の支払い画面へ進む（申し込めるかは checkPurchaseEligibility で決める）
  */
 export const startCheckout: StartCheckout = async ({ actor, coachSlug, planKind }, deps) => {
   const coach = await deps.findCoachForCheckout(coachSlug)
   if (!coach) {
     return err('not_found')
   }
-  const plan = coach.plans.find((p) => p.kind === planKind && p.active)
-  if (!plan || !coach.chargesEnabled || coach.stripeAccountId === null) {
-    return err('not_accepting')
+  const [activeThreadCount, hasPaidTrial, hasActiveSubscription] = await Promise.all([
+    deps.countActiveThreads(coach.userId),
+    deps.hasPaidTrial(actor.userId, coach.userId),
+    deps.hasActiveSubscription(actor.userId, coach.userId),
+  ])
+  const eligibility = checkPurchaseEligibility({
+    coach,
+    planKind,
+    studentUserId: actor.userId,
+    facts: { activeThreadCount, hasPaidTrial, hasActiveSubscription },
+  })
+  if (!eligibility.ok) {
+    return err(eligibility.error)
   }
-  if (coach.userId === actor.userId) {
-    return err('own_coach')
-  }
-  if ((await deps.countActiveThreads(coach.userId)) >= coach.monthlyCapacity) {
-    return err('full')
-  }
-  if (planKind === 'trial' && (await deps.hasPaidTrial(actor.userId, coach.userId))) {
-    return err('trial_used')
-  }
-  if (planKind === 'monthly' && (await deps.hasActiveSubscription(actor.userId, coach.userId))) {
-    return err('already_subscribed')
-  }
+  const { plan, destinationAccountId, mode } = eligibility.value
 
   const purchaseId = deps.generateId()
   await deps.savePendingPurchase({
@@ -99,11 +90,11 @@ export const startCheckout: StartCheckout = async ({ actor, coachSlug, planKind 
   })
   const session = await deps.createCheckoutSession({
     purchaseId,
-    mode: planKind === 'monthly' ? 'subscription' : 'payment',
+    mode,
     productName: `${coach.name}：${plan.name}`,
     priceYen: plan.priceYen,
     platformFeeYen: calcPlatformFee(plan.priceYen),
-    destinationAccountId: coach.stripeAccountId,
+    destinationAccountId,
     coachSlug,
     studentUserId: actor.userId,
   })

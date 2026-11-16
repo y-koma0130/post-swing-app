@@ -1,8 +1,11 @@
+import { calcRemainingCapacity } from '@/server/features/coach/domain/services/calcRemainingCapacity.service'
 import { ok, type Result } from '@/server/utils/result'
 
 type Dependencies = Readonly<{
-  /** 受付枠に空きがあり、キャンセル待ちがいるコーチと、空きの数 */
-  findCoachesWithOpenSlots: () => Promise<Array<{ coachUserId: string; openSlots: number }>>
+  /** まだ知らせていないキャンセル待ちがいるコーチと、受付枠・受付中のスレッドの数 */
+  findCoachesWithWaitlist: () => Promise<
+    Array<{ coachUserId: string; monthlyCapacity: number; activeThreadCount: number }>
+  >
   /** まだ知らせていないキャンセル待ちを、登録の古い順に limit 人 */
   findWaitingStudents: (coachUserId: string, limit: number) => Promise<string[]>
   notifyWaitlistOpened: (input: { coachUserId: string; studentUserId: string }) => Promise<void>
@@ -23,9 +26,10 @@ export type NotifyWaitlist = (
  */
 export const notifyWaitlist: NotifyWaitlist = async ({ now }, deps) => {
   let notified = 0
-  for (const coach of await deps.findCoachesWithOpenSlots()) {
-    if (coach.openSlots <= 0) continue
-    const students = await deps.findWaitingStudents(coach.coachUserId, coach.openSlots)
+  for (const coach of await deps.findCoachesWithWaitlist()) {
+    const openSlots = calcRemainingCapacity(coach, coach.activeThreadCount)
+    if (openSlots === 0) continue
+    const students = await deps.findWaitingStudents(coach.coachUserId, openSlots)
     for (const studentUserId of students) {
       await deps.notifyWaitlistOpened({ coachUserId: coach.coachUserId, studentUserId })
     }

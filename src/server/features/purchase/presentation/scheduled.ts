@@ -2,7 +2,7 @@ import 'server-only'
 import { notify } from '@/server/features/notification/public'
 import { notifyWaitlist } from '../application/usecases/notifyWaitlist.usecase'
 import {
-  findCoachesWithOpenSlots,
+  findCoachesWithWaitlist,
   findWaitingStudents,
   markWaitlistNotified,
 } from '../infrastructure/repositories/purchaseRepository'
@@ -12,7 +12,7 @@ export const runDailyWaitlistNotification = async (now: Date) => {
   const result = await notifyWaitlist(
     { now },
     {
-      findCoachesWithOpenSlots,
+      findCoachesWithWaitlist,
       findWaitingStudents,
       notifyWaitlistOpened: (input) => notify({ kind: 'waitlist_opened', ...input }),
       markWaitlistNotified,
