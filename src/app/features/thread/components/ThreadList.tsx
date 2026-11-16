@@ -6,8 +6,8 @@ import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 
 const STATUS_LABEL = {
-  coach: { waiting_coach: '添削待ち', waiting_student: '生徒の番', closed: '完了' },
-  student: { waiting_coach: '添削待ち', waiting_student: 'あなたの番', closed: '完了' },
+  coach: { waiting_coach: '添削待ち', waiting_student: 'レッスン中', closed: '完了' },
+  student: { waiting_coach: '添削待ち', waiting_student: 'レッスン中', closed: '完了' },
 } as const satisfies Record<'coach' | 'student', Record<ThreadStatus, string>>
 
 /** 見ている人が動く番なら目立たせる（コーチは返信待ち、生徒は自分の番） */

@@ -9,7 +9,13 @@ import type { Annotation, NormalizedPoint } from '@/server/features/thread/domai
 export const ANNOTATION_TOOLS = ['line', 'arrow', 'circle', 'free'] as const
 export type AnnotationTool = (typeof ANNOTATION_TOOLS)[number]
 
-export const ANNOTATION_COLORS = ['#5FD4A0', '#FF4D4F', '#FFD600'] as const
+/**
+ * 線の色。芝の緑・空・室内の壁のどれの上でも見えることを優先し、ブランドのミントと喧嘩しない3色
+ * - ホワイト：どの背景でも見える基本の色
+ * - サンイエロー：ゴルフ場の明るさ。芝の上で目立つ
+ * - コーラル：ミントの補色寄り。注意点を示す
+ */
+export const ANNOTATION_COLORS = ['#FFFFFF', '#FFD54A', '#FF6B5B'] as const
 export type AnnotationColor = (typeof ANNOTATION_COLORS)[number]
 
 /** これより短い線・小さい円は、タップの誤操作とみなして捨てる（動画の幅に対する割合） */
@@ -19,6 +25,11 @@ const FREE_POINT_STEP = 0.004
 
 /** 線の太さ（動画の幅に対する割合）。解像度が違っても見た目の太さをそろえる */
 export const STROKE_WIDTH_RATIO = 0.014
+
+/** 線の下に敷く縁（明るい背景でも白や黄色の線が見えるように） */
+export const OUTLINE_COLOR = 'rgba(0, 0, 0, 0.4)'
+/** 縁の太さ（線の太さに対する倍率） */
+export const OUTLINE_WIDTH_SCALE = 1.7
 
 const clamp01 = (value: number): number => Math.min(Math.max(value, 0), 1)
 

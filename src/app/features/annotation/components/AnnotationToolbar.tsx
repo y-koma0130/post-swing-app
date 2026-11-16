@@ -21,9 +21,9 @@ const TOOL_LABEL = {
 } as const satisfies Record<AnnotationTool, string>
 
 const COLOR_LABEL = {
-  '#5FD4A0': 'ミント',
-  '#FF4D4F': '赤',
-  '#FFD600': '黄',
+  '#FFFFFF': 'ホワイト',
+  '#FFD54A': 'サンイエロー',
+  '#FF6B5B': 'コーラル',
 } as const satisfies Record<AnnotationColor, string>
 
 /** 線引きの道具・色・元に戻す */
@@ -56,7 +56,7 @@ export const AnnotationToolbar = ({ editor }: Props) => (
           aria-pressed={editor.color === color}
           onClick={() => editor.setColor(color)}
           style={{ backgroundColor: color }}
-          className={`size-8 rounded-full ring-offset-2 ${
+          className={`border-line size-8 rounded-full border ring-offset-2 ${
             editor.color === color ? 'ring-ink ring-2' : ''
           }`}
         />

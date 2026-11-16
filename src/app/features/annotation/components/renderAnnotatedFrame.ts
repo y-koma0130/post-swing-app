@@ -1,5 +1,10 @@
 import type { Annotation } from '@/server/features/thread/domain/values/Annotation'
-import { arrowHeadPoints, STROKE_WIDTH_RATIO } from '../utils/shapes'
+import {
+  arrowHeadPoints,
+  OUTLINE_COLOR,
+  OUTLINE_WIDTH_SCALE,
+  STROKE_WIDTH_RATIO,
+} from '../utils/shapes'
 
 /** 画像の長い辺の上限。生徒がスマホで見るには十分で、送る量を抑える */
 const MAX_EDGE = 1280
@@ -11,7 +16,7 @@ const drawAnnotation = (
   height: number
 ) => {
   const toPixel = (p: { x: number; y: number }) => ({ x: p.x * width, y: p.y * height })
-  ctx.strokeStyle = annotation.color
+  const lineWidth = width * STROKE_WIDTH_RATIO
   ctx.beginPath()
   switch (annotation.kind) {
     case 'line':
@@ -21,7 +26,7 @@ const drawAnnotation = (
       ctx.moveTo(from.x, from.y)
       ctx.lineTo(to.x, to.y)
       if (annotation.kind === 'arrow') {
-        const [left, right] = arrowHeadPoints(from, to, ctx.lineWidth * 4)
+        const [left, right] = arrowHeadPoints(from, to, lineWidth * 4)
         ctx.moveTo(left.x, left.y)
         ctx.lineTo(to.x, to.y)
         ctx.lineTo(right.x, right.y)
@@ -41,6 +46,12 @@ const drawAnnotation = (
       break
     }
   }
+  // 下に黒い縁を敷いてから、線の色で描く（画面の SVG と同じ見た目）
+  ctx.strokeStyle = OUTLINE_COLOR
+  ctx.lineWidth = lineWidth * OUTLINE_WIDTH_SCALE
+  ctx.stroke()
+  ctx.strokeStyle = annotation.color
+  ctx.lineWidth = lineWidth
   ctx.stroke()
 }
 
@@ -63,7 +74,6 @@ export const renderAnnotatedFrame = async (
     throw new Error('画像を作れませんでした')
   }
   ctx.drawImage(video, 0, 0, width, height)
-  ctx.lineWidth = width * STROKE_WIDTH_RATIO
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   for (const annotation of annotations) {
