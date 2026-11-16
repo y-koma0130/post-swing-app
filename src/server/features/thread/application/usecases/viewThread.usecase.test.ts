@@ -7,6 +7,7 @@ const detail: ThreadDetailDto = {
   id: 'thread-1',
   coachName: '山田',
   coachSlug: 'yamada',
+  coachAvatarUrl: null,
   studentName: '佐藤',
   planKind: 'single',
   theme: '',

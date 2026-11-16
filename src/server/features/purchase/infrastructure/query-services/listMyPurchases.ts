@@ -2,6 +2,7 @@ import 'server-only'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, purchase } from '@/server/db/schema'
+import { toAvatarUrl } from '@/server/features/coach/public'
 import type { MyPurchaseDto } from '../../application/dto/MyPurchase.dto'
 
 export type ListMyPurchases = (studentUserId: string) => Promise<MyPurchaseDto[]>
@@ -12,6 +13,7 @@ export const listMyPurchases: ListMyPurchases = async (studentUserId) => {
       id: purchase.id,
       coachName: coachProfile.displayName,
       coachSlug: coachProfile.slug,
+      coachAvatarKey: coachProfile.avatarR2Key,
       planKind: purchase.planKind,
       priceYen: purchase.priceYen,
       status: purchase.status,
@@ -30,6 +32,7 @@ export const listMyPurchases: ListMyPurchases = async (studentUserId) => {
             id: row.id,
             coachName: row.coachName,
             coachSlug: row.coachSlug,
+            coachAvatarUrl: toAvatarUrl(row.coachSlug, row.coachAvatarKey),
             planKind: row.planKind,
             priceYen: row.priceYen,
             status: row.status,

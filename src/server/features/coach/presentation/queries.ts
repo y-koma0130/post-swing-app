@@ -10,6 +10,7 @@ import {
   delayFlagExpiresAt,
   isDelayFlagActive,
 } from '../domain/services/calcCoachAvailability.service'
+import { getAvatarBytes } from '../infrastructure/external-services/avatarStorage'
 import { fetchChargesEnabled } from '../infrastructure/external-services/stripeConnect'
 import {
   findCoachAvailabilityFacts,
@@ -19,6 +20,7 @@ import { findCoachProfileBySlug } from '../infrastructure/query-services/findCoa
 import { findCoachSettings } from '../infrastructure/query-services/findCoachSettings'
 import { listCoachesForAdmin } from '../infrastructure/query-services/listCoachesForAdmin'
 import {
+  findAvatarKeyBySlug,
   findStripeAccountId,
   saveChargesEnabled,
 } from '../infrastructure/repositories/coachRepository'
@@ -96,3 +98,13 @@ export const getCurrentCoachAvailabilitySettings =
       today,
     }
   }
+
+/** SNS のカード画像に埋め込むプロフィール画像。なければ null */
+export const getCoachAvatarImage = async (
+  slug: string
+): Promise<{ data: ArrayBuffer; contentType: string } | null> => {
+  const key = await findAvatarKeyBySlug(slug)
+  const data = key ? await getAvatarBytes(key) : null
+  if (!key || !data) return null
+  return { data, contentType: key.endsWith('.png') ? 'image/png' : 'image/jpeg' }
+}

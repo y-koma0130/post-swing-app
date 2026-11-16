@@ -23,6 +23,8 @@ export const coachProfile = sqliteTable('coach_profile', {
   chargesEnabled: integer({ mode: 'boolean' }).notNull().default(false),
   /** 管理者が受付を止めた日時。止めている間は新しい申し込みを受けない（進行中のスレッドは続く） */
   suspendedAt: integer({ mode: 'timestamp_ms' }),
+  /** プロフィール画像（R2 のキー。正方形の JPEG）。なければ null */
+  avatarR2Key: text('avatar_r2_key'),
   /** 返信遅れフラグを立てた日時（7日で自動で外れる。判定は domain の isDelayFlagActive） */
   delayFlagSetAt: integer({ mode: 'timestamp_ms' }),
   ...timestamps,

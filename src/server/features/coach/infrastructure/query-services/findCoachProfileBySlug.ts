@@ -10,7 +10,8 @@ import { calcRemainingCapacity } from '../../domain/services/calcRemainingCapaci
 import { canAcceptApplications } from '../../domain/services/canAcceptApplications.service'
 import { decideSignupGuard } from '../../domain/services/decideSignupGuard.service'
 import { coachSlugSchema } from '../../domain/values/CoachSlug'
-import { findCoachByUserId } from '../repositories/coachRepository'
+import { findAvatarKey, findCoachByUserId } from '../repositories/coachRepository'
+import { toAvatarUrl } from './avatarUrl'
 import {
   findCoachAvailabilityFacts,
   toAvailabilityDto,
@@ -48,7 +49,10 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     .get()
   const activeThreadCount = active?.n ?? 0
   const now = new Date()
-  const facts = await findCoachAvailabilityFacts(coach.userId)
+  const [facts, avatarKey] = await Promise.all([
+    findCoachAvailabilityFacts(coach.userId),
+    findAvatarKey(coach.userId),
+  ])
   const availability = calcCoachAvailability({ ...facts, now })
 
   return {
@@ -57,6 +61,7 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     title: coach.title,
     bio: coach.bio,
     instagram: coach.instagram,
+    avatarUrl: toAvatarUrl(coach.slug, avatarKey),
     remainingCapacity: calcRemainingCapacity(coach, activeThreadCount),
     acceptingApplications: canAcceptApplications(coach),
     availability: toAvailabilityDto(availability),

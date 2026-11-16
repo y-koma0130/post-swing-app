@@ -1,0 +1,1 @@
+ALTER TABLE `coach_profile` ADD `avatar_r2_key` text;

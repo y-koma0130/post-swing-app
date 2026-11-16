@@ -7,6 +7,7 @@ import {
   pausedMessage,
   signupAckLabel,
 } from '@/app/features/coach-availability/utils/availabilityText'
+import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { getApplyPage } from '@/server/features/purchase/presentation/queries'
 import { getTurnstileSiteKey } from '@/server/utils/turnstile'
 
@@ -25,9 +26,12 @@ const ApplyPage = async ({ params }: Props) => {
 
   return (
     <main className="space-y-6 px-6 py-10">
-      <div>
-        <p className="text-sm text-gray-500">{coach.name} さんの添削</p>
-        <h1 className="mt-1 text-xl font-bold">申し込み</h1>
+      <div className="flex items-center gap-3">
+        <CoachAvatar name={coach.name} url={coach.avatarUrl} size={48} />
+        <div>
+          <p className="text-sm text-gray-500">{coach.name} さんの添削</p>
+          <h1 className="mt-1 text-xl font-bold">申し込み</h1>
+        </div>
       </div>
       <CoachAvailabilityNotice
         coachName={coach.name}

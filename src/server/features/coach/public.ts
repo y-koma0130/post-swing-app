@@ -1,5 +1,7 @@
 import 'server-only'
 
+/** プロフィール画像の URL（キーから作る） */
+export { toAvatarUrl } from './infrastructure/query-services/avatarUrl'
 /** コーチの不在期間と返信遅れフラグ、今の状態（thread・purchase が判定に使う） */
 export {
   findCoachAvailability,

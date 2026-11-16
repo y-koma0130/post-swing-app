@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { AvatarUploader } from '@/app/features/coach-settings/components/AvatarUploader'
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
@@ -34,6 +35,7 @@ const CoachSettingsPage = async () => {
       </Card>
       <Card className="space-y-4">
         <h2 className="font-bold">プロフィール</h2>
+        <AvatarUploader name={settings.name} avatarUrl={settings.avatarUrl} />
         <CoachProfileForm settings={settings} />
       </Card>
       <Card className="space-y-4">

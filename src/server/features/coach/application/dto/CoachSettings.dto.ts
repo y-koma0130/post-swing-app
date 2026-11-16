@@ -7,6 +7,7 @@ export type CoachSettingsDto = {
   title: string
   bio: string
   instagram: string
+  avatarUrl: string | null
   monthlyCapacity: number
   chargesEnabled: boolean
   hasStripeAccount: boolean

@@ -200,3 +200,31 @@ export const saveCoachSuspended: SaveCoachSuspended = async (userId, suspendedAt
     .set({ suspendedAt, updatedAt: new Date() })
     .where(eq(coachProfile.userId, userId))
 }
+
+export type FindAvatarKey = (coachUserId: string) => Promise<string | null>
+export const findAvatarKey: FindAvatarKey = async (coachUserId) => {
+  const row = await getDb()
+    .select({ key: coachProfile.avatarR2Key })
+    .from(coachProfile)
+    .where(eq(coachProfile.userId, coachUserId))
+    .get()
+  return row?.key ?? null
+}
+
+export type FindAvatarKeyBySlug = (slug: string) => Promise<string | null>
+export const findAvatarKeyBySlug: FindAvatarKeyBySlug = async (slug) => {
+  const row = await getDb()
+    .select({ key: coachProfile.avatarR2Key })
+    .from(coachProfile)
+    .where(eq(coachProfile.slug, slug))
+    .get()
+  return row?.key ?? null
+}
+
+export type SaveAvatarKey = (coachUserId: string, r2Key: string | null) => Promise<void>
+export const saveAvatarKey: SaveAvatarKey = async (coachUserId, r2Key) => {
+  await getDb()
+    .update(coachProfile)
+    .set({ avatarR2Key: r2Key, updatedAt: new Date() })
+    .where(eq(coachProfile.userId, coachUserId))
+}

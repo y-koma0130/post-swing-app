@@ -14,6 +14,7 @@ export type ThreadDetailDto = {
   id: string
   coachName: string
   coachSlug: string
+  coachAvatarUrl: string | null
   studentName: string
   planKind: PlanKind
   theme: string

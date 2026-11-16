@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
+import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
 import {
   coachShareDescription,
@@ -49,9 +50,14 @@ const CoachLandingPage = async ({ params }: Props) => {
 
   return (
     <main className="px-6 py-10">
-      <p className="text-sm text-gray-500">{coach.title}</p>
-      <h1 className="mt-1 text-2xl font-bold">{coach.name}</h1>
-      <p className="mt-1 text-sm text-gray-500">{coach.instagram}</p>
+      <div className="flex items-center gap-4">
+        <CoachAvatar name={coach.name} url={coach.avatarUrl} size={80} />
+        <div>
+          <p className="text-sm text-gray-500">{coach.title}</p>
+          <h1 className="mt-1 text-2xl font-bold">{coach.name}</h1>
+          <p className="mt-1 text-sm text-gray-500">{coach.instagram}</p>
+        </div>
+      </div>
       <p className="mt-6 leading-relaxed text-gray-700">{coach.bio}</p>
       <p className="bg-mint-soft text-ink mt-6 inline-block rounded-full px-4 py-1 text-sm font-bold">
         {coach.remainingCapacity > 0

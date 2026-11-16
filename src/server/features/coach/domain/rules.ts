@@ -46,3 +46,13 @@ export const DEFAULT_PLANS: readonly Plan[] = [
 
 /** 画面に並べる順（お試し → 1スレッド → 月額） */
 export const PLAN_DISPLAY_ORDER = { trial: 0, single: 1, monthly: 2 } as const
+
+/** プロフィール画像のルール（ブラウザで正方形に切り抜き、縮めてから送る） */
+export const AVATAR_RULES = {
+  /** 一辺の大きさ（px） */
+  size: 512,
+  /** 送られてくる大きさの上限（512px の JPEG なら 100KB 前後） */
+  maxBytes: 1024 * 1024,
+  /** OG 画像の描画（satori）でも読める形式に限る */
+  allowedContentTypes: ['image/jpeg', 'image/png'],
+} as const

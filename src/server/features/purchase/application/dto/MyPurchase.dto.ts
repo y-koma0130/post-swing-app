@@ -5,6 +5,7 @@ export type MyPurchaseDto = {
   id: string
   coachName: string
   coachSlug: string
+  coachAvatarUrl: string | null
   planKind: PlanKind
   priceYen: number
   status: 'paid' | 'canceled'
