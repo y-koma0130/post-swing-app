@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import type { FormEvent } from 'react'
+import { type FormEvent, useRef, useState } from 'react'
+import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
 import { useVideoConversion } from '../hooks/useVideoConversion'
@@ -13,6 +14,10 @@ type Props = {
   /** 最初の動画のときだけテーマ（直したいところ）を書いてもらう */
   needsTheme: boolean
   maxBytes: number
+  /** 送る前に確かめる文言（コーチが不在・返信遅れのとき、毎回出す）。確認しないなら null */
+  confirmMessage: string | null
+  /** 送るボタンの近くに出す一行（「通常48時間以内に添削が届きます」） */
+  replyHint: string | null
 }
 
 const MB = 1024 * 1024
@@ -23,7 +28,13 @@ const MB = 1024 * 1024
  * 送る範囲を選んでもらい、ブラウザで H.264 の MP4 に変換してから送る。
  * 変換できないブラウザでは、元のファイルを（上限以内なら）そのまま送る
  */
-export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
+export const VideoUploadForm = ({
+  threadId,
+  needsTheme,
+  maxBytes,
+  confirmMessage,
+  replyHint,
+}: Props) => {
   const router = useRouter()
   const { state, upload } = useVideoUpload()
   const conversion = useVideoConversion(maxBytes)
@@ -33,10 +44,23 @@ export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
   const sendsAsIs = analysis.kind === 'as_is'
   const tooLarge = sendsAsIs && file !== null && file.size > maxBytes
 
+  // 確認を出しているあいだ、送る内容をとっておく（「やめる」でも入力と動画は消さない）
+  const pendingForm = useRef<FormData | null>(null)
+  const [confirming, setConfirming] = useState(false)
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!file || tooLarge || analysis.kind === 'reading') return
     const form = new FormData(event.currentTarget)
+    if (confirmMessage) {
+      pendingForm.current = form
+      setConfirming(true)
+      return
+    }
+    await send(form)
+  }
+
+  const send = async (form: FormData) => {
     const toSend = await conversion.prepare()
     if (!toSend) return
     const ok = await upload({
@@ -111,6 +135,18 @@ export const VideoUploadForm = ({ threadId, needsTheme, maxBytes }: Props) => {
       <Button type="submit" disabled={busy || !file || tooLarge} className="w-full">
         動画を送る
       </Button>
+      {replyHint && <p className="text-center text-xs text-gray-500">{replyHint}</p>}
+      <ConfirmDialog
+        open={confirming}
+        message={confirmMessage ?? ''}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false)
+          const form = pendingForm.current
+          pendingForm.current = null
+          if (form) void send(form)
+        }}
+      />
     </form>
   )
 }

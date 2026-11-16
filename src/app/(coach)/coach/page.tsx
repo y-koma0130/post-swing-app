@@ -1,8 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
-import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
+import {
+  getCurrentCoach,
+  getCurrentCoachAvailabilitySettings,
+} from '@/server/features/coach/presentation/queries'
 import { getCoachThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 /** コーチのホーム */
@@ -22,10 +26,14 @@ const CoachHomePage = async () => {
     )
   }
   const { settings, actor } = current
-  const threads = await getCoachThreadSummaries(actor.userId)
+  const [threads, availability] = await Promise.all([
+    getCoachThreadSummaries(actor.userId),
+    getCurrentCoachAvailabilitySettings(),
+  ])
 
   return (
     <main className="space-y-6">
+      {availability && <AvailabilityBanner availability={availability.availability} />}
       {!settings.chargesEnabled && (
         <Card className="space-y-1 border-amber-200 bg-amber-50">
           <p className="font-bold">まだ申し込みを受け付けていません</p>

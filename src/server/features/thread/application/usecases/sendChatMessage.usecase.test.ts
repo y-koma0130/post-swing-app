@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { localDateSchema } from '@/server/utils/localDate'
 import type { Thread } from '../../domain/values/Thread'
 import { threadIdSchema } from '../../domain/values/ThreadId'
 import { sendChatMessage } from './sendChatMessage.usecase'
@@ -28,19 +29,47 @@ const thread: Thread = {
 const student = { userId: 'student-1', name: '佐藤' }
 const coach = { userId: 'coach-1', name: '山田' }
 
-const setup = (t: Thread = thread) => {
+const absentFacts = (start: string, end: string) => ({
+  absences: [
+    {
+      id: 'absence-1',
+      coachUserId: 'coach-1',
+      startDate: localDateSchema.parse(start),
+      endDate: localDateSchema.parse(end),
+      note: '',
+      pauseNewSignups: false,
+    },
+  ],
+  delayFlagSetAt: null,
+})
+
+const setup = (
+  t: Thread = thread,
+  facts: Awaited<ReturnType<Deps['findCoachAvailabilityFacts']>> = {
+    absences: [],
+    delayFlagSetAt: null,
+  }
+) => {
   const saveChatMessage = vi.fn<Deps['saveChatMessage']>(async () => undefined)
+  const saveThreadNotice = vi.fn<Deps['saveThreadNotice']>(async () => undefined)
+  const saveAbsenceAck = vi.fn<Deps['saveAbsenceAck']>(async () => undefined)
   const notifyChatMessage = vi.fn<Deps['notifyChatMessage']>(async () => undefined)
   const deps: Deps = {
     findThread: async () => t,
+    findCoachAvailabilityFacts: async () => facts,
+    saveThreadNotice,
+    saveAbsenceAck,
     saveChatMessage,
     notifyChatMessage,
     generateId: () => 'm-1',
   }
-  return { deps, saveChatMessage, notifyChatMessage }
+  return { deps, saveChatMessage, notifyChatMessage, saveThreadNotice, saveAbsenceAck }
 }
-const send = (actor: typeof student, deps: Deps, body = '質問です') =>
-  sendChatMessage({ actor, threadId: 'thread-1', videoId: 'v1', body, now }, deps)
+const send = (actor: typeof student, deps: Deps, body = '質問です', hide = false) =>
+  sendChatMessage(
+    { actor, threadId: 'thread-1', videoId: 'v1', body, hideAbsenceNoticeFromNow: hide, now },
+    deps
+  )
 
 describe('sendChatMessage', () => {
   it('生徒が送るとコーチの番になり、コーチに知らせる', async () => {
@@ -88,5 +117,29 @@ describe('sendChatMessage', () => {
   it('終了したスレッドには送れない', async () => {
     const { deps } = setup({ ...thread, status: 'closed' })
     expect(await send(student, deps)).toEqual({ ok: false, error: 'closed' })
+  })
+
+  it('不在中に生徒が送ると、記録とお知らせ。「次から表示しない」なら了承も残す', async () => {
+    const day = now.toISOString().slice(0, 10)
+    const { deps, saveChatMessage, saveThreadNotice, saveAbsenceAck } = setup(
+      thread,
+      absentFacts(day, day)
+    )
+    await send(student, deps, '質問です', true)
+    expect(saveChatMessage.mock.calls[0]?.[0].sentDuringAbsenceId).toBe('absence-1')
+    expect(saveThreadNotice).toHaveBeenCalledTimes(1)
+    expect(saveAbsenceAck.mock.calls[0]?.[0]).toMatchObject({
+      studentUserId: 'student-1',
+      threadId: 'thread-1',
+      absenceId: 'absence-1',
+    })
+  })
+
+  it('不在中でも、コーチ自身の発言ではお知らせを出さない', async () => {
+    const day = now.toISOString().slice(0, 10)
+    const { deps, saveThreadNotice, saveAbsenceAck } = setup(thread, absentFacts(day, day))
+    await send(coach, deps, '戻りました', true)
+    expect(saveThreadNotice).not.toHaveBeenCalled()
+    expect(saveAbsenceAck).not.toHaveBeenCalled()
   })
 })

@@ -2,6 +2,11 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PlanCheckoutForm } from '@/app/features/apply/components/PlanCheckoutForm'
 import { WaitlistForm } from '@/app/features/apply/components/WaitlistForm'
+import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
+import {
+  pausedMessage,
+  signupAckLabel,
+} from '@/app/features/coach-availability/utils/availabilityText'
 import { getApplyPage } from '@/server/features/purchase/presentation/queries'
 import { getTurnstileSiteKey } from '@/server/utils/turnstile'
 
@@ -24,7 +29,18 @@ const ApplyPage = async ({ params }: Props) => {
         <p className="text-sm text-gray-500">{coach.name} さんの添削</p>
         <h1 className="mt-1 text-xl font-bold">申し込み</h1>
       </div>
-      {isFull ? (
+      <CoachAvailabilityNotice
+        coachName={coach.name}
+        availability={coach.availability}
+        upcomingAbsence={coach.upcomingAbsence}
+      />
+      {coach.signupGuard === 'paused' ? (
+        <p className="rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-600">
+          {coach.availability.kind === 'absent'
+            ? pausedMessage(coach.availability.resumeDate)
+            : 'ただいま申し込みを止めています'}
+        </p>
+      ) : isFull ? (
         <div className="space-y-4">
           <p className="text-sm text-gray-700">
             今月は満枠です。空きが出たら LINE でお知らせします。
@@ -41,6 +57,13 @@ const ApplyPage = async ({ params }: Props) => {
           plans={coach.plans}
           student={student}
           turnstileSiteKey={getTurnstileSiteKey()}
+          delayAckLabel={
+            coach.signupGuard === 'ack_required'
+              ? signupAckLabel(
+                  coach.availability.kind === 'absent' ? coach.availability.resumeDate : null
+                )
+              : null
+          }
         />
       )}
     </main>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
@@ -29,6 +30,7 @@ const ReviewPage = async ({ params }: Props) => {
         </h1>
         <p className="text-sm text-gray-500">
           動画 {thread.videos.length}/{thread.maxVideos}本・期限 {formatMonthDay(thread.expiresAt)}
+          {extensionNote(thread.extendedDays)}
           {thread.status === 'closed' && '・終了'}
         </p>
       </header>

@@ -45,7 +45,7 @@ const findCoachOnlyContext = async (coachUserId: string): Promise<Context | null
 
 export type FindNotificationContext = (message: NotificationMessage) => Promise<Context | null>
 export const findNotificationContext: FindNotificationContext = async (message) => {
-  if (message.kind === 'coach_invited') {
+  if (message.kind === 'coach_invited' || message.kind === 'absence_ended') {
     return findCoachOnlyContext(message.coachUserId)
   }
   if (message.kind !== 'waitlist_opened') {

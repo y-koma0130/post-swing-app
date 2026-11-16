@@ -104,6 +104,13 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         subject: `${ctx.studentName}さんの動画が添削を待っています`,
         text: `${ctx.studentName}さんから届いた動画に、まだ返信していません。生徒が待っているので、添削をお願いします。\n\n${coachThreadUrl(message.threadId)}`,
       }
+    case 'absence_ended':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `不在中に届いた動画が${message.videoCount}件、質問が${message.chatCount}件あります`,
+        text: `おかえりなさい。不在中に届いた動画が${message.videoCount}件、生徒からの質問が${message.chatCount}件あります。返信をお願いします。\n\n${ctx.appUrl}/coach`,
+      }
     case 'coach_invited':
       return {
         channel: 'email',

@@ -2,8 +2,26 @@ import 'server-only'
 import { desc, eq } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, thread, user } from '@/server/db/schema'
+import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
 import type { ThreadSummaryDto } from '../../application/dto/ThreadSummary.dto'
+import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import { countVideosByThread } from '../repositories/threadRepository'
+
+type SummaryRow = Omit<ThreadSummaryDto, 'videoCount'> & { startedAt: Date; coachUserId: string }
+
+/** 期限を、コーチの不在の分だけ延びた実際の期限にする */
+const withEffectiveExpiries = async (rows: SummaryRow[]): Promise<Date[]> => {
+  const facts = await findCoachAvailabilityFactsForCoaches(rows.map((r) => r.coachUserId))
+  return rows.map(
+    (row) => calcEffectiveExpiry(row, facts.get(row.coachUserId)?.absences ?? []).expiresAt
+  )
+}
+
+const toSummary = (
+  { startedAt: _startedAt, coachUserId: _coachUserId, ...row }: SummaryRow,
+  expiresAt: Date,
+  counts: Map<string, number>
+): ThreadSummaryDto => ({ ...row, expiresAt, videoCount: counts.get(row.id) ?? 0 })
 
 const STATUS_PRIORITY = { waiting_coach: 0, waiting_student: 1, closed: 2 } as const
 
@@ -18,14 +36,17 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
       theme: thread.theme,
       status: thread.status,
       expiresAt: thread.expiresAt,
+      startedAt: thread.startedAt,
+      coachUserId: thread.coachUserId,
     })
     .from(thread)
     .innerJoin(user, eq(user.id, thread.studentUserId))
     .where(eq(thread.coachUserId, coachUserId))
     .all()
   const counts = await countVideosByThread(rows.map((r) => r.id))
+  const effective = await withEffectiveExpiries(rows)
   return rows
-    .map((row) => ({ ...row, videoCount: counts.get(row.id) ?? 0 }))
+    .map((row, i) => toSummary(row, effective[i] ?? row.expiresAt, counts))
     .toSorted(
       (a, b) =>
         STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status] ||
@@ -44,6 +65,8 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
       theme: thread.theme,
       status: thread.status,
       expiresAt: thread.expiresAt,
+      startedAt: thread.startedAt,
+      coachUserId: thread.coachUserId,
     })
     .from(thread)
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
@@ -51,5 +74,6 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
     .orderBy(desc(thread.startedAt))
     .all()
   const counts = await countVideosByThread(rows.map((r) => r.id))
-  return rows.map((row) => ({ ...row, videoCount: counts.get(row.id) ?? 0 }))
+  const effective = await withEffectiveExpiries(rows)
+  return rows.map((row, i) => toSummary(row, effective[i] ?? row.expiresAt, counts))
 }

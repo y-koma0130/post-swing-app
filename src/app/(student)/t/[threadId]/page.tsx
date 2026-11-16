@@ -2,6 +2,14 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
+import {
+  absenceNoticeMessage,
+  availabilityBanner,
+  chatReplyHint,
+  extensionNote,
+  replyTargetMessage,
+  sendConfirmMessage,
+} from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
@@ -30,6 +38,8 @@ const ThreadViewPage = async ({ params }: Props) => {
   if (!(await getActor())) redirect(`/login?next=${encodeURIComponent(`/t/${threadId}`)}`)
   const thread = await getStudentThread(threadId)
   if (!thread) notFound()
+  const availability = thread.coachAvailability
+  const banner = availabilityBanner(thread.coachName, availability)
 
   return (
     <main className="space-y-8 px-6 py-10">
@@ -40,8 +50,14 @@ const ThreadViewPage = async ({ params }: Props) => {
         </h1>
         <p className="text-xs text-gray-500">
           動画 {thread.videos.length}/{thread.maxVideos}本・期限 {formatMonthDay(thread.expiresAt)}
+          {extensionNote(thread.extendedDays)}
         </p>
       </header>
+      {banner && thread.status !== 'closed' && (
+        <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-gray-800">
+          {banner}
+        </p>
+      )}
 
       {thread.videos.map((video, index) => (
         <section key={video.id} className="space-y-4">
@@ -60,6 +76,16 @@ const ThreadViewPage = async ({ params }: Props) => {
               video={video}
               viewer="student"
               closed={thread.status === 'closed'}
+              notices={video.notices.map((n) => ({
+                id: n.id,
+                text: absenceNoticeMessage(thread.coachName, n.absenceEndDate),
+                createdAt: n.createdAt,
+              }))}
+              inputHint={chatReplyHint(thread.coachName, availability)}
+              guard={thread.sendGuard.chat}
+              confirmMessage={
+                sendConfirmMessage('chat', thread.coachName, availability) ?? undefined
+              }
             />
           </div>
         </section>
@@ -90,6 +116,16 @@ const ThreadViewPage = async ({ params }: Props) => {
               threadId={thread.id}
               needsTheme={thread.videos.length === 0}
               maxBytes={thread.maxVideoBytes}
+              confirmMessage={
+                thread.sendGuard.video === 'none'
+                  ? null
+                  : sendConfirmMessage('video', thread.coachName, availability)
+              }
+              replyHint={
+                availability.kind === 'available'
+                  ? replyTargetMessage(availability.replyTargetHours)
+                  : null
+              }
             />
           </Card>
         ) : (

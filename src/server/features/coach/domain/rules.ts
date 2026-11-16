@@ -5,6 +5,20 @@ export const COACH_RULES = {
   defaultMonthlyCapacity: 20,
 } as const
 
+/**
+ * 返信の約束と不在のルール（暫定。あとで見直す前提で、数値はここにまとめる）
+ */
+export const AVAILABILITY_RULES = {
+  /** 動画の添削を返すまでの約束（時間） */
+  replyTargetHours: 48,
+  /** 返信遅れフラグは、立ててからこの日数で自動で外れる */
+  delayFlagDays: 7,
+  /** これから始まる不在を、受付ページで何日前から知らせるか */
+  upcomingNoticeDays: 7,
+  /** 不在のときに生徒へ見せる一言の長さ */
+  absenceNoteMaxLength: 40,
+} as const
+
 /** 招待したときに作るプラン（計画書の初期値）。コーチがあとで変えられる */
 export const DEFAULT_PLANS: readonly Plan[] = [
   {

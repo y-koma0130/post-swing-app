@@ -1,5 +1,6 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
+import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
 import { authorizeVideo } from '../application/usecases/authorizeVideo.usecase'
 import { type SubmitVideoError, submitVideo } from '../application/usecases/submitVideo.usecase'
@@ -10,6 +11,7 @@ import {
 import {
   findStoredVideo,
   findThread,
+  saveThreadNotice,
   saveVideo,
 } from '../infrastructure/repositories/threadRepository'
 
@@ -72,6 +74,8 @@ export const handleVideoUpload = async (request: Request, threadId: string): Pro
     },
     {
       findThread,
+      findCoachAvailabilityFacts,
+      saveThreadNotice,
       storeVideo: (r2Key, contentType) => putMediaObject(r2Key, body, contentType),
       saveVideo,
       notifyVideoSubmitted: (input) => notify({ kind: 'video_submitted', ...input }),

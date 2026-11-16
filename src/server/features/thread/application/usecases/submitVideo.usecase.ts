@@ -1,5 +1,9 @@
+import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
+import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
+import { absenceAtSend } from '../../domain/services/absenceAtSend.service'
+import { withEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import {
   checkVideoSubmission,
   type VideoSubmissionBlocker,
@@ -10,6 +14,7 @@ import {
 } from '../../domain/services/checkVideoUpload.service'
 import { nextStatusAfter } from '../../domain/services/nextStatusAfter.service'
 import type { Thread } from '../../domain/values/Thread'
+import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 
 export type NewVideo = Readonly<{
@@ -22,6 +27,8 @@ export type NewVideo = Readonly<{
   frameRate: number | null
   uploadedAt: Date
   nextStatus: ThreadStatus
+  /** 送ったとき、コーチが不在中だったか */
+  sentDuringAbsenceId: string | null
   /** 最初の動画のときだけ、スレッドのテーマも保存する */
   theme: string | null
 }>
@@ -40,6 +47,13 @@ export type SubmitVideoParams = Readonly<{
 
 type Dependencies = Readonly<{
   findThread: (threadId: string) => Promise<Thread | null>
+  /** コーチの不在期間と返信遅れフラグ（coach が持つ） */
+  findCoachAvailabilityFacts: (coachUserId: string) => Promise<{
+    absences: CoachAbsence[]
+    delayFlagSetAt: Date | null
+  }>
+  /** 不在中に送られたときのシステムメッセージ（同じ不在・同じスレッドで2回目以降は何もしない） */
+  saveThreadNotice: (notice: NewThreadNotice) => Promise<void>
   /** 動画の本体を保存する（R2）。権限と形式を確かめたあとにだけ呼ぶ */
   storeVideo: (r2Key: string, contentType: string) => Promise<void>
   /** 動画の記録を残し、スレッドをコーチの番にする */
@@ -64,7 +78,9 @@ export const submitVideo: SubmitVideo = async (params, deps) => {
   if (!thread || thread.studentUserId !== params.actor.userId) {
     return err('not_found')
   }
-  const blocker = checkVideoSubmission(thread, params.now)
+  const facts = await deps.findCoachAvailabilityFacts(thread.coachUserId)
+  // 期限はコーチの不在の分だけ延びる
+  const blocker = checkVideoSubmission(withEffectiveExpiry(thread, facts.absences), params.now)
   if (blocker) {
     return err(blocker)
   }
@@ -80,6 +96,7 @@ export const submitVideo: SubmitVideo = async (params, deps) => {
     return err(upload.error)
   }
 
+  const absence = absenceAtSend(calcCoachAvailability({ ...facts, now: params.now }))
   const videoId = deps.generateId()
   const r2Key = `videos/${thread.id}/${videoId}`
   await deps.storeVideo(r2Key, params.contentType)
@@ -92,7 +109,17 @@ export const submitVideo: SubmitVideo = async (params, deps) => {
     ...upload.value,
     uploadedAt: params.now,
     nextStatus: nextStatusAfter(thread, 'student_sent_video'),
+    sentDuringAbsenceId: absence?.absenceId ?? null,
   })
+  if (absence) {
+    await deps.saveThreadNotice({
+      ...absence,
+      id: deps.generateId(),
+      threadId: thread.id,
+      videoId,
+      createdAt: params.now,
+    })
+  }
   await deps.notifyVideoSubmitted({ threadId: thread.id, coachUserId: thread.coachUserId })
   return ok({ videoId })
 }

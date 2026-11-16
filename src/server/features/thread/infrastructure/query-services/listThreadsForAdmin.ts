@@ -3,7 +3,9 @@ import { and, desc, eq, inArray, isNull, min } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { getDb } from '@/server/db/client'
 import { coachProfile, purchase, reply, thread, user, video } from '@/server/db/schema'
+import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
 import type { AdminThreadRowDto } from '../../application/dto/AdminThreadRow.dto'
+import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 
 /** 一覧に出す件数（新しく動いた順） */
 const LIMIT = 100
@@ -25,6 +27,7 @@ export const listThreadsForAdmin: ListThreadsForAdmin = async () => {
       startedAt: thread.startedAt,
       expiresAt: thread.expiresAt,
       refundedAt: thread.refundedAt,
+      coachUserId: thread.coachUserId,
     })
     .from(thread)
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
@@ -51,8 +54,11 @@ export const listThreadsForAdmin: ListThreadsForAdmin = async () => {
     .groupBy(video.threadId)
     .all()
 
-  return rows.map((r) => ({
+  const facts = await findCoachAvailabilityFactsForCoaches(rows.map((r) => r.coachUserId))
+  return rows.map(({ coachUserId, ...r }) => ({
     ...r,
+    // 期限はコーチの不在の分だけ延びる
+    expiresAt: calcEffectiveExpiry(r, facts.get(coachUserId)?.absences ?? []).expiresAt,
     oldestUnrepliedAt: unreplied.find((u) => u.threadId === r.id)?.oldest ?? null,
   }))
 }

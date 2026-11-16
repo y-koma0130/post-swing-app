@@ -8,6 +8,10 @@ import { bindings, defineConfig, defineWorker, triggers } from 'cf/config'
  */
 const suffixFor = (mode: string | undefined): string => (mode === 'staging' ? '-staging' : '')
 
+/** 定期処理の時刻（UTC）。src/worker.ts で、どちらの処理かを見分ける */
+export const DAILY_MAINTENANCE_CRON = '0 19 * * *'
+export const MORNING_CRON = '0 0 * * *'
+
 /** 公開する URL。staging はサブドメインに分ける */
 const DOMAIN = 'swingpost.app'
 const hostnameFor = (mode: string | undefined): string =>
@@ -35,7 +39,9 @@ export default defineConfig({
       triggers: [
         triggers.queue({ name: notificationQueue, maxRetries: 5, retryDelay: 60 }),
         // 毎日 4:00（日本時間）。期限切れの処理、リマインド、古い動画の削除、キャンセル待ちへの連絡
-        triggers.scheduled({ schedule: '0 19 * * *' }),
+        triggers.scheduled({ schedule: DAILY_MAINTENANCE_CRON }),
+        // 毎日 9:00（日本時間）。不在が明けたコーチに、不在中に届いた件数を知らせる
+        triggers.scheduled({ schedule: MORNING_CRON }),
       ],
       env: {
         ASSETS: bindings.assets(),

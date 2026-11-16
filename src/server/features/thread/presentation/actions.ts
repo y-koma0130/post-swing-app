@@ -3,14 +3,20 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
+import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
-import { formString } from '@/server/utils/formData'
+import { formChecked, formString } from '@/server/utils/formData'
 import {
   type SendChatMessageError,
   sendChatMessage,
 } from '../application/usecases/sendChatMessage.usecase'
-import { findThread, saveChatMessage } from '../infrastructure/repositories/threadRepository'
+import {
+  findThread,
+  saveAbsenceAck,
+  saveChatMessage,
+  saveThreadNotice,
+} from '../infrastructure/repositories/threadRepository'
 
 const CHAT_ERROR = {
   not_found: '送れませんでした',
@@ -36,10 +42,14 @@ export const sendChatMessageAction = async (
       threadId,
       videoId: formString(formData, 'videoId'),
       body: formString(formData, 'body'),
+      hideAbsenceNoticeFromNow: formChecked(formData, 'hideAbsenceNotice'),
       now: new Date(),
     },
     {
       findThread,
+      findCoachAvailabilityFacts,
+      saveThreadNotice,
+      saveAbsenceAck,
       saveChatMessage,
       notifyChatMessage: (input) => notify({ kind: 'chat_message', ...input }),
       generateId: () => crypto.randomUUID(),

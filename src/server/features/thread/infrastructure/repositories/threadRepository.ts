@@ -1,12 +1,21 @@
 import 'server-only'
 import { and, asc, eq, gt, inArray, isNull, lt, lte, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { chatMessage, reply, reviewCard, thread, video } from '@/server/db/schema'
+import {
+  absenceAck,
+  chatMessage,
+  reply,
+  reviewCard,
+  thread,
+  threadNotice,
+  video,
+} from '@/server/db/schema'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
 import type { NewVideo } from '../../application/usecases/submitVideo.usecase'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
+import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
 
 export type FindThread = (threadId: string) => Promise<Thread | null>
 export const findThread: FindThread = async (threadId) => {
@@ -49,6 +58,7 @@ export const findThread: FindThread = async (threadId) => {
       from: m.senderRole,
       body: m.body,
       sentAt: m.sentAt,
+      sentDuringAbsenceId: m.sentDuringAbsenceId,
     })),
   })
 }
@@ -65,6 +75,7 @@ export const saveVideo: SaveVideo = async (v) => {
       sizeBytes: v.sizeBytes,
       note: v.note,
       frameRate: v.frameRate,
+      sentDuringAbsenceId: v.sentDuringAbsenceId,
       uploadedAt: v.uploadedAt,
     }),
     db
@@ -209,28 +220,40 @@ export const closeThreads: CloseThreads = async (threadIds, closedAt) => {
     .where(inArray(thread.id, threadIds))
 }
 
-export type FindThreadsExpiringBetween = (
-  from: Date,
-  to: Date
-) => Promise<Array<{ id: string; studentUserId: string }>>
-export const findThreadsExpiringBetween: FindThreadsExpiringBetween = async (from, to) =>
+export type FindOpenThreadsExpiringBy = (to: Date) => Promise<
+  Array<{
+    id: string
+    coachUserId: string
+    studentUserId: string
+    startedAt: Date
+    expiresAt: Date
+  }>
+>
+/** 保存した期限が to より前の、終了していないスレッド（実際の期限は domain が不在の分だけ延ばして判定する） */
+export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =>
   getDb()
-    .select({ id: thread.id, studentUserId: thread.studentUserId })
+    .select({
+      id: thread.id,
+      coachUserId: thread.coachUserId,
+      studentUserId: thread.studentUserId,
+      startedAt: thread.startedAt,
+      expiresAt: thread.expiresAt,
+    })
     .from(thread)
-    .where(and(ne(thread.status, 'closed'), gt(thread.expiresAt, from), lte(thread.expiresAt, to)))
+    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, to)))
     .all()
 
-export type FindThreadsWithUnrepliedVideosBetween = (
-  from: Date,
-  to: Date
-) => Promise<Array<{ id: string; coachUserId: string }>>
-/** from〜to に届いて、まだ返信していない動画があるスレッド（終了していないもの。1スレッド1件） */
-export const findThreadsWithUnrepliedVideosBetween: FindThreadsWithUnrepliedVideosBetween = async (
-  from,
-  to
-) =>
+export type FindUnrepliedVideosSince = (
+  since: Date
+) => Promise<Array<{ threadId: string; coachUserId: string; uploadedAt: Date }>>
+/** since より後に届き、まだ返信していない動画（終了していないスレッド） */
+export const findUnrepliedVideosSince: FindUnrepliedVideosSince = async (since) =>
   getDb()
-    .selectDistinct({ id: thread.id, coachUserId: thread.coachUserId })
+    .select({
+      threadId: video.threadId,
+      coachUserId: thread.coachUserId,
+      uploadedAt: video.uploadedAt,
+    })
     .from(video)
     .innerJoin(thread, eq(thread.id, video.threadId))
     .leftJoin(reply, eq(reply.videoId, video.id))
@@ -239,8 +262,7 @@ export const findThreadsWithUnrepliedVideosBetween: FindThreadsWithUnrepliedVide
         ne(thread.status, 'closed'),
         isNull(reply.id),
         isNull(video.deletedAt),
-        gt(video.uploadedAt, from),
-        lte(video.uploadedAt, to)
+        gt(video.uploadedAt, since)
       )
     )
     .all()
@@ -318,4 +340,60 @@ export const markThreadRefunded: MarkThreadRefunded = async (threadId, refundedA
     .update(thread)
     .set({ status: 'closed', closedAt: refundedAt, refundedAt, updatedAt: refundedAt })
     .where(eq(thread.id, threadId))
+}
+
+export type SaveThreadNotice = (notice: NewThreadNotice) => Promise<void>
+/** 不在のお知らせ。同じ不在・同じスレッドにすでにあれば何もしない（一意制約） */
+export const saveThreadNotice: SaveThreadNotice = async (notice) => {
+  await getDb().insert(threadNotice).values(notice).onConflictDoNothing()
+}
+
+export type SaveAbsenceAck = (input: {
+  studentUserId: string
+  threadId: string
+  absenceId: string
+  at: Date
+}) => Promise<void>
+export const saveAbsenceAck: SaveAbsenceAck = async ({
+  studentUserId,
+  threadId,
+  absenceId,
+  at,
+}) => {
+  await getDb()
+    .insert(absenceAck)
+    .values({ studentUserId, threadId, absenceId, createdAt: at })
+    .onConflictDoNothing()
+}
+
+export type CountAbsenceBacklog = (
+  absenceId: string
+) => Promise<{ videoCount: number; chatCount: number }>
+/** 不在中に届いて、まだ返信していない動画と、生徒からの質問（チャット）の数 */
+export const countAbsenceBacklog: CountAbsenceBacklog = async (absenceId) => {
+  const db = getDb()
+  const [videos, chats] = await Promise.all([
+    db
+      .select({ id: video.id })
+      .from(video)
+      .innerJoin(thread, eq(thread.id, video.threadId))
+      .leftJoin(reply, eq(reply.videoId, video.id))
+      .where(
+        and(
+          eq(video.sentDuringAbsenceId, absenceId),
+          isNull(reply.id),
+          isNull(video.deletedAt),
+          ne(thread.status, 'closed')
+        )
+      )
+      .all(),
+    db
+      .select({ id: chatMessage.id })
+      .from(chatMessage)
+      .where(
+        and(eq(chatMessage.sentDuringAbsenceId, absenceId), eq(chatMessage.senderRole, 'student'))
+      )
+      .all(),
+  ])
+  return { videoCount: videos.length, chatCount: chats.length }
 }

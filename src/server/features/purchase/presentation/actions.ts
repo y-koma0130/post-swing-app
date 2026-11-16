@@ -7,9 +7,10 @@ import { redirect } from 'next/navigation'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
+import { findCoachAvailability } from '@/server/features/coach/public'
 import { findThreadPayment, markThreadRefunded } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
-import { formString } from '@/server/utils/formData'
+import { formChecked, formString } from '@/server/utils/formData'
 import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
 import { refundThread } from '../application/usecases/refundThread.usecase'
@@ -37,6 +38,8 @@ const CHECKOUT_ERROR_MESSAGE = {
   not_found: 'コーチが見つかりません',
   not_accepting: 'このプランはいま受け付けていません',
   own_coach: '自分には申し込めません',
+  paused_for_absence: 'コーチが不在のため、いまは申し込みを受け付けていません',
+  ack_required: '返信が遅れることを確かめて、チェックを入れてください',
   full: '今月は満枠です。キャンセル待ちに登録できます',
   trial_used: 'お試しはすでに利用済みです',
   already_subscribed: 'すでに月額で申し込んでいます',
@@ -68,12 +71,19 @@ export const startCheckoutAction = async (
   }
 
   const result = await startCheckout(
-    { actor, coachSlug, planKind: planKind.data },
+    {
+      actor,
+      coachSlug,
+      planKind: planKind.data,
+      acknowledgedDelay: formChecked(formData, 'acknowledgeDelay'),
+      now: new Date(),
+    },
     {
       findCoachForCheckout,
       countActiveThreads,
       hasPaidTrial,
       hasActiveSubscription,
+      findCoachAvailability,
       savePendingPurchase,
       createCheckoutSession,
       attachCheckoutSession,
