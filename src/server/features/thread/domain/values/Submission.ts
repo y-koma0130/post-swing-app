@@ -15,12 +15,18 @@ export const submissionSchema = z.object({
 
 export type Submission = z.infer<typeof submissionSchema>
 
-/** 提出に使う前の動画（下書き）。上げた人とスレッドを確かめてから提出にひも付ける */
+/** 提出やチャットに使う前の動画（下書き）。上げた人とスレッドを確かめてからひも付ける */
+/** まだ提出にもチャットにも使われていない動画か */
+export const isUnusedDraft = (video: Pick<DraftVideo, 'submissionId' | 'chatMessageId'>): boolean =>
+  video.submissionId === null && video.chatMessageId === null
+
 export type DraftVideo = Readonly<{
   id: string
   threadId: string
   uploaderUserId: string
   /** すでに提出に使われていれば、その提出 */
   submissionId: string | null
+  /** すでにチャットに添えられていれば、そのメッセージ */
+  chatMessageId: string | null
   angle: z.infer<typeof videoAngleSchema>
 }>

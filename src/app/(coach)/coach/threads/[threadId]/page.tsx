@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { Page, PageHeader } from '@/app/components/ui/Page'
+import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
 import { threadUsageText } from '@/app/features/thread/utils/threadText'
@@ -58,14 +59,17 @@ const ReviewPage = async ({ params }: Props) => {
           )}
         </Card>
       )}
-      <ReviewWorkspace
-        threadId={thread.id}
-        closed={thread.status === 'closed'}
-        submissions={thread.submissions}
-        messages={thread.messages}
-        notices={thread.notices}
-        drills={drills}
-      />
+      <QuoteProvider>
+        <ReviewWorkspace
+          threadId={thread.id}
+          closed={thread.status === 'closed'}
+          submissions={thread.submissions}
+          messages={thread.messages}
+          notices={thread.notices}
+          drills={drills}
+          limits={thread.limits}
+        />
+      </QuoteProvider>
     </Page>
   )
 }

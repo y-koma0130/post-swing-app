@@ -4,7 +4,7 @@ import type { ChatBlocker } from '../../domain/services/checkChatMessage.service
 import type { SubmissionBlocker } from '../../domain/services/checkSubmission.service'
 import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
-import type { ChatSender } from '../../domain/values/ChatMessage'
+import type { ChatQuote, ChatSender } from '../../domain/values/ChatMessage'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import type { VideoAngle } from '../../domain/values/VideoAngle'
@@ -87,6 +87,11 @@ export type ThreadDetailDto = {
     from: ChatSender
     body: string
     sentAt: Date
+    attachment:
+      | { kind: 'none' }
+      | { kind: 'drill'; title: string; description: string }
+      | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
+    quote: ChatQuote | null
   }>
   /** システムメッセージ（不在中に送られたときの「戻り次第返信します」） */
   notices: Array<{

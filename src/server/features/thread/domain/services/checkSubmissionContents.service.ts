@@ -1,6 +1,6 @@
 import { err, ok, type Result } from '@/server/utils/result'
 import { THREAD_RULES } from '../rules'
-import type { DraftVideo, Submission } from '../values/Submission'
+import { type DraftVideo, isUnusedDraft, type Submission } from '../values/Submission'
 import { type Thread, threadThemeSchema } from '../values/Thread'
 
 export type SubmissionContentsBlocker =
@@ -50,7 +50,7 @@ export const checkSubmissionContents: CheckSubmissionContents = (input) => {
       !draft ||
       draft.threadId !== input.thread.id ||
       draft.uploaderUserId !== input.actorUserId ||
-      draft.submissionId !== null
+      !isUnusedDraft(draft)
     ) {
       return err('invalid_video')
     }

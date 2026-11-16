@@ -8,6 +8,7 @@ import { AnnotationLayer } from '@/app/features/annotation/components/Annotation
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
 import { renderAnnotatedFrame } from '@/app/features/annotation/components/renderAnnotatedFrame'
 import { useAnnotationEditor } from '@/app/features/annotation/hooks/useAnnotationEditor'
+import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import {
   KEY_POSITION_LABEL,
@@ -28,6 +29,7 @@ type Props = {
   messages: ThreadDetailDto['messages']
   notices: ThreadDetailDto['notices']
   drills: DrillDto[]
+  limits: ThreadDetailDto['limits']
 }
 
 const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
@@ -57,6 +59,7 @@ export const ReviewWorkspace = ({
   messages,
   notices,
   drills,
+  limits,
 }: Props) => {
   const router = useRouter()
   const editor = useAnnotationEditor()
@@ -214,6 +217,15 @@ export const ReviewWorkspace = ({
             />
           )}
         </div>
+        <div className="group flex justify-end">
+          <QuoteButton
+            target={{
+              kind: 'video',
+              targetId: currentVideo.id,
+              label: `${ordinalLabel(index)}・${ANGLE_LABEL[currentVideo.angle]}の動画`,
+            }}
+          />
+        </div>
         {current.note && (
           <p className="rounded-card text-body bg-white p-4 text-sm whitespace-pre-wrap shadow-sm">
             {current.note}
@@ -225,7 +237,19 @@ export const ReviewWorkspace = ({
         {current.reply ? (
           <Card className="space-y-3">
             <h2 className="text-heading">送った添削</h2>
-            <ReviewCardList cards={current.reply.cards} videoLabel={angleOf} />
+            <ReviewCardList
+              cards={current.reply.cards}
+              videoLabel={angleOf}
+              renderAction={(card) => (
+                <QuoteButton
+                  target={{
+                    kind: 'card',
+                    targetId: card.id,
+                    label: `${ordinalLabel(index)}の添削・${KEY_POSITION_LABEL[card.position]}`,
+                  }}
+                />
+              )}
+            />
           </Card>
         ) : (
           <Card className="space-y-4">
@@ -279,6 +303,8 @@ export const ReviewWorkspace = ({
           submissions={submissions}
           messages={messages}
           notices={notices}
+          drills={drills}
+          limits={limits}
         />
       </aside>
     </div>

@@ -6,6 +6,7 @@ const draft = (id: string, angle: 'front' | 'back' | 'other' = 'front') => ({
   threadId: 't1',
   uploaderUserId: 'student',
   submissionId: null,
+  chatMessageId: null,
   angle,
 })
 const base = {
@@ -75,6 +76,12 @@ describe('checkSubmissionContents', () => {
       })
     ).toEqual(invalid)
     expect(checkSubmissionContents({ ...base, drafts: [draft('v1')] })).toEqual(invalid)
+    expect(
+      checkSubmissionContents({
+        ...base,
+        drafts: [{ ...draft('v1'), chatMessageId: 'm1' }, draft('v2')],
+      })
+    ).toEqual(invalid)
   })
 
   it('最初の提出はテーマが要る。2回目以降はテーマを変えない', () => {

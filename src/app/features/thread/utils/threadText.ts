@@ -1,5 +1,7 @@
 import type { ChatBlocker } from '@/server/features/thread/domain/services/checkChatMessage.service'
 import type { SubmissionBlocker } from '@/server/features/thread/domain/services/checkSubmission.service'
+import type { ChatQuote, QuoteKind } from '@/server/features/thread/domain/values/ChatMessage'
+import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
 /** 撮った角度の呼び方 */
@@ -49,3 +51,29 @@ export const threadUsageText = (
     ? submissions
     : `${submissions}・チャット 残り${input.remainingStudentMessages}通`
 }
+
+/** 添削カードのキー位置の呼び方 */
+export const KEY_POSITION_LABEL = {
+  address: 'アドレス',
+  top: 'トップ',
+  impact: 'インパクト',
+  finish: 'フィニッシュ',
+} as const satisfies Record<KeyPosition, string>
+
+/** 引用の見出し（「1回目・正面の動画」「1回目の添削・トップ」「コーチ：ここの左手…」） */
+export const quoteLabel = (quote: ChatQuote): string => {
+  switch (quote.kind) {
+    case 'video':
+      return quote.submissionIndex === null || quote.angle === null
+        ? 'コーチの動画'
+        : `${ordinalLabel(quote.submissionIndex)}・${ANGLE_LABEL[quote.angle]}の動画`
+    case 'card':
+      return `${ordinalLabel(quote.submissionIndex)}の添削・${KEY_POSITION_LABEL[quote.position]}`
+    case 'message':
+      return `${quote.from === 'coach' ? 'コーチ' : '生徒'}：${quote.excerpt}`
+  }
+}
+
+/** 引用先の要素の id（引用を押すと、そこへスクロールする） */
+export const quoteAnchorId = (kind: QuoteKind, targetId: string): string =>
+  `quote-${kind}-${targetId}`

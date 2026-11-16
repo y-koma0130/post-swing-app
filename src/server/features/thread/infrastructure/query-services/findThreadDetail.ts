@@ -41,7 +41,10 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   }
   const db = getDb()
   const submissionIds = t.submissions.map((s) => s.id)
-  const videoIds = t.submissions.flatMap((s) => s.videos.map((v) => v.id))
+  const videoIds = [
+    ...t.submissions.flatMap((s) => s.videos.map((v) => v.id)),
+    ...t.messages.flatMap((m) => (m.attachment.kind === 'video' ? [m.attachment.videoId] : [])),
+  ]
   const reviewRow = await db
     .select({
       rating: coachReview.rating,
@@ -175,7 +178,17 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
           : null,
       }
     }),
-    messages: t.messages.map((m) => ({ id: m.id, from: m.from, body: m.body, sentAt: m.sentAt })),
+    messages: t.messages.map(({ attachment, ...m }) => ({
+      ...m,
+      attachment:
+        attachment.kind === 'video'
+          ? {
+              ...attachment,
+              url: `/api/videos/${attachment.videoId}`,
+              frameRate: frameRates.find((x) => x.id === attachment.videoId)?.frameRate ?? null,
+            }
+          : attachment,
+    })),
     notices: notices.map((n) => ({
       id: n.id,
       absenceEndDate: n.absenceEndDate,
