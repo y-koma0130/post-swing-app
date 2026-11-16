@@ -11,6 +11,13 @@ export const ANGLE_LABEL = {
   other: 'その他',
 } as const satisfies Record<VideoAngle, string>
 
+/**
+ * 動画の呼び方。角度が「その他」で1本だけなら、ただ「動画」と呼ぶ
+ * （角度を選ぶ前に送られた動画も「その他」になっているので）
+ */
+export const videoLabel = (angle: VideoAngle, videoCount: number): string =>
+  angle === 'other' && videoCount === 1 ? '動画' : ANGLE_LABEL[angle]
+
 /** 選ぶ順（正面・後方がふつう） */
 export const ANGLES = ['front', 'back', 'other'] as const satisfies VideoAngle[]
 
