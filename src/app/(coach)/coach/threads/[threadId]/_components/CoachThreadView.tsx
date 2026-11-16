@@ -7,7 +7,7 @@ import { Drawer } from '@/app/components/ui/Drawer'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
-import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
+import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import {
   ANGLE_LABEL,
@@ -70,28 +70,39 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
         noticeText={(n) => `不在中に送られました（${formatShortDate(n.absenceEndDate)}まで不在）`}
         renderSubmission={(submission, index) => (
           <Card
-            className={`space-y-3 ${submission.reply ? '' : 'border-mint ring-mint/30 ring-2'}`}
+            className={`space-y-3 p-4 ${submission.reply ? '' : 'border-mint ring-mint/30 ring-2'}`}
           >
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-heading">{submissionLabel(index)}</h2>
-              <span className="text-caption text-muted">
-                {formatDateTime(submission.submittedAt)}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-heading">
+                {submissionLabel(index)}
+                <span className="text-caption text-muted ml-2 font-normal">
+                  {formatDateTime(submission.submittedAt)}
+                </span>
+              </h2>
+              {submission.reply ? (
+                <Button variant="secondary" size="sm" onClick={() => open(index)}>
+                  大きく見る
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => open(index)} disabled={closed}>
+                  添削する
+                </Button>
+              )}
             </div>
             {/* 動画は小さく並べ、押すとドロワーで大きく開く */}
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <ul className="flex flex-wrap gap-3">
               {submission.videos.map((video, videoIndex) => {
                 const label = videoLabel(video.angle, submission.videos.length)
                 return (
                   <li
                     key={video.id}
                     id={quoteAnchorId('video', video.id)}
-                    className="group scroll-mt-20 space-y-1"
+                    className="w-40 scroll-mt-20 space-y-1"
                   >
                     <button
                       type="button"
                       onClick={() => open(index, videoIndex)}
-                      className="relative block w-full overflow-hidden rounded-xl bg-black"
+                      className="relative block w-full overflow-hidden rounded-lg bg-black"
                       aria-label={`${label}を開く`}
                     >
                       {/* 最初のコマだけを読み、サムネイルにする */}
@@ -102,10 +113,10 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                         playsInline
                         className="aspect-video w-full object-contain"
                       />
-                      <span className="text-caption absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
+                      <span className="text-caption absolute top-1.5 left-1.5 rounded-full bg-black/60 px-2 py-0.5 font-bold text-white">
                         {label}
                       </span>
-                      <span className="absolute inset-0 flex items-center justify-center text-2xl text-white/90">
+                      <span className="absolute inset-0 flex items-center justify-center text-xl text-white/90">
                         ▶︎
                       </span>
                     </button>
@@ -123,31 +134,23 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
               })}
             </ul>
             {submission.note && (
-              <p className="text-body text-sm whitespace-pre-wrap">{submission.note}</p>
-            )}
-            {submission.reply ? (
-              <Button variant="secondary" size="sm" onClick={() => open(index)}>
-                動画を大きく見る
-              </Button>
-            ) : (
-              <Button onClick={() => open(index)} disabled={closed}>
-                添削する
-              </Button>
+              <p className="text-caption text-body whitespace-pre-wrap">{submission.note}</p>
             )}
           </Card>
         )}
         renderReply={(submission, index) =>
           submission.reply && (
-            <section className="space-y-3">
+            <Card className="space-y-3 p-4">
               <h2 className="text-heading">
                 {ordinalLabel(index)}の添削
                 <span className="text-caption text-muted ml-2 font-normal">
                   {formatDateTime(submission.reply.sentAt)}
                 </span>
               </h2>
-              <ReviewCardList
+              <ReviewCardStrip
                 cards={submission.reply.cards}
                 videoLabel={angleOf(submission)}
+                onOpen={() => open(index)}
                 renderAction={(card) => (
                   <QuoteButton
                     target={{
@@ -158,7 +161,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                   />
                 )}
               />
-            </section>
+            </Card>
           )
         }
         renderMessageVideo={(video) => <VideoPlayer src={video.url} frameRate={video.frameRate} />}

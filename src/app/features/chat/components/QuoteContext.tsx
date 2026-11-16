@@ -25,8 +25,7 @@ export const QuoteProvider = ({ children }: { children: ReactNode }) => {
 export const useQuote = () => useContext(QuoteContext)
 
 /**
- * 「引用する」ボタン。押すと入力欄に引用を置き、入力欄へ移る。
- * PC ではホバーで出し、タッチの端末では常に出す（親に group を付ける）
+ * 「引用する」ボタン。押すと入力欄に引用を置き、入力欄へ移る（PC でもスマホでも常に出す）
  */
 export const QuoteButton = ({ target }: { target: QuoteTarget }) => {
   const { setQuote } = useQuote()
@@ -39,7 +38,7 @@ export const QuoteButton = ({ target }: { target: QuoteTarget }) => {
         input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         input?.focus({ preventScroll: true })
       }}
-      className="text-caption text-muted hover:text-ink shrink-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0"
+      className="text-caption text-muted hover:text-ink shrink-0"
       aria-label={`${target.label}を引用する`}
     >
       ↩︎ 引用
