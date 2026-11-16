@@ -9,6 +9,7 @@ import {
   getCurrentCoach,
   refreshCurrentCoachPayout,
 } from '@/server/features/coach/presentation/queries'
+import { getSiteUrl } from '@/server/utils/siteUrl'
 
 export const metadata: Metadata = { title: '設定' }
 
@@ -36,7 +37,7 @@ const CoachSettingsPage = async () => {
       <Card className="space-y-4">
         <h2 className="font-bold">プロフィール</h2>
         <AvatarUploader name={settings.name} avatarUrl={settings.avatarUrl} />
-        <CoachProfileForm settings={settings} />
+        <CoachProfileForm settings={settings} siteUrl={getSiteUrl().origin} />
       </Card>
       <Card className="space-y-4">
         <h2 className="font-bold">プラン</h2>

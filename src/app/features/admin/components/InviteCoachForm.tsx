@@ -21,8 +21,16 @@ export const InviteCoachForm = () => {
         <input name="name" required className={inputClass} />
       </label>
       <label className="block space-y-1">
-        <span className={labelTextClass}>受付ページのURL（/c/…）</span>
-        <input name="slug" required pattern="[a-z0-9-]{3,30}" className={inputClass} />
+        <span className={labelTextClass}>受付ページのURL（任意）</span>
+        <input
+          name="slug"
+          pattern="[a-z0-9-]{3,30}"
+          placeholder="yamada-golf"
+          className={inputClass}
+        />
+        <span className="block text-xs text-gray-500">
+          /c/ のあとに付く文字。空欄なら自動で決まり、コーチがあとで変えられます
+        </span>
       </label>
       <div className="space-y-2 sm:col-span-3">
         <FormMessage state={state} />

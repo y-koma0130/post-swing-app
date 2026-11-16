@@ -20,6 +20,7 @@ const deps = (overrides: Partial<Omit<Deps, 'saveInvitedCoach' | 'notifyCoachInv
       findUserByEmail: async () => null,
       isSlugTaken: async () => false,
       generateId: () => 'new-user-id',
+      generateSlug: () => coachSlugSchema.parse('random01'),
       ...overrides,
       saveInvitedCoach,
       notifyCoachInvited,
@@ -75,5 +76,11 @@ describe('inviteCoach', () => {
     const { deps: d, notifyCoachInvited } = deps({ isSlugTaken: async () => true })
     expect(await inviteCoach(params, d)).toEqual({ ok: false, error: 'slug_taken' })
     expect(notifyCoachInvited).not.toHaveBeenCalled()
+  })
+
+  it('スラッグを決めなければ、ランダムな文字列にする', async () => {
+    const { deps: d, saveInvitedCoach } = deps()
+    await inviteCoach({ ...params, slug: null }, d)
+    expect(saveInvitedCoach.mock.calls[0]?.[0].slug).toBe('random01')
   })
 })

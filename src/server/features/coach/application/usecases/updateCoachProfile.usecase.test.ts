@@ -16,13 +16,17 @@ const deps = (overrides: Partial<Parameters<typeof updateCoachProfile>[1]> = {})
   findCoachSlug: vi.fn(async () => coachSlugSchema.parse('old-slug')),
   isSlugTaken: vi.fn(async () => false),
   saveCoachProfile: vi.fn(async () => undefined),
+  generateSlug: () => coachSlugSchema.parse('random01'),
   ...overrides,
 })
 
 describe('updateCoachProfile', () => {
   it('自分のプロフィールを保存する', async () => {
     const d = deps()
-    expect(await updateCoachProfile({ actor, profile }, d)).toEqual({ ok: true, value: undefined })
+    expect(await updateCoachProfile({ actor, profile }, d)).toEqual({
+      ok: true,
+      value: { slug: 'new-slug' },
+    })
     expect(d.saveCoachProfile).toHaveBeenCalledWith('coach-1', profile)
   })
 
@@ -47,5 +51,27 @@ describe('updateCoachProfile', () => {
     const d = deps({ findCoachSlug: vi.fn(async () => profile.slug), isSlugTaken: vi.fn() })
     await updateCoachProfile({ actor, profile }, d)
     expect(d.isSlugTaken).not.toHaveBeenCalled()
+  })
+
+  it('スラッグを空にしたら、使われていないランダムな文字列にする', async () => {
+    const taken = new Set(['random01'])
+    let n = 0
+    const d = deps({
+      isSlugTaken: vi.fn(async (slug: string) => taken.has(slug)),
+      generateSlug: () => coachSlugSchema.parse(n++ === 0 ? 'random01' : 'random02'),
+    })
+    expect(await updateCoachProfile({ actor, profile: { ...profile, slug: null } }, d)).toEqual({
+      ok: true,
+      value: { slug: 'random02' },
+    })
+  })
+
+  it('ランダムな文字列が決められなければ保存しない', async () => {
+    const d = deps({ isSlugTaken: vi.fn(async () => true) })
+    expect(await updateCoachProfile({ actor, profile: { ...profile, slug: null } }, d)).toEqual({
+      ok: false,
+      error: 'slug_unavailable',
+    })
+    expect(d.saveCoachProfile).not.toHaveBeenCalled()
   })
 })

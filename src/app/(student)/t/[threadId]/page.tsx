@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { ChatPanel } from '@/app/features/chat/components/ChatPanel'
@@ -44,6 +45,9 @@ const ThreadViewPage = async ({ params }: Props) => {
 
   return (
     <main className="space-y-8 px-6 py-10">
+      <Link href="/me" className="inline-block text-sm text-gray-500 hover:text-gray-800">
+        ← マイページ
+      </Link>
       <header className="space-y-1">
         <p className="flex items-center gap-2 text-sm text-gray-500">
           <CoachAvatar name={thread.coachName} url={thread.coachAvatarUrl} size={28} />

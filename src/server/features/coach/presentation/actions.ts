@@ -17,6 +17,7 @@ import { setDelayFlag } from '../application/usecases/setDelayFlag.usecase'
 import { startPayoutOnboarding } from '../application/usecases/startPayoutOnboarding.usecase'
 import { updateCoachProfile } from '../application/usecases/updateCoachProfile.usecase'
 import { updatePlans } from '../application/usecases/updatePlans.usecase'
+import { generateCoachSlug, RANDOM_SLUG_LENGTH } from '../domain/services/generateCoachSlug.service'
 import { coachProfileSchema } from '../domain/values/Coach'
 import { absenceInputSchema } from '../domain/values/CoachAbsence'
 import { coachSlugSchema } from '../domain/values/CoachSlug'
@@ -50,10 +51,21 @@ import {
 const firstIssue = (error: z.ZodError): string =>
   error.issues[0]?.message ?? '入力を確かめてください'
 
+/** スラッグの入力。空なら null（ランダムな文字列にする） */
+const optionalSlugSchema = z
+  .string()
+  .trim()
+  .transform((value) => (value === '' ? null : value))
+  .pipe(coachSlugSchema.nullable())
+
+/** 自動で決めるスラッグ（乱数は Web Crypto から） */
+const generateSlug = () =>
+  generateCoachSlug(crypto.getRandomValues(new Uint8Array(RANDOM_SLUG_LENGTH)))
+
 const inviteInputSchema = z.object({
   email: z.email('メールアドレスの形が正しくありません'),
   name: z.string().trim().min(1, '名前を入れてください').max(50),
-  slug: coachSlugSchema,
+  slug: optionalSlugSchema,
 })
 
 /** 管理者がコーチを招待する */
@@ -78,13 +90,16 @@ export const inviteCoachAction = async (
     isSlugTaken,
     saveInvitedCoach,
     generateId: () => crypto.randomUUID(),
+    generateSlug,
     notifyCoachInvited: (input) => notify({ kind: 'coach_invited', ...input }),
   })
   if (!result.ok) {
     return actionError(
       result.error === 'already_coach'
         ? 'このメールアドレスはすでにコーチです'
-        : 'このスラッグはほかのコーチが使っています'
+        : result.error === 'slug_taken'
+          ? 'この受付ページのURLはほかのコーチが使っています'
+          : 'URLを自動で決められませんでした。もう一度お試しください'
     )
   }
   revalidatePath('/admin')
@@ -100,7 +115,7 @@ export const updateCoachProfileAction = async (
   if (!actor) {
     return actionError('ログインし直してください')
   }
-  const input = coachProfileSchema.safeParse({
+  const input = coachProfileSchema.extend({ slug: optionalSlugSchema }).safeParse({
     slug: formString(formData, 'slug'),
     name: formString(formData, 'name'),
     title: formString(formData, 'title'),
@@ -114,13 +129,15 @@ export const updateCoachProfileAction = async (
 
   const result = await updateCoachProfile(
     { actor, profile: input.data },
-    { findCoachSlug, isSlugTaken, saveCoachProfile }
+    { findCoachSlug, isSlugTaken, saveCoachProfile, generateSlug }
   )
   if (!result.ok) {
     return actionError(
       result.error === 'slug_taken'
         ? 'このURLはほかのコーチが使っています'
-        : 'コーチとして登録されていません'
+        : result.error === 'slug_unavailable'
+          ? 'URLを自動で決められませんでした。もう一度お試しください'
+          : 'コーチとして登録されていません'
     )
   }
   revalidatePath('/coach/settings')
