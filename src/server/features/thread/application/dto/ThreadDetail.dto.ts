@@ -71,6 +71,11 @@ export type ThreadDetailDto = {
     }>
     reply: {
       sentAt: Date
+      /** 全体の説明（以前の添削では空） */
+      comment: string
+      /** おすすめのドリル */
+      drills: Array<{ title: string; description: string }>
+      /** 画像（キャプチャ）と、それぞれの一言 */
       cards: Array<{
         id: string
         /** どの動画から作ったカードか */
@@ -80,7 +85,6 @@ export type ThreadDetailDto = {
         annotations: Annotation[]
         comment: string
         imageUrl: string
-        drill: { title: string; description: string } | null
       }>
     } | null
   }>

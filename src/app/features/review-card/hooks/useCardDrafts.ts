@@ -9,8 +9,8 @@ export type CardDraft = {
   position: KeyPosition
   timeSec: number
   annotations: Annotation[]
+  /** 画像の一言（任意） */
   comment: string
-  drillId: string | null
   image: Blob
   imageUrl: string
 }
@@ -30,7 +30,7 @@ const readMessage = async (response: Response): Promise<string> => {
   return '送信に失敗しました。もう一度お試しください'
 }
 
-/** 作りかけの添削カード。送るまではブラウザの中だけに持つ */
+/** 作りかけの添削の画像。送るまではブラウザの中だけに持つ */
 export const useCardDrafts = () => {
   const [drafts, setDrafts] = useState<CardDraft[]>([])
   const urls = useRef(new Set<string>())
@@ -43,24 +43,18 @@ export const useCardDrafts = () => {
     }
   }, [])
 
-  const add = useCallback(
-    (draft: Omit<CardDraft, 'localId' | 'imageUrl' | 'comment' | 'drillId'>) => {
-      const imageUrl = URL.createObjectURL(draft.image)
-      urls.current.add(imageUrl)
-      setDrafts((prev) => [
-        ...prev,
-        { ...draft, localId: crypto.randomUUID(), imageUrl, comment: '', drillId: null },
-      ])
-    },
-    []
-  )
+  const add = useCallback((draft: Omit<CardDraft, 'localId' | 'imageUrl' | 'comment'>) => {
+    const imageUrl = URL.createObjectURL(draft.image)
+    urls.current.add(imageUrl)
+    setDrafts((prev) => [
+      ...prev,
+      { ...draft, localId: crypto.randomUUID(), imageUrl, comment: '' },
+    ])
+  }, [])
 
-  const update = useCallback(
-    (localId: string, patch: Partial<Pick<CardDraft, 'comment' | 'drillId'>>) => {
-      setDrafts((prev) => prev.map((d) => (d.localId === localId ? { ...d, ...patch } : d)))
-    },
-    []
-  )
+  const update = useCallback((localId: string, patch: Partial<Pick<CardDraft, 'comment'>>) => {
+    setDrafts((prev) => prev.map((d) => (d.localId === localId ? { ...d, ...patch } : d)))
+  }, [])
 
   const remove = useCallback((localId: string) => {
     setDrafts((prev) => {
@@ -74,21 +68,26 @@ export const useCardDrafts = () => {
   }, [])
 
   const send = useCallback(
-    async (threadId: string, submissionId: string): Promise<SendResult> => {
+    async (
+      threadId: string,
+      submissionId: string,
+      review: { comment: string; drillIds: string[] }
+    ): Promise<SendResult> => {
       const form = new FormData()
       form.set(
         'cards',
         JSON.stringify(
-          drafts.map(({ videoId, position, timeSec, annotations, comment, drillId }) => ({
+          drafts.map(({ videoId, position, timeSec, annotations, comment }) => ({
             videoId,
             position,
             timeSec,
             annotations,
             comment,
-            drillId,
           }))
         )
       )
+      form.set('comment', review.comment)
+      form.set('drillIds', JSON.stringify(review.drillIds))
       drafts.forEach((draft, index) => {
         form.set(`image-${index}`, draft.image, `card-${index}.png`)
       })

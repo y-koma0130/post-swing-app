@@ -63,3 +63,17 @@ export const findOwnDrill: FindOwnDrill = async (coachUserId, drillId) =>
     .from(drill)
     .where(and(eq(drill.coachUserId, coachUserId), eq(drill.id, drillId)))
     .get()) ?? null
+
+export type FindOwnDrills = (
+  coachUserId: string,
+  drillIds: string[]
+) => Promise<Array<{ id: string; title: string; description: string }>>
+/** そのコーチ自身のドリル（添削におすすめとして添えるときに中身を写す） */
+export const findOwnDrills: FindOwnDrills = async (coachUserId, drillIds) => {
+  if (drillIds.length === 0) return []
+  return getDb()
+    .select({ id: drill.id, title: drill.title, description: drill.description })
+    .from(drill)
+    .where(and(eq(drill.coachUserId, coachUserId), inArray(drill.id, drillIds)))
+    .all()
+}

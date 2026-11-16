@@ -1,21 +1,19 @@
 'use client'
 
 import { inputClass } from '@/app/components/ui/fieldStyles'
-import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
+import { KEY_POSITION_LABEL } from '@/app/features/thread/utils/threadText'
 import type { CardDraft } from '../hooks/useCardDrafts'
-import { KEY_POSITION_LABEL } from './ReviewCardList'
 
 type Props = {
   drafts: CardDraft[]
-  drills: DrillDto[]
   /** カードを作った動画の呼び方（「正面」など）。動画が1本なら null */
   videoLabel?: ((videoId: string) => string | null) | undefined
-  onChange: (localId: string, patch: Partial<Pick<CardDraft, 'comment' | 'drillId'>>) => void
+  onChange: (localId: string, patch: Partial<Pick<CardDraft, 'comment'>>) => void
   onRemove: (localId: string) => void
 }
 
-/** 作りかけの添削カード。理由を書き、ドリルを添える */
-export const CardDraftList = ({ drafts, drills, videoLabel, onChange, onRemove }: Props) => (
+/** 作りかけの添削の画像。画像ごとに一言を書ける（任意） */
+export const CardDraftList = ({ drafts, videoLabel, onChange, onRemove }: Props) => (
   <ol className="space-y-3">
     {drafts.map((draft, index) => (
       <li key={draft.localId} className="border-line-soft space-y-2 rounded-xl border bg-white p-3">
@@ -38,36 +36,19 @@ export const CardDraftList = ({ drafts, drills, videoLabel, onChange, onRemove }
               onClick={() => onRemove(draft.localId)}
               className="text-caption text-muted underline"
             >
-              このカードを消す
+              この画像を消す
             </button>
           </div>
         </div>
         <textarea
-          aria-label="理由"
+          aria-label="この画像の一言"
           value={draft.comment}
           onChange={(event) => onChange(draft.localId, { comment: event.currentTarget.value })}
-          rows={3}
-          maxLength={2000}
-          placeholder="何がどうなっていて、どう直すか"
+          rows={2}
+          maxLength={200}
+          placeholder="この画像の一言（任意）　例：右ひざが伸びている"
           className={inputClass}
         />
-        {drills.length > 0 && (
-          <select
-            aria-label="ドリル"
-            value={draft.drillId ?? ''}
-            onChange={(event) =>
-              onChange(draft.localId, { drillId: event.currentTarget.value || null })
-            }
-            className={inputClass}
-          >
-            <option value="">ドリルを添えない</option>
-            {drills.map((drill) => (
-              <option key={drill.id} value={drill.id}>
-                {drill.title}
-              </option>
-            ))}
-          </select>
-        )}
       </li>
     ))}
   </ol>

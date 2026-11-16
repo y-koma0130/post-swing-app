@@ -5,8 +5,8 @@ import {
   absenceAck,
   coachProfile,
   coachReview,
-  drill,
   reply,
+  replyDrill,
   reviewCard,
   thread,
   threadNotice,
@@ -55,7 +55,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     .from(coachReview)
     .where(eq(coachReview.threadId, threadId))
     .get()
-  const [people, replies, cards, frameRates] = await Promise.all([
+  const [people, replies, cards, frameRates, replyDrills] = await Promise.all([
     db
       .select({
         coachName: coachProfile.displayName,
@@ -74,15 +74,9 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     submissionIds.length === 0
       ? []
       : db
-          .select({
-            card: reviewCard,
-            submissionId: reply.submissionId,
-            drillTitle: drill.title,
-            drillDescription: drill.description,
-          })
+          .select({ card: reviewCard, submissionId: reply.submissionId })
           .from(reviewCard)
           .innerJoin(reply, eq(reply.id, reviewCard.replyId))
-          .leftJoin(drill, eq(drill.id, reviewCard.drillId))
           .where(inArray(reply.submissionId, submissionIds))
           .orderBy(asc(reviewCard.sortOrder))
           .all(),
@@ -92,6 +86,19 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
           .select({ id: video.id, frameRate: video.frameRate })
           .from(video)
           .where(inArray(video.id, videoIds))
+          .all(),
+    submissionIds.length === 0
+      ? []
+      : db
+          .select({
+            replyId: replyDrill.replyId,
+            title: replyDrill.title,
+            description: replyDrill.description,
+          })
+          .from(replyDrill)
+          .innerJoin(reply, eq(reply.id, replyDrill.replyId))
+          .where(inArray(reply.submissionId, submissionIds))
+          .orderBy(asc(replyDrill.sortOrder))
           .all(),
   ])
   if (!people) {
@@ -167,9 +174,13 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         reply: r
           ? {
               sentAt: r.sentAt,
+              comment: r.comment,
+              drills: replyDrills
+                .filter((d) => d.replyId === r.id)
+                .map(({ title, description }) => ({ title, description })),
               cards: cards
                 .filter((c) => c.submissionId === s.id)
-                .map(({ card, drillTitle, drillDescription }) => ({
+                .map(({ card }) => ({
                   id: card.id,
                   videoId: card.videoId,
                   position: card.position,
@@ -177,10 +188,6 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
                   annotations: annotationSchema.array().parse(card.annotations),
                   comment: card.comment,
                   imageUrl: `/api/cards/${card.id}/image`,
-                  drill:
-                    drillTitle === null
-                      ? null
-                      : { title: drillTitle, description: drillDescription ?? '' },
                 })),
             }
           : null,

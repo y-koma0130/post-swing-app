@@ -4,18 +4,20 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useRef, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
+import { inputClass } from '@/app/components/ui/fieldStyles'
 import { AnnotationLayer } from '@/app/features/annotation/components/AnnotationLayer'
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
 import { renderAnnotatedFrame } from '@/app/features/annotation/components/renderAnnotatedFrame'
 import { useAnnotationEditor } from '@/app/features/annotation/hooks/useAnnotationEditor'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
-import {
-  KEY_POSITION_LABEL,
-  ReviewCardList,
-} from '@/app/features/review-card/components/ReviewCardList'
+import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
-import { ANGLE_LABEL, ordinalLabel } from '@/app/features/thread/utils/threadText'
+import {
+  ANGLE_LABEL,
+  KEY_POSITION_LABEL,
+  ordinalLabel,
+} from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
@@ -45,8 +47,9 @@ const tabClass = (active: boolean) =>
 
 /**
  * 添削の作業エリア（ドロワーの中に開く）
- * 動画（正面・後方など）を切り替えながら、止めて線を引き、キー位置ごとにキャプチャしてカードにする。
- * カードは提出ごとにまとめて1通で送る。添削済みの提出は、動画と送った添削を見るだけ
+ * 動画（正面・後方など）を切り替えながら、止めて線を引き、キー位置ごとにキャプチャして画像にする。
+ * 画像（それぞれに一言）・全体の説明・おすすめのドリルを、提出ごとにまとめて1通で送る。
+ * 添削済みの提出は、動画と送った添削を見るだけ
  *
  * 複数の feature を組み合わせるので、features/ ではなくこの画面の _components/ に置く
  */
@@ -67,6 +70,9 @@ export const ReviewWorkspace = ({
   const videoElement = useRef<HTMLVideoElement | null>(null)
   const [comparing, setComparing] = useState(false)
   const [sending, setSending] = useState(false)
+  /** 添削全体の説明と、おすすめのドリル（閉じても書きかけを残す） */
+  const [comment, setComment] = useState('')
+  const [drillIds, setDrillIds] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const current = submissions[index]
   const currentVideo = current?.videos[videoIndex] ?? current?.videos[0]
@@ -127,18 +133,20 @@ export const ReviewWorkspace = ({
   }
 
   const send = async () => {
-    if (cards.drafts.some((d) => d.comment.trim() === '')) {
-      setError('すべてのカードに理由を書いてください')
+    if (comment.trim() === '') {
+      setError('説明を書いてください')
       return
     }
     setSending(true)
     setError(null)
-    const result = await cards.send(threadId, current.id)
+    const result = await cards.send(threadId, current.id, { comment, drillIds })
     setSending(false)
     if (!result.ok) {
       setError(result.message)
       return
     }
+    setComment('')
+    setDrillIds([])
     onSent()
     router.refresh()
   }
@@ -236,8 +244,8 @@ export const ReviewWorkspace = ({
         {current.reply ? (
           <Card className="space-y-3">
             <h2 className="text-heading">送った添削</h2>
-            <ReviewCardList
-              cards={current.reply.cards}
+            <ReviewView
+              reply={current.reply}
               videoLabel={angleOf}
               renderAction={(card) => (
                 <QuoteButton
@@ -253,10 +261,10 @@ export const ReviewWorkspace = ({
         ) : (
           <Card className="space-y-4">
             <div className="space-y-2">
-              <h2 className="text-heading">添削カード</h2>
+              <h2 className="text-heading">1. 画像を撮る</h2>
               <p className="text-caption text-muted">
-                動画を止めて線を引き、キー位置を押すと、そのコマがカードになります。
-                {current.videos.length > 1 && '角度を切り替えて、両方の動画からカードを作れます。'}
+                動画を止めて線を引き、キー位置を押すと、そのコマが画像になります。何枚でも撮れます。
+                {current.videos.length > 1 && '角度を切り替えて、両方の動画から撮れます。'}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {KEY_POSITIONS.map((position) => (
@@ -274,11 +282,45 @@ export const ReviewWorkspace = ({
             </div>
             <CardDraftList
               drafts={cards.drafts}
-              drills={drills}
               videoLabel={angleOf}
               onChange={cards.update}
               onRemove={cards.remove}
             />
+            <label className="block space-y-2">
+              <span className="text-heading">2. 説明</span>
+              <textarea
+                value={comment}
+                onChange={(event) => setComment(event.currentTarget.value)}
+                rows={5}
+                maxLength={2000}
+                placeholder="全体として何がどうなっていて、どう直してほしいか"
+                className={inputClass}
+              />
+            </label>
+            {drills.length > 0 && (
+              <fieldset className="space-y-2">
+                <legend className="text-heading">3. おすすめのドリル（3つまで）</legend>
+                {drills.map((drill) => {
+                  const checked = drillIds.includes(drill.id)
+                  return (
+                    <label key={drill.id} className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={!checked && drillIds.length >= 3}
+                        onChange={() =>
+                          setDrillIds((prev) =>
+                            checked ? prev.filter((id) => id !== drill.id) : [...prev, drill.id]
+                          )
+                        }
+                        className="accent-mint mt-0.5 size-4"
+                      />
+                      {drill.title}
+                    </label>
+                  )
+                })}
+              </fieldset>
+            )}
             {error && (
               <p role="alert" className="text-danger text-sm">
                 {error}
@@ -291,8 +333,8 @@ export const ReviewWorkspace = ({
               className="w-full"
             >
               {cards.drafts.length === 0
-                ? 'カードを作ってください'
-                : `${cards.drafts.length}枚のカードを送る`}
+                ? '画像を撮ってください'
+                : `${cards.drafts.length}枚の画像と説明を送る`}
             </Button>
           </Card>
         )}

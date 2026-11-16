@@ -5,4 +5,8 @@ import 'server-only'
  */
 
 /** カードに付けたりチャットで送ったりできるのは、そのコーチ自身のドリルだけ */
-export { findOwnDrill, findOwnDrillIds } from './infrastructure/repositories/drillRepository'
+export {
+  findOwnDrill,
+  findOwnDrillIds,
+  findOwnDrills,
+} from './infrastructure/repositories/drillRepository'

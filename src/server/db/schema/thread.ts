@@ -102,17 +102,37 @@ export const video = sqliteTable(
   ]
 )
 
-/** 提出へのコーチの添削（添削カードをまとめて1通で送る） */
+/** 提出へのコーチの添削（画像を何枚かと、全体の説明・おすすめのドリルをまとめて1通で送る） */
 export const reply = sqliteTable('reply', {
   id: text().primaryKey(),
   submissionId: text()
     .notNull()
     .unique()
     .references(() => submission.id),
+  /** 全体の説明（こうしてほしい）。以前の添削では空 */
+  comment: text().notNull().default(''),
   sentAt: integer({ mode: 'timestamp_ms' }).notNull(),
 })
 
-/** 添削カード（キャプチャ画像＋線＋理由） */
+/**
+ * 添削に添えたおすすめのドリル。送った時点の中身を写して持つ（ドリルを消しても残る）
+ */
+export const replyDrill = sqliteTable(
+  'reply_drill',
+  {
+    replyId: text()
+      .notNull()
+      .references(() => reply.id),
+    sortOrder: integer().notNull(),
+    /** 元のドリル（消されたら null のまま残す） */
+    drillId: text(),
+    title: text().notNull(),
+    description: text().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.replyId, t.sortOrder] })]
+)
+
+/** 添削の画像（キャプチャ画像＋線＋短い一言）。drill_id は以前の形の名残（いまは reply_drill を使う） */
 export const reviewCard = sqliteTable(
   'review_card',
   {

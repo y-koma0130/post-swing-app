@@ -14,7 +14,7 @@ import {
 } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
-import { ReviewCardList } from '@/app/features/review-card/components/ReviewCardList'
+import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
@@ -102,8 +102,8 @@ const ThreadViewPage = async ({ params }: Props) => {
                     {submissionLabel(index)}へ
                   </span>
                 </h2>
-                <ReviewCardList
-                  cards={submission.reply.cards}
+                <ReviewView
+                  reply={submission.reply}
                   videoLabel={(videoId) => {
                     const video = submission.videos.find((v) => v.id === videoId)
                     return video && submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
