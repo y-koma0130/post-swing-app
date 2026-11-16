@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
@@ -10,10 +10,13 @@ import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 type Props = {
   settings: CoachSettingsDto
+  /** 受付ページの URL の見本に使う（https://swingpost.app など） */
+  siteUrl: string
 }
 
-export const CoachProfileForm = ({ settings }: Props) => {
+export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
   const [state, action, pending] = useActionState(updateCoachProfileAction, IDLE_ACTION_STATE)
+  const [slug, setSlug] = useState(settings.slug)
 
   return (
     <form action={action} className="space-y-4">
@@ -49,13 +52,22 @@ export const CoachProfileForm = ({ settings }: Props) => {
           <span className="shrink-0 text-sm text-gray-500">/c/</span>
           <input
             name="slug"
-            defaultValue={settings.slug}
-            required
+            value={slug}
+            onChange={(event) => setSlug(event.currentTarget.value)}
             pattern="[a-z0-9-]{3,30}"
+            placeholder="yamada-golf"
             className={inputClass}
           />
         </div>
-        <span className="text-xs text-gray-500">英小文字・数字・ハイフンの3〜30文字</span>
+        <span className="block text-xs text-gray-500">
+          生徒に案内する受付ページのURLの最後の部分です。インスタのプロフィールなどに貼って使います。
+          英小文字・数字・ハイフンの3〜30文字（例：yamada-golf）。空欄にして保存すると、ランダムな文字列になります。
+        </span>
+        {slug && (
+          <span className="block text-xs break-all text-gray-700">
+            {siteUrl}/c/{slug}
+          </span>
+        )}
       </label>
       <label className="block space-y-1">
         <span className={labelTextClass}>月の受付枠（人）</span>

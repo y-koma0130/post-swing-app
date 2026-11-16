@@ -2,11 +2,13 @@ import { err, ok, type Result } from '@/server/utils/result'
 import { COACH_RULES, DEFAULT_PLANS } from '../../domain/rules'
 import type { Coach } from '../../domain/values/Coach'
 import type { CoachSlug } from '../../domain/values/CoachSlug'
+import { allocateRandomSlug } from '../allocateRandomSlug'
 
 export type InviteCoachParams = Readonly<{
   email: string
   name: string
-  slug: CoachSlug
+  /** null なら、ランダムな文字列にする（コーチがあとで設定画面で変えられる） */
+  slug: CoachSlug | null
 }>
 
 type Dependencies = Readonly<{
@@ -15,6 +17,7 @@ type Dependencies = Readonly<{
   /** userId が既存なら user は作らず、コーチのプロフィールだけ足す */
   saveInvitedCoach: (coach: Coach, user: { email: string; isNew: boolean }) => Promise<void>
   generateId: () => string
+  generateSlug: () => CoachSlug
   /** 招待したコーチに、ログインの案内を送る */
   notifyCoachInvited: (input: { coachUserId: string }) => Promise<void>
 }>
@@ -22,7 +25,7 @@ type Dependencies = Readonly<{
 export type InviteCoach = (
   params: InviteCoachParams,
   dependencies: Dependencies
-) => Promise<Result<{ userId: string }, 'already_coach' | 'slug_taken'>>
+) => Promise<Result<{ userId: string }, 'already_coach' | 'slug_taken' | 'slug_unavailable'>>
 
 /**
  * コーチを招待する（管理者だけが使う）
@@ -36,15 +39,19 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
   if (existing?.isCoach) {
     return err('already_coach')
   }
-  if (await deps.isSlugTaken(params.slug)) {
+  if (params.slug !== null && (await deps.isSlugTaken(params.slug))) {
     return err('slug_taken')
+  }
+  const slug = params.slug ?? (await allocateRandomSlug(deps))
+  if (slug === null) {
+    return err('slug_unavailable')
   }
 
   const userId = existing?.id ?? deps.generateId()
   await deps.saveInvitedCoach(
     {
       userId,
-      slug: params.slug,
+      slug,
       name: params.name,
       title: '',
       bio: '',
