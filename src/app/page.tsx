@@ -2,22 +2,29 @@ import { Logo } from '@/app/components/Logo'
 import { SiteFooter } from '@/app/components/SiteFooter'
 import { ButtonLink } from '@/app/components/ui/Button'
 
+/** コーチ向けの紹介ページ（申し込みフォームはこちら） */
+const COACH_LP_URL = 'https://coach.swingpost.app'
+
+/** LP と同じ3つの柱 */
 const FEATURES = [
   {
-    title: 'コマ送りと線で添削',
-    body: '生徒の動画をコマ送りで止めて、線を引き、言葉を添えて返せます。',
+    label: 'INCOME',
+    title: 'フォロワーを、生徒に',
+    body: '添削するだけで、レッスン以外の収入に。全国のフォロワーに届き、価格も枠も自分で決められます。',
   },
   {
-    title: '受付と集金はおまかせ',
-    body: '受付ページを作り、月の枠を決めるだけ。お支払いは Stripe で受け取れます。',
+    label: 'EASY',
+    title: '添削だけに集中できる',
+    body: '受付・集金・通知はおまかせ。スロー・コマ送りで止めて、要所をワンタップでキャプチャ。',
   },
   {
-    title: '届いたら LINE でお知らせ',
-    body: '添削が届くと生徒に LINE で通知。スレッドのチャットで質問も受けられます。',
+    label: 'FREEDOM',
+    title: '自分のペースで、自分の名前で',
+    body: '受付枠で無理のない人数だけ。試合や旅行のときは不在期間を登録できます。',
   },
 ] as const
 
-/** トップ。生徒はコーチの受付ページから来るので、ここはコーチ向けの紹介と入口 */
+/** トップ。生徒はコーチの受付ページから来るので、ここはコーチ向けの紹介と入口（文言は LP にそろえる） */
 const HomePage = () => (
   <div className="min-h-dvh bg-white">
     <header className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
@@ -29,28 +36,30 @@ const HomePage = () => (
     <main className="mx-auto max-w-4xl px-6">
       <section className="space-y-6 py-16 sm:py-24">
         <p className="text-caption text-mint font-bold tracking-wide">
-          ゴルフのレッスンプロのために
+          ゴルフコーチのための、オンライン添削サービス
         </p>
         <h1 className="text-3xl leading-snug font-bold sm:text-4xl">
-          フォロワーに、
+          いいねの先に、
           <br />
-          スイング添削を
-          <br className="sm:hidden" />
-          届けよう。
+          レッスンを。
         </h1>
         <p className="text-muted max-w-lg leading-relaxed">
-          動画の受け取りから、コマ送りと線引きの添削、集金まで。インスタのフォロワーに、オンラインのスイング添削を月額で届けられます。
+          インスタのフォロワーに、スイング添削を月額で届けられます。プロフィールにリンクを貼って、届いた動画に線とひと言を添えて返すだけ。
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
-          <ButtonLink href="/coach" size="lg">
+          <ButtonLink href={COACH_LP_URL} size="lg">
+            コーチとして申し込む
+          </ButtonLink>
+          <ButtonLink href="/coach" variant="secondary" size="lg">
             コーチのログイン
           </ButtonLink>
         </div>
-        <p className="text-caption text-muted">いまは招待制です。</p>
+        <p className="text-caption text-muted">初期費用・月額 0円（手数料は売上の10%）</p>
       </section>
       <section className="grid gap-4 pb-16 sm:grid-cols-3">
         {FEATURES.map((feature) => (
           <div key={feature.title} className="bg-surface rounded-card space-y-2 p-5">
+            <p className="text-caption text-mint font-bold tracking-wide">{feature.label}</p>
             <h2 className="text-heading">{feature.title}</h2>
             <p className="text-muted text-sm leading-relaxed">{feature.body}</p>
           </div>

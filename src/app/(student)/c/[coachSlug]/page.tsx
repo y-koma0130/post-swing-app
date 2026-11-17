@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/app/components/ui/Badge'
 import { ButtonLink } from '@/app/components/ui/Button'
@@ -13,7 +14,7 @@ import {
   coachShareTitle,
 } from '@/app/features/coach-profile/utils/coachShareText'
 import { ReviewSummary } from '@/app/features/coach-review/components/ReviewSummary'
-import { getCoachProfile } from '@/server/features/coach/presentation/queries'
+import { getCoachProfile, getCurrentCoach } from '@/server/features/coach/presentation/queries'
 import { getCoachReviewSummary } from '@/server/features/coach-review/presentation/queries'
 import { getSiteUrl } from '@/server/utils/siteUrl'
 
@@ -45,11 +46,14 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 /** 受付ページ */
 const CoachLandingPage = async ({ params }: Props) => {
   const { coachSlug } = await params
-  const [coach, reviews] = await Promise.all([
+  const [coach, reviews, viewer] = await Promise.all([
     getCoachProfile(coachSlug),
     getCoachReviewSummary(coachSlug),
+    getCurrentCoach(),
   ])
   if (!coach) notFound()
+  // コーチが自分の受付ページを見ている（生徒からの見え方の確認）
+  const ownPage = viewer.kind === 'coach' && viewer.settings.slug === coach.slug
 
   const closedMessage =
     coach.signupGuard === 'paused'
@@ -62,6 +66,22 @@ const CoachLandingPage = async ({ params }: Props) => {
 
   return (
     <Page layout="student">
+      {ownPage && (
+        <div className="bg-mint-soft space-y-2 rounded-xl p-4 text-sm">
+          <p className="text-ink font-bold">あなたの受付ページです</p>
+          <p className="text-body">
+            生徒にはこのように見えます。プロフィールやプランは設定から変えられます。
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/coach" className="text-ink font-bold">
+              ← コーチ画面に戻る
+            </Link>
+            <Link href="/coach/settings" className="text-ink underline">
+              設定を開く
+            </Link>
+          </div>
+        </div>
+      )}
       <header className="flex items-center gap-4">
         <CoachAvatar name={coach.name} url={coach.avatarUrl} size={72} />
         <div className="min-w-0 space-y-0.5">
@@ -89,7 +109,11 @@ const CoachLandingPage = async ({ params }: Props) => {
       </section>
       <HowItWorks />
       <ReviewSummary summary={reviews} />
-      {closedMessage ? (
+      {ownPage ? (
+        <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">
+          生徒はここの「動画を送って添削してもらう」から申し込みます（あなた自身は申し込めません）
+        </p>
+      ) : closedMessage ? (
         <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">{closedMessage}</p>
       ) : (
         // スクロールしても申し込みボタンが画面の下に残る
