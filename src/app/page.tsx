@@ -1,9 +1,7 @@
 import { Logo } from '@/app/components/Logo'
 import { SiteFooter } from '@/app/components/SiteFooter'
 import { ButtonLink } from '@/app/components/ui/Button'
-
-/** コーチ向けの紹介ページ（申し込みフォームはこちら） */
-const COACH_LP_URL = 'https://coach.swingpost.app'
+import { COACH_LP_URL } from '@/app/utils/externalLinks'
 
 /** LP と同じ3つの柱 */
 const FEATURES = [
