@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Purchase } from '../../domain/values/Purchase'
+import type { CheckoutCoach } from './startApplication.usecase'
 import { startApplicationCheckout } from './startApplicationCheckout.usecase'
-import type { CheckoutCoach } from './startCheckout.usecase'
 
 type Deps = Parameters<typeof startApplicationCheckout>[1]
 
@@ -67,11 +67,12 @@ describe('startApplicationCheckout', () => {
     })
     expect(createCheckoutSession.mock.calls[0]?.[0]).toMatchObject({
       purchaseId: 'purchase-1',
-      mode: 'payment',
+      threadId: 'thread-1',
+      productName: '山田：1スレッド',
       priceYen: 4980,
       platformFeeYen: 498,
       destinationAccountId: 'acct_1',
-      application: { threadId: 'thread-1' },
+      saveCardForRenewal: false,
     })
     expect(attachCheckoutSession).toHaveBeenCalledWith('purchase-1', 'cs_1')
   })
@@ -106,5 +107,24 @@ describe('startApplicationCheckout', () => {
       error: 'full',
     })
     expect(createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('月額は初月分を仮押さえし、2か月目からの請求に使うカードを保存しておく', async () => {
+    const monthlyCoach = {
+      ...coach,
+      plans: [{ kind: 'monthly' as const, name: '月額', priceYen: 3980, active: true }],
+    }
+    const { deps, createCheckoutSession } = setup({
+      findPurchase: async () => ({ ...purchase, planKind: 'monthly', priceYen: 3980 }),
+      findCoachForCheckoutByUserId: async () => monthlyCoach,
+    })
+    expect((await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).ok).toBe(
+      true
+    )
+    expect(createCheckoutSession.mock.calls[0]?.[0]).toMatchObject({
+      productName: '山田：月額（初月）',
+      priceYen: 3980,
+      saveCardForRenewal: true,
+    })
   })
 })

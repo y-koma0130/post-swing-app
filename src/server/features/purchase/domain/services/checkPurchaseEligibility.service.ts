@@ -33,8 +33,6 @@ export type EligiblePurchase = Readonly<{
   plan: Readonly<{ name: string; priceYen: number }>
   /** 売上を送るコーチの Stripe の口座 */
   destinationAccountId: string
-  /** 月額はサブスクリプション、それ以外は都度払い */
-  mode: 'payment' | 'subscription'
 }>
 
 export type CheckPurchaseEligibility = (
@@ -82,6 +80,5 @@ export const checkPurchaseEligibility: CheckPurchaseEligibility = ({
   return ok({
     plan: { name: plan.name, priceYen: plan.priceYen },
     destinationAccountId: coach.stripeAccountId,
-    mode: planKind === 'monthly' ? 'subscription' : 'payment',
   })
 }

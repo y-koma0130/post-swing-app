@@ -61,7 +61,7 @@ describe('deliverNotification', () => {
   it('申し込みが入ったら、コーチにメールで添削画面の URL を送る', async () => {
     const { deps, sendEmail } = setup()
     await deliverNotification(
-      { kind: 'thread_started', threadId: 't1', coachUserId: 'coach-1' },
+      { kind: 'application_received', threadId: 't1', coachUserId: 'coach-1' },
       deps
     )
     expect(sendEmail.mock.calls[0]?.[0]).toMatchObject({
@@ -76,7 +76,7 @@ describe('deliverNotification', () => {
   it('生徒の名前が空なら「生徒さん」と呼ぶ', async () => {
     const { deps, sendEmail } = setup({ findContext: async () => ({ ...ctx, studentName: '' }) })
     await deliverNotification(
-      { kind: 'thread_started', threadId: 't1', coachUserId: 'coach-1' },
+      { kind: 'application_received', threadId: 't1', coachUserId: 'coach-1' },
       deps
     )
     expect(sendEmail.mock.calls[0]?.[0].subject).toBe('生徒さんから申し込みがありました')

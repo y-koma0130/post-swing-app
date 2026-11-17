@@ -7,7 +7,7 @@ export type StartDraftThread = (
     purchaseId: string
     coachUserId: string
     studentUserId: string
-    planKind: Exclude<Thread['planKind'], 'monthly'>
+    planKind: Thread['planKind']
     now: Date
   }>
 ) => NewThread

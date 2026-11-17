@@ -74,7 +74,7 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
       if (!result.ok) throw new Error(`申し込みが見つかりません: ${purchaseId}`)
       return
     }
-    // 月額の請求が払われた（初回も毎月も）。請求ごとにスレッドを作る
+    // 月額の2か月目からの請求が払われた。請求ごとにスレッドを作る（初月は申し込みの承認で始まる）
     case 'invoice.paid': {
       const invoice = event.data.object
       const details = invoice.parent?.subscription_details
@@ -84,6 +84,8 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
           ? details.subscription
           : (details?.subscription?.id ?? null)
       if (!purchaseId || !subscriptionId || !invoice.id) return
+      // サブスクリプションを始めたときの無料期間（初月は承認のときに払い済み）の0円の請求書
+      if (invoice.amount_paid === 0) return
       const paidAt = invoice.status_transitions.paid_at ?? event.created
       const result = await recordPayment(
         {

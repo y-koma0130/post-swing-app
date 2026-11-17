@@ -6,7 +6,7 @@ import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { formatYen } from '@/app/utils/format'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
-import { startCheckoutAction } from '@/server/features/purchase/presentation/actions'
+import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 type Props = {
@@ -19,7 +19,7 @@ type Props = {
   delayAckLabel: string | null
 }
 
-/** プランを選んで申し込む（お試し・1スレッドは悩みと動画を送る画面へ、月額は Stripe の支払い画面へ） */
+/** プランを選んで申し込む（悩みと動画を送る画面へ。請求はコーチが受け付けたとき） */
 export const PlanCheckoutForm = ({
   coachSlug,
   plans,
@@ -27,7 +27,7 @@ export const PlanCheckoutForm = ({
   turnstileSiteKey,
   delayAckLabel,
 }: Props) => {
-  const [state, action, pending] = useActionState(startCheckoutAction, IDLE_ACTION_STATE)
+  const [state, action, pending] = useActionState(startApplicationAction, IDLE_ACTION_STATE)
   const [acknowledged, setAcknowledged] = useState(false)
   const needsAck = student !== null && delayAckLabel !== null
 
@@ -104,7 +104,7 @@ export const PlanCheckoutForm = ({
         {student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-caption text-muted">
-        お試し・1スレッドは、悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです。月額は、お支払いのあとに始まります。お支払いは
+        悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。お支払いは
         Stripe の画面で行い、カード番号は SwingPost に保存されません。
       </p>
     </form>

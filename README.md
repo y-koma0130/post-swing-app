@@ -62,7 +62,7 @@ pnpm dev
 1. 管理画面 http://localhost:5173/admin でコーチを招待する（開発中は誰でも開ける）
 2. http://localhost:5173/coach/login で、招待したメールアドレスにコードを送る。コードはログに出る（`docker compose logs app | grep -a ログインコード`）
 3. 生徒は http://localhost:5173/login の「開発用：メールのコードでログイン」で入る（LINE のチャネルがなくても試せる）
-4. Stripe を通さずに申し込む：生徒でログインしたまま `http://localhost:5173/api/dev/purchase?coach=<スラッグ>&plan=single` を開く（本番では 404）。申し込みの下書きができるので、悩みと動画を送り、「（開発用）Stripe を通さずに申し込む」を押すと、コーチの承認待ちになる（`plan=monthly` は今まで通り、すぐにスレッドができる）
+4. Stripe を通さずに申し込む：生徒でログインしたまま `http://localhost:5173/api/dev/purchase?coach=<スラッグ>&plan=single` を開く（本番では 404）。申し込みの下書きができるので、悩みと動画を送り、「（開発用）Stripe を通さずに申し込む」を押すと、コーチの承認待ちになる（`plan=monthly` も同じ。Stripe を通さないので、承認してもサブスクリプションは作られない）
 5. コーチのホームの「申し込み（承認待ち）」から受ける（お断りもできる）。受けたら、コーチの添削画面でカードを作って返す
 6. 毎日の処理を手で動かす：`curl "http://localhost:5173/cdn-cgi/local/scheduled?cron=0+19+*+*+*"`
 

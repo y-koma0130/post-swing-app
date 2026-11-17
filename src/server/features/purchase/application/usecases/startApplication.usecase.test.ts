@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { localDateSchema } from '@/server/utils/localDate'
-import { startApplication } from './startApplication.usecase'
-import type { CheckoutCoach } from './startCheckout.usecase'
+import { type CheckoutCoach, startApplication } from './startApplication.usecase'
 
 type Deps = Parameters<typeof startApplication>[1]
 

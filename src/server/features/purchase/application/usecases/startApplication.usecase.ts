@@ -10,15 +10,22 @@ import {
   type PurchaseBlocker,
 } from '../../domain/services/checkPurchaseEligibility.service'
 import type { Purchase } from '../../domain/values/Purchase'
-import type { CheckoutCoach } from './startCheckout.usecase'
 
-/** 承認制で申し込むプラン（月額は今のところすぐに支払う） */
-export type ApplicationPlanKind = Exclude<PlanKind, 'monthly'>
+/** 申し込みの判定に要るコーチの情報 */
+export type CheckoutCoach = Readonly<{
+  userId: string
+  name: string
+  stripeAccountId: string | null
+  chargesEnabled: boolean
+  suspended: boolean
+  monthlyCapacity: number
+  plans: ReadonlyArray<{ kind: PlanKind; name: string; priceYen: number; active: boolean }>
+}>
 
 export type StartApplicationParams = Readonly<{
   actor: Actor
   coachSlug: string
-  planKind: ApplicationPlanKind
+  planKind: PlanKind
   /** 返信が遅れがちなとき、遅れることを了承したか */
   acknowledgedDelay: boolean
   now: Date

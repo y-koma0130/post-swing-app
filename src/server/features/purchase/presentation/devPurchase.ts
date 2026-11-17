@@ -1,29 +1,25 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
-import { notify } from '@/server/features/notification/public'
 import { startDraftThread } from '@/server/features/thread/domain/services/startDraftThread.service'
 import {
   createThread,
   findApplicationThread,
   requestThreadApproval,
-  threadExists,
 } from '@/server/features/thread/public'
-import { recordPayment } from '../application/usecases/recordPayment.usecase'
 import {
   findCoachForCheckout,
-  findPurchase,
   markPurchaseAuthorized,
-  markPurchasePaid,
   savePendingPurchase,
 } from '../infrastructure/repositories/purchaseRepository'
 
 /**
  * 開発用：Stripe を通さずに申し込みを進める。本番では 404 を返す
  *
- * - `?coach=<slug>&plan=trial|single`：申し込みの下書きを作り、悩みと動画を送る画面へ
+ * - `?coach=<slug>&plan=trial|single|monthly`：申し込みの下書きを作り、悩みと動画を送る画面へ
  * - `?thread=<threadId>`：悩みと動画を送った下書きを、カードを仮押さえした扱いにしてコーチの承認待ちへ
- * - `?coach=<slug>&plan=monthly`：支払い済みにしてスレッドを作る（月額はまだ承認制でない）
+ *
+ * Stripe を通さないので、月額を承認してもサブスクリプションは作らない（2か月目からは試せない）
  *
  * Stripe のテストキーがなくても、申し込み・承認・添削を手元で確かめられるようにする
  */
@@ -71,28 +67,14 @@ export const handleDevPurchase = async (request: Request): Promise<Response> => 
     stripeSubscriptionId: null,
     stripePaymentIntentId: null,
   })
-  if (plan.kind !== 'monthly') {
-    const draft = startDraftThread({
-      id: crypto.randomUUID(),
-      purchaseId,
-      coachUserId: coach.userId,
-      studentUserId: actor.userId,
-      planKind: plan.kind,
-      now: new Date(),
-    })
-    await createThread(draft)
-    return Response.redirect(new URL(`/t/${draft.id}`, request.url), 303)
-  }
-  await recordPayment(
-    { purchaseId, stripeCustomerId: null, subscription: null, paidAt: new Date() },
-    {
-      findPurchase,
-      markPurchasePaid,
-      threadExists,
-      createThread,
-      notifyThreadStarted: (input) => notify({ kind: 'thread_started', ...input }),
-      generateId: () => crypto.randomUUID(),
-    }
-  )
-  return Response.redirect(new URL('/me', request.url), 303)
+  const draft = startDraftThread({
+    id: crypto.randomUUID(),
+    purchaseId,
+    coachUserId: coach.userId,
+    studentUserId: actor.userId,
+    planKind: plan.kind,
+    now: new Date(),
+  })
+  await createThread(draft)
+  return Response.redirect(new URL(`/t/${draft.id}`, request.url), 303)
 }
