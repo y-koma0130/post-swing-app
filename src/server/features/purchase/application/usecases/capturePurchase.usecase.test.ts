@@ -9,6 +9,7 @@ const authorized: Purchase = {
   coachUserId: 'coach-1',
   planKind: 'single',
   priceYen: 4980,
+  systemFeeYen: 200,
   status: 'authorized',
   stripeSubscriptionId: null,
   stripePaymentIntentId: 'pi_1',
@@ -71,6 +72,7 @@ describe('capturePurchase', () => {
       purchaseId: 'purchase-1',
       paymentIntentId: 'pi_1',
       priceYen: 3980,
+      systemFeeYen: 200,
       firstRenewalAt: new Date('2026-12-20T00:00:00Z'),
     })
     expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', {

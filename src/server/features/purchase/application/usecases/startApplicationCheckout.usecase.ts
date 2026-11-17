@@ -3,7 +3,7 @@ import type { CoachAvailability } from '@/server/features/coach/domain/values/Co
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
-import { calcPlatformFee } from '../../domain/services/calcPlatformFee.service'
+import { calcCharge } from '../../domain/services/calcCharge.service'
 import {
   checkPurchaseEligibility,
   type PurchaseBlocker,
@@ -20,7 +20,10 @@ export type CreateCheckoutSessionInput = Readonly<{
   threadId: string
   productName: string
   priceYen: number
-  platformFeeYen: number
+  /** 価格とは別の行に出すシステム利用料 */
+  systemFeeYen: number
+  /** プラットフォームの取り分（手数料＋システム利用料）。残りがコーチの口座へ */
+  applicationFeeYen: number
   destinationAccountId: string
   /** 月額：承認したあと、2か月目からの請求に使うカードを保存しておく */
   saveCardForRenewal: boolean
@@ -73,7 +76,7 @@ export type StartApplicationCheckout = (
  * - 本人の下書きだけ（他人には not_found）。悩みと動画を送ってから
  * - 下書きを作ってから時間がたっているので、申し込めるかをもう一度 checkPurchaseEligibility で確かめる
  *   （返信遅れの了承は、プランを選んだときに済んでいる）
- * - 価格は、下書きを作ったときの値（申し込みに保存した値）
+ * - 価格とシステム利用料は、下書きを作ったときの値（申し込みに保存した値）
  * - 月額も初月は同じく仮押さえ。カードを保存し、承認したときにそのカードでサブスクリプションを始める
  */
 export const startApplicationCheckout: StartApplicationCheckout = async (
@@ -119,7 +122,8 @@ export const startApplicationCheckout: StartApplicationCheckout = async (
     purchaseId: purchase.id,
     productName: `${coach.name}：${eligibility.value.plan.name}${purchase.planKind === 'monthly' ? '（初月）' : ''}`,
     priceYen: purchase.priceYen,
-    platformFeeYen: calcPlatformFee(purchase.priceYen),
+    systemFeeYen: purchase.systemFeeYen,
+    applicationFeeYen: calcCharge(purchase).applicationFeeYen,
     destinationAccountId: eligibility.value.destinationAccountId,
     threadId: thread.id,
     saveCardForRenewal: purchase.planKind === 'monthly',

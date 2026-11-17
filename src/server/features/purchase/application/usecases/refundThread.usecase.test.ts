@@ -10,6 +10,7 @@ const purchase = {
   coachUserId: 'c1',
   planKind: 'single' as const,
   priceYen: 5000,
+  systemFeeYen: 200,
   status: 'paid' as const,
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,

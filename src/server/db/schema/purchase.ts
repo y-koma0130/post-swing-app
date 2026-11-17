@@ -25,6 +25,8 @@ export const purchase = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 申し込んだ時点の価格（あとでコーチが価格を変えても変わらない） */
     priceYen: integer().notNull(),
+    /** 生徒が別に払うシステム利用料（申し込んだ時点の値。月額は毎月）。以前の申し込みは0 */
+    systemFeeYen: integer().notNull().default(0),
     status: text({ enum: ['pending', 'authorized', 'paid', 'voided', 'canceled'] }).notNull(),
     stripeCheckoutSessionId: text().unique(),
     /** カードを仮押さえした支払い（承認で確定、断ったら取り消す） */

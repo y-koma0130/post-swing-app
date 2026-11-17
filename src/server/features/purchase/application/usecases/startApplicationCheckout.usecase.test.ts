@@ -24,6 +24,7 @@ const purchase: Purchase = {
   planKind: 'single',
   // 下書きを作ったときの価格（そのあとコーチが 6000 円に変えた）
   priceYen: 4980,
+  systemFeeYen: 200,
   status: 'pending',
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,
@@ -70,7 +71,8 @@ describe('startApplicationCheckout', () => {
       threadId: 'thread-1',
       productName: '山田：1スレッド',
       priceYen: 4980,
-      platformFeeYen: 498,
+      systemFeeYen: 200,
+      applicationFeeYen: 698,
       destinationAccountId: 'acct_1',
       saveCardForRenewal: false,
     })

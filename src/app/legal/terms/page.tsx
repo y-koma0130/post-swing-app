@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SYSTEM_FEE_YEN } from '@/app/features/apply/utils/systemFeeText'
 import { LegalDraftNotice } from '../LegalDraftNotice'
 
 export const metadata: Metadata = { title: '利用規約' }
@@ -17,7 +18,13 @@ const TermsPage = () => (
     </p>
     <h2>2. 料金と支払い</h2>
     <ul>
-      <li>料金はコーチが決めたプランの価格です。支払いは Stripe を通じて行います。</li>
+      <li>
+        料金はコーチが決めたプランの価格と、申し込みごとのシステム利用料（{SYSTEM_FEE_YEN}
+        円・税込。月額プランは毎月）です。支払いは Stripe を通じて行います。
+      </li>
+      <li>
+        申し込みのときはカードの利用枠を確保するだけで、コーチが内容を見て受け付けた時点で請求します。コーチがお受けできなかったとき・48時間以内に受け付けられなかったときは請求しません。
+      </li>
       <li>
         月額プランは、解約するまで毎月自動で支払われ、そのたびに1スレッド（30日間）が始まります。
       </li>

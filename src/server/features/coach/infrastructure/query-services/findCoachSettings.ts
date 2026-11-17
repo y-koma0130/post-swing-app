@@ -1,6 +1,6 @@
 import 'server-only'
 import type { CoachSettingsDto } from '../../application/dto/CoachSettings.dto'
-import { PLAN_DISPLAY_ORDER } from '../../domain/rules'
+import { PLAN_DISPLAY_ORDER, PLAN_MIN_PRICE_YEN } from '../../domain/rules'
 import { findAvatarKey, findCoachByUserId } from '../repositories/coachRepository'
 import { toAvatarUrl } from './avatarUrl'
 
@@ -27,6 +27,7 @@ export const findCoachSettings: FindCoachSettings = async (userId) => {
         kind: plan.kind,
         name: plan.name,
         priceYen: plan.price,
+        minPriceYen: PLAN_MIN_PRICE_YEN[plan.kind],
         description: plan.description,
         active: plan.active,
       })),

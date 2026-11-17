@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { formatYen } from '@/app/utils/format'
 import type { CoachSettingsDto } from '@/server/features/coach/application/dto/CoachSettings.dto'
 import { updatePlansAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -47,12 +48,15 @@ export const PlansForm = ({ plans }: Props) => {
               <input
                 name={`${plan.kind}.price`}
                 type="number"
-                min={50}
+                min={plan.minPriceYen}
                 step={1}
                 defaultValue={plan.priceYen}
                 required
                 className={inputClass}
               />
+              <span className="text-caption text-muted block">
+                {formatYen(plan.minPriceYen)}以上
+              </span>
             </label>
           </div>
           <label className="block space-y-1">
@@ -65,6 +69,9 @@ export const PlansForm = ({ plans }: Props) => {
           </label>
         </fieldset>
       ))}
+      <p className="text-caption text-muted">
+        価格を上げても、いま月額を続けている生徒は申し込んだ価格のままです（新しく申し込む人から新しい価格）。下げたときは、いまの生徒も次の請求から新しい価格になります。生徒には、このほかシステム利用料が別にかかります（コーチの売上には影響しません）。
+      </p>
       <FormMessage state={state} />
       <Button type="submit" disabled={pending}>
         プランを保存

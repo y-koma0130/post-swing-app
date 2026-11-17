@@ -1,16 +1,20 @@
 import 'server-only'
 import { err, type Result } from '@/server/utils/result'
 import { capturePurchase } from './application/usecases/capturePurchase.usecase'
+import { lowerMonthlyPrices as lowerMonthlyPricesUsecase } from './application/usecases/lowerMonthlyPrices.usecase'
 import { voidPurchase } from './application/usecases/voidPurchase.usecase'
 import {
   cancelPaymentIntent,
   capturePaymentIntent,
+  changeSubscriptionPrice,
   startSubscription,
 } from './infrastructure/external-services/paymentIntents'
 import {
+  findActiveSubscriptions,
   findPurchase,
   markPurchaseCaptured,
   markPurchaseVoided,
+  savePurchasePrice,
 } from './infrastructure/repositories/purchaseRepository'
 
 /**
@@ -55,4 +59,23 @@ export const voidPayment = (purchaseId: string) =>
       { purchaseId },
       { findPurchase, cancelPaymentIntent, markPurchaseVoided, allowWithoutStripe }
     )
+  )
+
+/** コーチが月額を値下げしたら、いまの生徒にも次の請求から反映する（値上げは何もしない） */
+export const lowerMonthlyPrices = (coachUserId: string, monthlyPriceYen: number) =>
+  lowerMonthlyPricesUsecase(
+    { coachUserId, monthlyPriceYen },
+    {
+      findActiveSubscriptions,
+      changeSubscriptionPrice: async (input) => {
+        try {
+          await changeSubscriptionPrice(input)
+          return true
+        } catch (error) {
+          console.error('[stripe] 月額の価格を変えられませんでした', input.subscriptionId, error)
+          return false
+        }
+      },
+      savePurchasePrice,
+    }
   )

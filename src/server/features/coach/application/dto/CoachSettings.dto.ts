@@ -15,6 +15,8 @@ export type CoachSettingsDto = {
     kind: PlanKind
     name: string
     priceYen: number
+    /** この種類の最低価格 */
+    minPriceYen: number
     description: string
     active: boolean
   }>

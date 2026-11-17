@@ -28,7 +28,8 @@ export const MyPurchaseList = ({ purchases, showCoach }: Props) => (
             )}
             <span className="text-muted text-sm">
               {showCoach && `${PLAN_LABEL[p.planKind]}・`}
-              {formatYen(p.priceYen)}
+              {formatYen(p.priceYen + p.systemFeeYen)}
+              {p.systemFeeYen > 0 && '（利用料込み）'}
               {p.status === 'canceled' && '（解約済み）'}
             </span>
           </div>

@@ -28,6 +28,7 @@ const detail: ThreadDetailDto = {
   submissionBlocker: null,
   remainingStudentMessages: 30,
   studentChatBlocker: 'no_submission',
+  studentCloseBlocker: 'not_in_lesson',
   lastReadAt: { coach: null, student: null },
   review: null,
   submissions: [],

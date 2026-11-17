@@ -106,6 +106,13 @@
       "when": 1794909190927,
       "tag": "0014_application_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1794913966137,
+      "tag": "0015_system_fee",
+      "breakpoints": true
     }
   ]
 }

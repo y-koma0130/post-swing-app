@@ -15,7 +15,7 @@ export const purchaseStatusSchema = z.enum(['pending', 'authorized', 'paid', 'vo
  * 申し込み（Stripe Checkout 1回分）
  *
  * ドメインルール:
- * - 価格は申し込んだ時点の値で固定
+ * - 価格とシステム利用料は申し込んだ時点の値で固定（月額の値下げだけは、あとから反映する）
  * - お試し・1スレッドは、カードを仮押さえし、コーチが承認したら請求を確定する（断ったら取り消す）
  * - 月額は1つの申し込みから毎月スレッドができる
  */
@@ -25,6 +25,8 @@ export const purchaseSchema = z.object({
   coachUserId: z.string().min(1),
   planKind: planKindSchema,
   priceYen: z.number().int().positive(),
+  /** 生徒が別に払うシステム利用料（申し込んだ時点の値。月額は毎月） */
+  systemFeeYen: z.number().int().nonnegative(),
   status: purchaseStatusSchema,
   stripeSubscriptionId: z.string().nullable(),
   /** カードを仮押さえした支払い。開発用の申し込みでは null */

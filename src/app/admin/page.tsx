@@ -129,7 +129,7 @@ const AdminPage = async () => {
                       <RefundThreadButton
                         threadId={row.id}
                         studentName={row.studentName || '生徒'}
-                        priceYen={row.priceYen}
+                        priceYen={row.priceYen + row.systemFeeYen}
                       />
                     )}
                   </td>

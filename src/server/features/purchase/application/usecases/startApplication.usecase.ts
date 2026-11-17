@@ -5,6 +5,7 @@ import { startDraftThread } from '@/server/features/thread/domain/services/start
 import type { NewThread } from '@/server/features/thread/domain/values/Thread'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
+import { PURCHASE_RULES } from '../../domain/rules'
 import {
   checkPurchaseEligibility,
   type PurchaseBlocker,
@@ -98,6 +99,7 @@ export const startApplication: StartApplication = async (
     coachUserId: coach.userId,
     planKind,
     priceYen: eligibility.value.plan.priceYen,
+    systemFeeYen: PURCHASE_RULES.systemFeeYen,
     status: 'pending',
     stripeSubscriptionId: null,
     stripePaymentIntentId: null,

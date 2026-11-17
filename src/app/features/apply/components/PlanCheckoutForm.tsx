@@ -8,6 +8,7 @@ import { formatYen } from '@/app/utils/format'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
+import { SYSTEM_FEE_NOTE, SYSTEM_FEE_YEN } from '../utils/systemFeeText'
 
 type Props = {
   coachSlug: string
@@ -69,6 +70,12 @@ export const PlanCheckoutForm = ({
                   </span>
                 </span>
                 <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
+                <span className="text-caption text-muted mt-1 block">
+                  ＋システム利用料{formatYen(SYSTEM_FEE_YEN)}
+                  {plan.kind === 'monthly' ? '／月' : ''}（お支払い{' '}
+                  {formatYen(plan.priceYen + SYSTEM_FEE_YEN)}
+                  {plan.kind === 'monthly' ? '／月' : ''}）
+                </span>
               </span>
             </label>
           )
@@ -104,8 +111,8 @@ export const PlanCheckoutForm = ({
         {student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-caption text-muted">
-        悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。お支払いは
-        Stripe の画面で行い、カード番号は SwingPost に保存されません。
+        悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。
+        {SYSTEM_FEE_NOTE}お支払いは Stripe の画面で行い、カード番号は SwingPost に保存されません。
       </p>
     </form>
   )

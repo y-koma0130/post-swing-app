@@ -8,6 +8,8 @@ export type AdminThreadRowDto = {
   studentName: string
   planKind: PlanKind
   priceYen: number
+  /** 生徒が払ったシステム利用料（返金では一緒に返す） */
+  systemFeeYen: number
   status: ThreadStatus
   startedAt: Date
   expiresAt: Date

@@ -20,6 +20,8 @@ type Dependencies = Readonly<{
   /** 保存した期限を過ぎて、まだ終了していないスレッド（実際の期限は不在の分だけ延びる） */
   findExpiredOpenThreads: (now: Date) => Promise<Thread[]>
   closeThreads: (threadIds: string[], closedAt: Date) => Promise<void>
+  /** 生徒に「スレッドが終わりました。レビューをお願いします」と知らせる */
+  notifyThreadClosed: (input: { threadId: string; studentUserId: string }) => Promise<void>
   /** 保存した期限が to より前の、終了していないスレッド */
   findOpenThreadsExpiringBy: (to: Date) => Promise<
     Array<{
@@ -102,11 +104,17 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
   ])
   const absencesOf = (coachUserId: string) => absences.get(coachUserId) ?? []
 
-  const toClose = expired
-    .filter((t) => shouldCloseThread(withEffectiveExpiry(t, absencesOf(t.coachUserId)), now))
-    .map((t) => t.id)
+  const toClose = expired.filter((t) =>
+    shouldCloseThread(withEffectiveExpiry(t, absencesOf(t.coachUserId)), now)
+  )
   if (toClose.length > 0) {
-    await deps.closeThreads(toClose, now)
+    await deps.closeThreads(
+      toClose.map((t) => t.id),
+      now
+    )
+    for (const t of toClose) {
+      await deps.notifyThreadClosed({ threadId: t.id, studentUserId: t.studentUserId })
+    }
   }
 
   const toRemind = expiring.filter((t) => {
