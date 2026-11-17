@@ -109,12 +109,40 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         subject: '受付に空きが出ました',
         text: `${ctx.coachName}さんの受付に空きが出ました。\n${ctx.appUrl}/c/${ctx.coachSlug}/apply`,
       }
+    case 'application_received':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `${ctx.studentName}さんから申し込みがありました`,
+        text: `${ctx.studentName}さんから申し込みがありました。悩みと動画を見て、48時間以内に受けるか決めてください。受けると生徒への請求が確定し、添削を始められます。\n\n${coachThreadUrl(message.threadId)}`,
+      }
+    case 'application_approved':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: '申し込みが受け付けられました',
+        text: `${ctx.coachName}さんが申し込みを受け付けました。添削が届いたら、またお知らせします。\n${studentThreadUrl(message.threadId)}`,
+      }
+    case 'application_declined':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: '申し込みをお受けできませんでした',
+        text: `${ctx.coachName}さんは、今回の申し込みをお受けできませんでした。請求はされません。\n${studentThreadUrl(message.threadId)}`,
+      }
+    case 'application_expired':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: '申し込みが取り消されました',
+        text: `${ctx.coachName}さんから期限までにお返事がなかったため、申し込みを取り消しました。請求はされません。\n${studentThreadUrl(message.threadId)}`,
+      }
     case 'thread_started':
       return {
         channel: 'email',
         recipientUserId: ctx.coachUserId,
         subject: `${ctx.studentName}さんから申し込みがありました`,
-        text: `${ctx.studentName}さんの申し込み（支払い済み）が入りました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
+        text: `${ctx.studentName}さんの月額の申し込み（支払い済み）が入りました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'reply_overdue':
       return {

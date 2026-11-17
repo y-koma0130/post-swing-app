@@ -18,6 +18,7 @@ const thread: Thread = {
   startedAt: now,
   expiresAt: new Date('2026-12-14T00:00:00Z'),
   closedAt: null,
+  requestedAt: null,
   submissions: [],
   messages: [],
 }
@@ -142,5 +143,20 @@ describe('submitSubmission', () => {
       submissionId: 'id-1',
       absenceId: 'absence-1',
     })
+  })
+
+  it('申し込みの下書きでは、提出しても下書きのまま。コーチにはまだ知らせない', async () => {
+    const { deps, saveSubmission, notifySubmitted, saveThreadNotice } = setup(
+      { ...thread, status: 'draft' },
+      absentFacts('2026-11-13', '2026-11-20')
+    )
+    expect((await submitSubmission(params, deps)).ok).toBe(true)
+    expect(saveSubmission.mock.calls[0]?.[0]).toMatchObject({
+      nextStatus: 'draft',
+      theme: 'トップで右ひざが流れる',
+      sentDuringAbsenceId: null,
+    })
+    expect(notifySubmitted).not.toHaveBeenCalled()
+    expect(saveThreadNotice).not.toHaveBeenCalled()
   })
 })

@@ -5,6 +5,7 @@ import type { SubmissionBlocker } from '../../domain/services/checkSubmission.se
 import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
 import type { ChatQuote, ChatSender } from '../../domain/values/ChatMessage'
+import type { DeclineReason } from '../../domain/values/DeclineReason'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import type { VideoAngle } from '../../domain/values/VideoAngle'
@@ -27,6 +28,13 @@ export type ThreadDetailDto = {
   expiresAt: Date
   /** 不在のために延びた日数 */
   extendedDays: number
+  /** 申し込み（承認制）の様子 */
+  application: {
+    /** 承認待ちのとき、コーチが返事をする期限。それ以外は null */
+    approvalDeadline: Date | null
+    /** 断られたとき、その理由とひとこと。それ以外は null */
+    decline: { reason: DeclineReason; message: string } | null
+  }
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
   /** 生徒が送る前の確認（提出・チャット） */
@@ -48,7 +56,10 @@ export type ThreadDetailDto = {
   /** 生徒があと何通チャットを送れるか */
   remainingStudentMessages: number
   /** 生徒がいまチャットを送れない理由。送れるなら null */
-  studentChatBlocker: Extract<ChatBlocker, 'closed' | 'no_submission' | 'limit_reached'> | null
+  studentChatBlocker: Extract<
+    ChatBlocker,
+    'closed' | 'not_started' | 'no_submission' | 'limit_reached'
+  > | null
   /** それぞれが最後にスレッドを開いた時刻（開く前の値。「ここから新着」の線を引くのに使う） */
   lastReadAt: { coach: Date | null; student: Date | null }
   /** 終わったスレッドへの生徒のレビュー */

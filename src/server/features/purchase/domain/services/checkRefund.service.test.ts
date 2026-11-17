@@ -44,4 +44,13 @@ describe('checkRefund', () => {
       error: 'no_stripe_payment',
     })
   })
+
+  it('仮押さえ・取り消しの申し込みは、請求していないので返金しない', () => {
+    for (const status of ['authorized', 'voided'] as const) {
+      expect(checkRefund({ purchase: { ...paid, status }, thread })).toEqual({
+        ok: false,
+        error: 'not_paid',
+      })
+    }
+  })
 })

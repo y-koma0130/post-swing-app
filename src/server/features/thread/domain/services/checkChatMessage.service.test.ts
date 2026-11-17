@@ -93,4 +93,27 @@ describe('checkChatMessage', () => {
       checkChatMessage({ thread, sender: 'student', body: '見て', attachmentKind: 'video' })
     ).toEqual({ ok: false, error: 'attachment_not_allowed' })
   })
+
+  it('申し込みの下書き・承認待ちのあいだは、どちらも送れない。断られたら終了と同じ', () => {
+    for (const status of ['draft', 'requested'] as const) {
+      for (const sender of ['coach', 'student'] as const) {
+        expect(
+          checkChatMessage({
+            thread: { ...thread, status },
+            sender,
+            body: '質問',
+            attachmentKind: 'none',
+          })
+        ).toEqual({ ok: false, error: 'not_started' })
+      }
+    }
+    expect(
+      checkChatMessage({
+        thread: { ...thread, status: 'declined' },
+        sender: 'coach',
+        body: '質問',
+        attachmentKind: 'none',
+      })
+    ).toEqual({ ok: false, error: 'closed' })
+  })
 })

@@ -19,7 +19,7 @@ type Props = {
   delayAckLabel: string | null
 }
 
-/** プランを選んで Stripe の支払い画面へ進む */
+/** プランを選んで申し込む（お試し・1スレッドは悩みと動画を送る画面へ、月額は Stripe の支払い画面へ） */
 export const PlanCheckoutForm = ({
   coachSlug,
   plans,
@@ -101,10 +101,11 @@ export const PlanCheckoutForm = ({
         size="lg"
         className="w-full"
       >
-        {student ? 'お支払いへ進む' : 'ログインして申し込む'}
+        {student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-caption text-muted">
-        お支払いは Stripe の画面で行います。カード番号は SwingPost に保存されません。
+        お試し・1スレッドは、悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです。月額は、お支払いのあとに始まります。お支払いは
+        Stripe の画面で行い、カード番号は SwingPost に保存されません。
       </p>
     </form>
   )

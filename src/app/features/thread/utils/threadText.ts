@@ -1,6 +1,10 @@
 import type { ChatBlocker } from '@/server/features/thread/domain/services/checkChatMessage.service'
 import type { SubmissionBlocker } from '@/server/features/thread/domain/services/checkSubmission.service'
 import type { ChatQuote, QuoteKind } from '@/server/features/thread/domain/values/ChatMessage'
+import type {
+  CoachDeclineReason,
+  DeclineReason,
+} from '@/server/features/thread/domain/values/DeclineReason'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
@@ -46,12 +50,30 @@ export const SUBMISSION_BLOCKER_SHORT = {
 /** 生徒がいまチャットを送れない理由 */
 export const STUDENT_CHAT_BLOCKER_MESSAGE = {
   closed: 'このスレッドは終了しました',
+  not_started: '申し込みが受け付けられると、コーチにチャットで質問できます',
   no_submission: '最初の動画を提出すると、コーチにチャットで質問できます',
   limit_reached: 'このスレッドで送れるメッセージは、すべて使いました',
 } as const satisfies Record<
-  Extract<ChatBlocker, 'closed' | 'no_submission' | 'limit_reached'>,
+  Extract<ChatBlocker, 'closed' | 'not_started' | 'no_submission' | 'limit_reached'>,
   string
 >
+
+/** 申し込みを断った理由 */
+export const DECLINE_REASON_LABEL = {
+  out_of_scope: '今回のお悩みは、このコーチの得意分野から外れていました',
+  unavailable: 'いまは新しい申し込みを受けるのが難しい状況です',
+  video_unclear: '動画が見づらく、添削が難しい内容でした',
+  other: 'コーチの都合により、お受けできませんでした',
+  expired: '期限までにコーチからお返事がありませんでした',
+} as const satisfies Record<DeclineReason, string>
+
+/** コーチが選ぶ、断る理由の短い言い方 */
+export const COACH_DECLINE_REASON_OPTION = {
+  out_of_scope: '得意分野から外れている',
+  unavailable: 'いまは受けるのが難しい',
+  video_unclear: '動画が見づらい',
+  other: 'その他',
+} as const satisfies Record<CoachDeclineReason, string>
 
 /** スレッドの残り（「提出 1/3回・チャット 残り28通」） */
 export const threadUsageText = (

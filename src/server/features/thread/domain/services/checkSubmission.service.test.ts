@@ -40,4 +40,12 @@ describe('checkSubmission', () => {
     expect(checkSubmission({ ...base, expiresAt: now }, now)).toBe('expired')
     expect(checkSubmission({ ...base, status: 'closed' }, now)).toBe('closed')
   })
+
+  it('申し込みの下書きでは最初の1回を送れる。承認待ちは添削待ち、断られたら終了と同じ', () => {
+    expect(checkSubmission({ ...base, status: 'draft' }, now)).toBeNull()
+    expect(
+      checkSubmission({ ...base, status: 'requested', submissions: [submission(false)] }, now)
+    ).toBe('awaiting_reply')
+    expect(checkSubmission({ ...base, status: 'declined' }, now)).toBe('closed')
+  })
 })

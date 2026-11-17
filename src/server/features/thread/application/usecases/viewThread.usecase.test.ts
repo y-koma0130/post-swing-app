@@ -15,6 +15,7 @@ const detail: ThreadDetailDto = {
   startedAt: new Date(),
   expiresAt: new Date(),
   extendedDays: 0,
+  application: { approvalDeadline: null, decline: null },
   coachAvailability: { kind: 'available', replyTargetHours: 48 },
   sendGuard: { video: 'none', chat: 'none' },
   limits: {
@@ -53,6 +54,26 @@ describe('viewThread', () => {
       deps
     )
     expect(result.ok).toBe(true)
+  })
+
+  it('申し込みの下書きは、担当のコーチにも存在しないと返す（本人の生徒は見られる）', async () => {
+    const draftDeps = {
+      findThreadDetail: async () => ({ detail: { ...detail, status: 'draft' as const }, members }),
+    }
+    expect(
+      await viewThread(
+        { actor: { userId: 'coach-1', name: '' }, threadId: 'thread-1', as: 'coach' },
+        draftDeps
+      )
+    ).toEqual({ ok: false, error: 'not_found' })
+    expect(
+      (
+        await viewThread(
+          { actor: { userId: 'student-1', name: '' }, threadId: 'thread-1', as: 'student' },
+          draftDeps
+        )
+      ).ok
+    ).toBe(true)
   })
 
   it('他人には存在しないと返す', async () => {

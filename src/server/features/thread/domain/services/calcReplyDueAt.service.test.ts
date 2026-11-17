@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { localDateSchema } from '@/server/utils/localDate'
-import { calcReplyDueAt, isReplyDuePassedToday } from './calcReplyDueAt.service'
+import { calcReplyDueAt, isReplyDuePassedToday, replyClockStart } from './calcReplyDueAt.service'
 
 const absences = [
   { startDate: localDateSchema.parse('2026-11-20'), endDate: localDateSchema.parse('2026-11-23') },
@@ -26,5 +26,12 @@ describe('isReplyDuePassedToday', () => {
     expect(isReplyDuePassedToday(new Date('2026-11-19T10:00:00+09:00'), now)).toBe(true)
     expect(isReplyDuePassedToday(new Date('2026-11-18T10:00:00+09:00'), now)).toBe(false)
     expect(isReplyDuePassedToday(new Date('2026-11-20T10:00:00+09:00'), now)).toBe(false)
+  })
+
+  it('申し込みで承認前に届いた提出は、承認した時点（スレッドの開始）から数える', () => {
+    const submittedAt = new Date('2026-11-16T10:00:00+09:00')
+    const approvedAt = new Date('2026-11-17T09:00:00+09:00')
+    expect(replyClockStart(submittedAt, approvedAt)).toEqual(approvedAt)
+    expect(replyClockStart(approvedAt, submittedAt)).toEqual(approvedAt)
   })
 })

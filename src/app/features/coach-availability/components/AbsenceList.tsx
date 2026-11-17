@@ -44,10 +44,7 @@ export const AbsenceList = ({ coachName, settings }: Props) => {
                     </Badge>
                   )}
                 </p>
-                <p className="text-muted text-sm">
-                  {absence.note || '一言なし'}・
-                  {absence.pauseNewSignups ? '新規の申し込みを止める' : '新規の申し込みは受ける'}
-                </p>
+                <p className="text-muted text-sm">{absence.note || '一言なし'}</p>
               </div>
               <div className="flex gap-2">
                 <Button

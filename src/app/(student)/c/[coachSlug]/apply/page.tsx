@@ -18,7 +18,7 @@ type Props = {
   params: Promise<{ coachSlug: string }>
 }
 
-/** 申し込み：プランを選んで支払う。動画は支払いのあと、スレッドの画面から送る */
+/** 申し込み：プランを選ぶ。お試し・1スレッドは、このあとスレッドの画面で悩みと動画を送り、カードを登録する（月額はすぐ支払う） */
 const ApplyPage = async ({ params }: Props) => {
   const { coachSlug } = await params
   const page = await getApplyPage(coachSlug)

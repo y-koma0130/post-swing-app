@@ -5,9 +5,14 @@ import {
   withEffectiveExpiry,
 } from '../../domain/services/calcEffectiveExpiry.service'
 import { calcMaintenanceDates } from '../../domain/services/calcMaintenanceDates.service'
-import { calcReplyDueAt, isReplyDuePassedToday } from '../../domain/services/calcReplyDueAt.service'
+import {
+  calcReplyDueAt,
+  isReplyDuePassedToday,
+  replyClockStart,
+} from '../../domain/services/calcReplyDueAt.service'
 import { shouldCloseThread } from '../../domain/services/shouldCloseThread.service'
 import type { Thread } from '../../domain/values/Thread'
+import type { ThreadDecline } from './declineApplication.usecase'
 
 type Dependencies = Readonly<{
   /** コーチごとの不在期間（coach が持つ） */
@@ -26,10 +31,12 @@ type Dependencies = Readonly<{
     }>
   >
   notifyThreadExpiring: (input: { threadId: string; studentUserId: string }) => Promise<void>
-  /** since より後に届き、まだ添削していない提出（終了していないスレッド） */
+  /** since より後に届き、まだ添削していない提出（レッスン中のスレッド）。threadStartedAt はスレッドの開始 */
   findUnrepliedSubmissionsSince: (
     since: Date
-  ) => Promise<Array<{ threadId: string; coachUserId: string; submittedAt: Date }>>
+  ) => Promise<
+    Array<{ threadId: string; coachUserId: string; submittedAt: Date; threadStartedAt: Date }>
+  >
   notifyReplyOverdue: (input: { threadId: string; coachUserId: string }) => Promise<void>
   /** closedBefore より前に終了したスレッドの、まだ消していない動画 */
   findVideosToDelete: (closedBefore: Date) => Promise<Array<{ id: string; r2Key: string }>>
@@ -39,6 +46,20 @@ type Dependencies = Readonly<{
   findDraftVideosToDelete: (createdBefore: Date) => Promise<Array<{ id: string; r2Key: string }>>
   /** 下書きの動画の記録を消す（提出に使われていないので、残す理由がない） */
   deleteDraftVideos: (videoIds: string[]) => Promise<void>
+  /** requestedBefore より前に承認を待ち始めて、まだ決まっていない申し込み */
+  findExpiredApplications: (
+    requestedBefore: Date
+  ) => Promise<Array<{ threadId: string; studentUserId: string; purchaseId: string }>>
+  /** カードの仮押さえを外す（purchase が持つ） */
+  voidPayment: (purchaseId: string) => Promise<Result<unknown, string>>
+  saveDecline: (threadId: string, decline: ThreadDecline) => Promise<void>
+  notifyApplicationExpired: (input: { threadId: string; studentUserId: string }) => Promise<void>
+  /** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
+  findDraftThreadsToDelete: (
+    createdBefore: Date
+  ) => Promise<Array<{ threadId: string; videoR2Keys: string[] }>>
+  /** 下書きのスレッドを、提出・動画の記録ごと消す */
+  deleteDraftThreads: (threadIds: string[]) => Promise<void>
 }>
 
 export type RunThreadMaintenance = (
@@ -52,6 +73,8 @@ export type RunThreadMaintenance = (
       overdue: number
       deletedVideos: number
       deletedDrafts: number
+      expiredApplications: number
+      deletedDraftThreads: number
     },
     never
   >
@@ -59,7 +82,8 @@ export type RunThreadMaintenance = (
 
 /**
  * 毎日1回の処理（Cron）。期限切れの終了、期限前のお知らせ、返信の遅れのお知らせ、古い動画と
- * 提出されなかった動画（下書き）の削除
+ * 提出されなかった動画（下書き）の削除、承認されないままの申し込みのお断り、カードを登録しないままの
+ * 申し込みの下書きの削除
  *
  * 判定は domain に任せる：期限は calcEffectiveExpiry（不在の分だけ延びる）、終了は shouldCloseThread、
  * 返信の期限は calcReplyDueAt、日付は calcMaintenanceDates
@@ -99,7 +123,8 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
   // 1スレッドに遅れた提出がいくつあっても、知らせるのは1回
   const overdue = new Map<string, string>()
   for (const s of unreplied) {
-    if (isReplyDuePassedToday(calcReplyDueAt(s.submittedAt, absencesOf(s.coachUserId)), now)) {
+    const from = replyClockStart(s.submittedAt, s.threadStartedAt)
+    if (isReplyDuePassedToday(calcReplyDueAt(from, absencesOf(s.coachUserId)), now)) {
       overdue.set(s.threadId, s.coachUserId)
     }
   }
@@ -126,11 +151,32 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     await deps.deleteDraftVideos(drafts.map((v) => v.id))
   }
 
+  // 期限までに承認されなかった申し込みは、断った扱いにしてカードの仮押さえを外す。
+  // 外せなかったもの（Stripe の一時的な失敗）は承認待ちのまま残し、翌日にもう一度試す
+  let expiredApplications = 0
+  for (const a of await deps.findExpiredApplications(dates.expireApplicationsRequestedBefore)) {
+    const voided = await deps.voidPayment(a.purchaseId)
+    if (!voided.ok) continue
+    await deps.saveDecline(a.threadId, { reason: 'expired', message: '', decidedAt: now })
+    await deps.notifyApplicationExpired({ threadId: a.threadId, studentUserId: a.studentUserId })
+    expiredApplications += 1
+  }
+
+  const draftThreads = await deps.findDraftThreadsToDelete(dates.deleteDraftThreadsCreatedBefore)
+  for (const key of draftThreads.flatMap((t) => t.videoR2Keys)) {
+    await deps.deleteMediaObject(key)
+  }
+  if (draftThreads.length > 0) {
+    await deps.deleteDraftThreads(draftThreads.map((t) => t.threadId))
+  }
+
   return ok({
     closed: toClose.length,
     reminded: toRemind.length,
     overdue: overdue.size,
     deletedVideos: videos.length,
     deletedDrafts: drafts.length,
+    expiredApplications,
+    deletedDraftThreads: draftThreads.length,
   })
 }

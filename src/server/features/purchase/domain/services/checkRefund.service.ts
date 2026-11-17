@@ -21,12 +21,12 @@ export type CheckRefund = (
  * ドメインルール:
  * - 返金はスレッド単位（月額は、そのスレッドを作った請求だけを返す）
  * - 同じスレッドは1回だけ
- * - 支払いが済んでいない申し込みは返金しない
+ * - 支払いが済んでいない申し込み（仮押さえ・取り消しを含む）は返金しない（解約した月額は、払った分を返せる）
  * - Stripe を通っていない支払い（開発用の購入）は返金できない
  */
 export const checkRefund: CheckRefund = ({ purchase, thread }) => {
   if (thread.refunded) return err('already_refunded')
-  if (purchase.status === 'pending') return err('not_paid')
+  if (purchase.status !== 'paid' && purchase.status !== 'canceled') return err('not_paid')
   if (thread.stripeInvoiceId) return ok({ kind: 'invoice', invoiceId: thread.stripeInvoiceId })
   if (purchase.stripeCheckoutSessionId) {
     return ok({ kind: 'checkout_session', checkoutSessionId: purchase.stripeCheckoutSessionId })

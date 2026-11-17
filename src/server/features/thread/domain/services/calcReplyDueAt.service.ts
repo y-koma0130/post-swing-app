@@ -25,6 +25,15 @@ export const calcReplyDueAt: CalcReplyDueAt = (submittedAt, absences) => {
 }
 
 /**
+ * 返信の期限を数え始める時刻
+ *
+ * ドメインルール:
+ * - 申し込みの最初の提出は、承認する前に届いている。期限は承認した時点（スレッドの開始）から数える
+ */
+export const replyClockStart = (submittedAt: Date, threadStartedAt: Date): Date =>
+  submittedAt.getTime() >= threadStartedAt.getTime() ? submittedAt : threadStartedAt
+
+/**
  * 毎日の処理で、コーチに返信の遅れを知らせるか
  * （毎日1回動くので、この1日のあいだに期限を過ぎたものだけ。1回の提出につき1回になる）
  */

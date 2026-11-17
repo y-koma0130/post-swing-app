@@ -26,6 +26,7 @@ const thread: Thread = {
   startedAt: now,
   expiresAt: new Date('2026-12-20T00:00:00Z'),
   closedAt: null,
+  requestedAt: null,
   submissions: [submission('s1', false)],
   messages: [],
 }

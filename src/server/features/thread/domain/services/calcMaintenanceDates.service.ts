@@ -1,4 +1,4 @@
-import { MAINTENANCE_RULES } from '../rules'
+import { APPLICATION_RULES, MAINTENANCE_RULES } from '../rules'
 
 const HOUR_MS = 60 * 60 * 1000
 const DAY_MS = 24 * HOUR_MS
@@ -13,6 +13,10 @@ export type MaintenanceDates = Readonly<{
   deleteVideosClosedBefore: Date
   /** これより前に上げて、提出に使われなかった動画（下書き）を消す */
   deleteDraftsCreatedBefore: Date
+  /** これより前に承認を待ち始めた申し込みは、期限切れとして断った扱いにする */
+  expireApplicationsRequestedBefore: Date
+  /** これより前に作り、カードを登録しないままの申し込みの下書きを消す */
+  deleteDraftThreadsCreatedBefore: Date
 }>
 
 export type CalcMaintenanceDates = (now: Date) => MaintenanceDates
@@ -25,6 +29,8 @@ export type CalcMaintenanceDates = (now: Date) => MaintenanceDates
  * - 返信の遅れは、返信の期限（calcReplyDueAt）で決める。ここでは調べる範囲だけを出す
  * - 終了から90日で動画を消す
  * - 提出に使われなかった動画（下書き）は24時間で消す
+ * - 申し込みは、承認を待ち始めてから48時間で期限切れ
+ * - カードを登録しないままの申し込みの下書きは24時間で消す
  */
 export const calcMaintenanceDates: CalcMaintenanceDates = (now) => {
   const days = MAINTENANCE_RULES.remindDaysBefore
@@ -37,6 +43,12 @@ export const calcMaintenanceDates: CalcMaintenanceDates = (now) => {
     ),
     deleteDraftsCreatedBefore: new Date(
       now.getTime() - MAINTENANCE_RULES.draftVideoRetentionHours * HOUR_MS
+    ),
+    expireApplicationsRequestedBefore: new Date(
+      now.getTime() - APPLICATION_RULES.approvalHours * HOUR_MS
+    ),
+    deleteDraftThreadsCreatedBefore: new Date(
+      now.getTime() - APPLICATION_RULES.draftRetentionHours * HOUR_MS
     ),
   }
 }

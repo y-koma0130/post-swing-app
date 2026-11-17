@@ -8,12 +8,23 @@ import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { findCoachAvailability } from '@/server/features/coach/public'
-import { findThreadPayment, markThreadRefunded } from '@/server/features/thread/public'
+import {
+  createThread,
+  findApplicationThread,
+  findOpenApplication,
+  findThreadPayment,
+  markThreadRefunded,
+} from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
 import { refundThread } from '../application/usecases/refundThread.usecase'
+import { startApplication } from '../application/usecases/startApplication.usecase'
+import {
+  type StartApplicationCheckoutError,
+  startApplicationCheckout,
+} from '../application/usecases/startApplicationCheckout.usecase'
 import {
   type StartCheckoutError,
   startCheckout,
@@ -25,8 +36,10 @@ import {
   attachCheckoutSession,
   countActiveThreads,
   findCoachForCheckout,
+  findCoachForCheckoutByUserId,
   findCoachUserIdBySlug,
   findPortalCustomer,
+  findPurchase,
   findPurchaseForRefund,
   hasActiveSubscription,
   hasPaidTrial,
@@ -45,7 +58,18 @@ const CHECKOUT_ERROR_MESSAGE = {
   already_subscribed: 'すでに月額で申し込んでいます',
 } as const satisfies Record<StartCheckoutError, string>
 
-/** 申し込んで Stripe の支払い画面へ進む */
+const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
+  ...CHECKOUT_ERROR_MESSAGE,
+  not_found: '申し込みが見つかりません',
+  not_draft: 'この申し込みは、すでにカードの登録が済んでいます',
+  no_submission: '先に、悩みと動画を送ってください',
+  full: '受付枠が埋まってしまいました。キャンセル待ちに登録できます',
+} as const satisfies Record<StartApplicationCheckoutError, string>
+
+/**
+ * プランを選んで申し込む。お試し・1スレッドは、悩みと動画を送る下書きへ（支払いはコーチの承認後）。
+ * 月額は、そのまま Stripe の支払い画面へ
+ */
 export const startCheckoutAction = async (
   _prev: ActionState,
   formData: FormData
@@ -65,19 +89,33 @@ export const startCheckoutAction = async (
     remoteIp: (await headers()).get('cf-connecting-ip'),
   })
   if (!human) {
-    return actionError(
-      '確認できませんでした。少し待ってから、もう一度「お支払いへ進む」を押してください'
+    return actionError('確認できませんでした。少し待ってから、もう一度ボタンを押してください')
+  }
+
+  const acknowledgedDelay = formChecked(formData, 'acknowledgeDelay')
+  if (planKind.data !== 'monthly') {
+    const application = await startApplication(
+      { actor, coachSlug, planKind: planKind.data, acknowledgedDelay, now: new Date() },
+      {
+        findCoachForCheckout,
+        countActiveThreads,
+        hasPaidTrial,
+        hasActiveSubscription,
+        findCoachAvailability,
+        findOpenApplication,
+        savePendingPurchase,
+        createThread,
+        generateId: () => crypto.randomUUID(),
+      }
     )
+    if (!application.ok) {
+      return actionError(CHECKOUT_ERROR_MESSAGE[application.error])
+    }
+    redirect(`/t/${application.value.threadId}`)
   }
 
   const result = await startCheckout(
-    {
-      actor,
-      coachSlug,
-      planKind: planKind.data,
-      acknowledgedDelay: formChecked(formData, 'acknowledgeDelay'),
-      now: new Date(),
-    },
+    { actor, coachSlug, planKind: planKind.data, acknowledgedDelay, now: new Date() },
     {
       findCoachForCheckout,
       countActiveThreads,
@@ -92,6 +130,36 @@ export const startCheckoutAction = async (
   )
   if (!result.ok) {
     return actionError(CHECKOUT_ERROR_MESSAGE[result.error])
+  }
+  redirect(result.value.url)
+}
+
+/** 悩みと動画を送った申し込みの、カードの登録（仮押さえ）へ進む */
+export const startApplicationCheckoutAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const threadId = formString(formData, 'threadId')
+  const actor = await getActor()
+  if (!actor) {
+    redirect(`/login?next=${encodeURIComponent(`/t/${threadId}`)}`)
+  }
+  const result = await startApplicationCheckout(
+    { actor, threadId, now: new Date() },
+    {
+      findApplicationThread,
+      findPurchase,
+      findCoachForCheckoutByUserId,
+      countActiveThreads,
+      hasPaidTrial,
+      hasActiveSubscription,
+      findCoachAvailability,
+      createCheckoutSession,
+      attachCheckoutSession,
+    }
+  )
+  if (!result.ok) {
+    return actionError(APPLICATION_CHECKOUT_ERROR_MESSAGE[result.error])
   }
   redirect(result.value.url)
 }

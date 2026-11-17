@@ -9,7 +9,8 @@ import { type ThreadStatus, threadStatusSchema } from './ThreadStatus'
  * スレッド（1つのテーマを「送る→直す→撮り直す」で見る単位）
  *
  * ドメインルール:
- * - 期間は開始から30日
+ * - 期間は開始から30日（申し込みは、コーチが承認した時点から）
+ * - お試し・1スレッドは、下書き → 承認待ち → レッスン中 と進む（コーチが断れば終わり）
  * - 提出はお試し1回、それ以外は3回まで（1回に動画2本まで）
  * - チャットはスレッドに1本の流れ
  * - テーマは最初の提出のときに生徒が書く
@@ -24,6 +25,8 @@ export const threadSchema = z.object({
   startedAt: z.coerce.date(),
   expiresAt: z.coerce.date(),
   closedAt: z.coerce.date().nullable(),
+  /** 承認を待ち始めた日時（申し込みでないスレッドや、下書きのあいだは null） */
+  requestedAt: z.coerce.date().nullable(),
   submissions: z.array(submissionSchema),
   messages: z.array(chatMessageSchema),
 })
@@ -37,7 +40,7 @@ export const threadThemeSchema = z
   .min(1, '直したいところを書いてください')
   .max(100, '100文字までです')
 
-/** 支払いが済んだときに作るスレッド（作るのは thread、呼ぶのは purchase） */
+/** 新しく作るスレッド（作るのは thread、呼ぶのは purchase。申し込みの下書きか、月額の支払い） */
 export type NewThread = Readonly<{
   id: string
   purchaseId: string

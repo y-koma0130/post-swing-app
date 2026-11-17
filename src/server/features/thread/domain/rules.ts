@@ -51,11 +51,25 @@ export const CHAT_RULES = {
   maxLength: 1000,
 } as const
 
+/** レッスン中のスレッドの状態。期限・返信の遅れ・期限前のお知らせは、これだけを見る */
+export const IN_LESSON_STATUSES = ['waiting_student', 'waiting_coach'] as const
+
 /**
- * 受付枠に数えるスレッドの状態（終わっていないもの）。
+ * 受付枠に数えるスレッドの状態（レッスン中と、承認待ち）。下書きは数えない。
  * 申し込み・受付ページ・キャンセル待ちで、同じ数え方をする
  */
-export const CAPACITY_COUNTED_STATUSES = ['waiting_student', 'waiting_coach'] as const
+export const CAPACITY_COUNTED_STATUSES = [...IN_LESSON_STATUSES, 'requested'] as const
+
+/** 申し込み（承認制）のルール（暫定） */
+export const APPLICATION_RULES = {
+  /**
+   * コーチが受けるか決める期限（時間）。過ぎたら断った扱いにしてカードの仮押さえを外す。
+   * カードの仮押さえは7日で切れるので、それより十分短くする
+   */
+  approvalHours: 48,
+  /** カードを登録しないままの下書きを何時間で消すか */
+  draftRetentionHours: 24,
+} as const
 
 /** 毎日の処理のルール */
 export const MAINTENANCE_RULES = {

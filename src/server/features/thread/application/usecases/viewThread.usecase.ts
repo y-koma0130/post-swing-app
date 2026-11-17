@@ -23,7 +23,8 @@ export type ViewThread = (
 /**
  * スレッドを見る
  *
- * 担当のコーチ・本人の生徒だけが見られる。他人には「存在しない」と返す（IDの有無を推測させない）
+ * 担当のコーチ・本人の生徒だけが見られる。他人には「存在しない」と返す（IDの有無を推測させない）。
+ * 申し込みの下書きは、コーチにも「存在しない」と返す
  */
 export const viewThread: ViewThread = async ({ actor, threadId, as }, deps) => {
   const found = await deps.findThreadDetail(threadId)
@@ -32,6 +33,10 @@ export const viewThread: ViewThread = async ({ actor, threadId, as }, deps) => {
   }
   const memberId = as === 'coach' ? found.members.coachUserId : found.members.studentUserId
   if (memberId !== actor.userId) {
+    return err('not_found')
+  }
+  // 申し込みの下書き（カードを登録する前）は、コーチにはまだ見せない
+  if (as === 'coach' && found.detail.status === 'draft') {
     return err('not_found')
   }
   return ok(found.detail)

@@ -9,6 +9,7 @@ const timestamps = {
 
 /**
  * 生徒の申し込み（Stripe Checkout 1回分）
+ * お試し・1スレッドは、カードを仮押さえ（authorized）→ コーチが承認したら支払い済み（paid）、断ったら取り消し（voided）。
  * 月額は、この1行に対して毎月スレッドが1つずつ作られる
  */
 export const purchase = sqliteTable(
@@ -24,8 +25,10 @@ export const purchase = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 申し込んだ時点の価格（あとでコーチが価格を変えても変わらない） */
     priceYen: integer().notNull(),
-    status: text({ enum: ['pending', 'paid', 'canceled'] }).notNull(),
+    status: text({ enum: ['pending', 'authorized', 'paid', 'voided', 'canceled'] }).notNull(),
     stripeCheckoutSessionId: text().unique(),
+    /** カードを仮押さえした支払い（承認で確定、断ったら取り消す） */
+    stripePaymentIntentId: text().unique(),
     stripeCustomerId: text(),
     stripeSubscriptionId: text().unique(),
     ...timestamps,

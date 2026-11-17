@@ -5,9 +5,10 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
+import { ApplicationDecision } from '@/app/features/thread/components/ApplicationDecision'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
-import { threadUsageText } from '@/app/features/thread/utils/threadText'
+import { DECLINE_REASON_LABEL, threadUsageText } from '@/app/features/thread/utils/threadText'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
@@ -34,18 +35,38 @@ const ReviewPage = async ({ params }: Props) => {
         eyebrow={thread.studentName || '（名前なし）'}
         title={thread.theme === '' ? '（動画待ち）' : thread.theme}
         description={
-          <>
-            {threadUsageText({
-              submissionCount: thread.submissions.length,
-              maxSubmissions: thread.limits.maxSubmissions,
-            })}
-            ・生徒のチャット 残り{thread.remainingStudentMessages}通・期限{' '}
-            {formatMonthDay(thread.expiresAt)}
-            {extensionNote(thread.extendedDays)}
-            {thread.status === 'closed' && '・終了'}
-          </>
+          thread.status === 'requested' ? (
+            '申し込み（承認待ち）'
+          ) : thread.status === 'declined' ? (
+            'お断りした申し込み'
+          ) : (
+            <>
+              {threadUsageText({
+                submissionCount: thread.submissions.length,
+                maxSubmissions: thread.limits.maxSubmissions,
+              })}
+              ・生徒のチャット 残り{thread.remainingStudentMessages}通・期限{' '}
+              {formatMonthDay(thread.expiresAt)}
+              {extensionNote(thread.extendedDays)}
+              {thread.status === 'closed' && '・終了'}
+            </>
+          )
         }
       />
+      {thread.status === 'requested' && (
+        <ApplicationDecision
+          threadId={thread.id}
+          studentName={thread.studentName}
+          deadline={thread.application.approvalDeadline}
+        />
+      )}
+      {thread.application.decline && (
+        <p className="bg-surface text-muted rounded-xl p-4 text-sm">
+          お断りしました：{DECLINE_REASON_LABEL[thread.application.decline.reason]}
+          {thread.application.decline.message && `（${thread.application.decline.message}）`}
+          。生徒には請求されていません。
+        </p>
+      )}
       {thread.review && (
         <Card className="space-y-2">
           <p className="font-bold">

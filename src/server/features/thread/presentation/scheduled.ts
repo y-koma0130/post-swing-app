@@ -4,20 +4,25 @@ import {
   findCoachAvailabilityFactsForCoaches,
 } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
+import { voidPayment } from '@/server/features/purchase/public'
 import { notifyAbsenceEnded } from '../application/usecases/notifyAbsenceEnded.usecase'
 import { runThreadMaintenance } from '../application/usecases/runThreadMaintenance.usecase'
 import { deleteMediaObject } from '../infrastructure/external-services/videoStorage'
 import {
   closeThreads,
   countAbsenceBacklog,
+  deleteDraftThreads,
   deleteDraftVideos,
+  findDraftThreadsToDelete,
   findDraftVideosToDelete,
+  findExpiredApplications,
   findExpiredOpenThreads,
   findOpenThreadsExpiringBy,
   findUnrepliedSubmissionsSince,
   findVideosToDelete,
   markVideosDeleted,
 } from '../infrastructure/repositories/maintenanceRepository'
+import { saveDecline } from '../infrastructure/repositories/threadRepository'
 
 /** 毎日の処理（スレッド）。Worker の scheduled ハンドラから呼ぶ */
 export const runDailyThreadMaintenance = async (now: Date) => {
@@ -39,6 +44,12 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       markVideosDeleted,
       findDraftVideosToDelete,
       deleteDraftVideos,
+      findExpiredApplications,
+      voidPayment,
+      saveDecline,
+      notifyApplicationExpired: (input) => notify({ kind: 'application_expired', ...input }),
+      findDraftThreadsToDelete,
+      deleteDraftThreads,
     }
   )
   if (result.ok) console.info('[scheduled] スレッド', result.value)

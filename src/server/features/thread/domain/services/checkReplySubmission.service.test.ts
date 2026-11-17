@@ -63,4 +63,9 @@ describe('checkReplySubmission', () => {
       'invalid_drill'
     )
   })
+
+  it('申し込みは、承認するまで返せない。断ったら終了と同じ', () => {
+    expect(checkReplySubmission({ ...base, thread: { status: 'requested' } })).toBe('not_started')
+    expect(checkReplySubmission({ ...base, thread: { status: 'declined' } })).toBe('closed')
+  })
 })

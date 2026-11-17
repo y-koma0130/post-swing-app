@@ -33,21 +33,16 @@ describe('findUpcomingAbsence', () => {
 describe('decideSignupGuard', () => {
   const resumeDate = localDateSchema.parse('2026-11-24')
 
-  it('不在中：新規を止めていれば申し込めない。止めていなければ了承が要る', () => {
-    expect(
-      decideSignupGuard({
-        kind: 'absent',
-        absence: absence('2026-11-20', '2026-11-23', true),
-        resumeDate,
-      })
-    ).toBe('paused')
-    expect(
-      decideSignupGuard({
-        kind: 'absent',
-        absence: absence('2026-11-20', '2026-11-23'),
-        resumeDate,
-      })
-    ).toBe('ack_required')
+  it('不在中は、新規を止める設定によらず申し込めない（48時間以内に受けるか決められないため）', () => {
+    for (const pause of [true, false]) {
+      expect(
+        decideSignupGuard({
+          kind: 'absent',
+          absence: absence('2026-11-20', '2026-11-23', pause),
+          resumeDate,
+        })
+      ).toBe('paused')
+    }
   })
 
   it('返信遅れは了承が要り、通常はそのまま', () => {

@@ -1,9 +1,11 @@
 import { REPLY_RULES } from '../rules'
 import type { Submission } from '../values/Submission'
 import type { Thread } from '../values/Thread'
+import { isFinished, isInLesson } from '../values/ThreadStatus'
 
 export type ReplyBlocker =
   | 'closed'
+  | 'not_started'
   | 'already_replied'
   | 'no_cards'
   | 'too_many_cards'
@@ -36,6 +38,7 @@ export type CheckReplySubmission = (
  *
  * ドメインルール:
  * - 終了したスレッドには返せない（期限が過ぎても、期限内に届いた提出には返せる）
+ * - 申し込みは、承認してから返す
  * - 提出1回に添削は1通（追加の説明はチャットで）
  * - 画像は1〜8枚、1枚5MBまで。その提出の動画（正面・後方など）のどれからでも作れる
  * - 説明（こうしてほしい）は必ず書く。2000文字まで
@@ -49,7 +52,8 @@ export const checkReplySubmission: CheckReplySubmission = ({
   drillIds,
   ownDrillIds,
 }) => {
-  if (thread.status === 'closed') return 'closed'
+  if (isFinished(thread.status)) return 'closed'
+  if (!isInLesson(thread.status)) return 'not_started'
   if (submission.replied) return 'already_replied'
   if (cards.length === 0) return 'no_cards'
   if (cards.length > REPLY_RULES.maxCards) return 'too_many_cards'
