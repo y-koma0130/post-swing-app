@@ -15,6 +15,7 @@ import {
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
+import { CloseThreadButton } from '@/app/features/thread/components/CloseThreadButton'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
@@ -146,6 +147,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
           quoteMode="longPress"
         />
 
+        {thread.studentCloseBlocker === null && (
+          <CloseThreadButton threadId={thread.id} coachName={thread.coachName} />
+        )}
         {/* チャットの入力欄。提出もここから（ドロワーで開く）。申し込みで動画を送ったあとは、上の案内だけ */}
         {applying && thread.submissions.length > 0 ? null : (
           <div className="border-line-soft sticky bottom-0 -mx-6 border-t bg-white/95 px-6 py-3 backdrop-blur">

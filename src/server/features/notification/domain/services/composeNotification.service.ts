@@ -102,6 +102,13 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         subject: 'スレッドの期限が近づいています',
         text: `${ctx.coachName}さんとのスレッドは${ctx.expiresAt ? formatDate(ctx.expiresAt) : 'もうすぐ'}までです。撮り直した動画やご質問はお早めにどうぞ。\n${studentThreadUrl(message.threadId)}`,
       }
+    case 'thread_closed':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: 'スレッドが終わりました',
+        text: `${ctx.coachName}さんとのスレッドが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
+      }
     case 'waitlist_opened':
       return {
         channel: 'line',

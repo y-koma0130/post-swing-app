@@ -16,6 +16,7 @@ export const listMyPurchases: ListMyPurchases = async (studentUserId) => {
       coachAvatarKey: coachProfile.avatarR2Key,
       planKind: purchase.planKind,
       priceYen: purchase.priceYen,
+      systemFeeYen: purchase.systemFeeYen,
       status: purchase.status,
       customerId: purchase.stripeCustomerId,
     })
@@ -38,6 +39,7 @@ export const listMyPurchases: ListMyPurchases = async (studentUserId) => {
             coachAvatarUrl: toAvatarUrl(row.coachSlug, row.coachAvatarKey),
             planKind: row.planKind,
             priceYen: row.priceYen,
+            systemFeeYen: row.systemFeeYen,
             status: row.status,
             canManage: row.planKind === 'monthly' && row.customerId !== null,
           },

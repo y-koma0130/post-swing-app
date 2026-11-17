@@ -23,6 +23,7 @@ export const listThreadsForAdmin: ListThreadsForAdmin = async () => {
       studentName: student.name,
       planKind: thread.planKind,
       priceYen: purchase.priceYen,
+      systemFeeYen: purchase.systemFeeYen,
       status: thread.status,
       startedAt: thread.startedAt,
       expiresAt: thread.expiresAt,

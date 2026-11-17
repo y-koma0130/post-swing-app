@@ -25,6 +25,7 @@ import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
 import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import { studentChatBlocker } from '../../domain/services/checkChatMessage.service'
+import { checkStudentClose } from '../../domain/services/checkStudentClose.service'
 import { checkSubmission } from '../../domain/services/checkSubmission.service'
 import { countRemainingStudentMessages } from '../../domain/services/countRemainingStudentMessages.service'
 import { decideSendGuard } from '../../domain/services/decideSendGuard.service'
@@ -166,6 +167,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       maxStudentMessages: THREAD_RULES.maxStudentMessagesByPlan[t.planKind],
     },
     submissionBlocker: checkSubmission({ ...t, expiresAt: expiry.expiresAt }, now),
+    studentCloseBlocker: checkStudentClose(t),
     remainingStudentMessages: countRemainingStudentMessages(t),
     studentChatBlocker: studentChatBlocker(t),
     lastReadAt: { coach: readAtOf(t.coachUserId), student: readAtOf(t.studentUserId) },

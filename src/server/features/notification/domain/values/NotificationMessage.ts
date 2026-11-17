@@ -33,6 +33,8 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     coachUserId: z.string(),
     occurredAt: occurredAtSchema,
   }),
+  /** 生徒へ：スレッドが終わった（自分で終えた・期限で終わった）。レビューをお願いする（LINE） */
+  z.object({ kind: z.literal('thread_closed'), threadId: z.string(), studentUserId: z.string() }),
   /** 生徒へ：期限が近い（LINE） */
   z.object({ kind: z.literal('thread_expiring'), threadId: z.string(), studentUserId: z.string() }),
   /** キャンセル待ちの生徒へ：枠が空いた（LINE） */

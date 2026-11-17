@@ -54,6 +54,7 @@ describe('startApplication', () => {
       coachUserId: 'coach-1',
       planKind: 'single',
       priceYen: 4980,
+      systemFeeYen: 200,
       status: 'pending',
       stripeSubscriptionId: null,
       stripePaymentIntentId: null,

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PLANS } from '../../domain/rules'
+import { priceYenSchema } from '../../domain/values/PriceYen'
 import { updatePlans } from './updatePlans.usecase'
 
 const actor = { userId: 'coach-1', name: '山田' }
@@ -22,6 +23,19 @@ describe('updatePlans', () => {
       { isCoach: async () => false, savePlans }
     )
     expect(result).toEqual({ ok: false, error: 'not_found' })
+    expect(savePlans).not.toHaveBeenCalled()
+  })
+
+  it('最低価格を下回るプランがあれば保存しない', async () => {
+    const savePlans = vi.fn()
+    const cheap = DEFAULT_PLANS.map((p) =>
+      p.kind === 'single' ? { ...p, price: priceYenSchema.parse(2980) } : p
+    )
+    const result = await updatePlans(
+      { actor, plans: cheap },
+      { isCoach: async () => true, savePlans }
+    )
+    expect(result).toEqual({ ok: false, error: 'below_minimum' })
     expect(savePlans).not.toHaveBeenCalled()
   })
 

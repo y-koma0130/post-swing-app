@@ -8,6 +8,8 @@ export type MyPurchaseDto = {
   coachAvatarUrl: string | null
   planKind: PlanKind
   priceYen: number
+  /** システム利用料（以前の申し込みは0） */
+  systemFeeYen: number
   status: 'paid' | 'canceled'
   /** 月額で、Stripe の画面から解約・カード変更ができる */
   canManage: boolean

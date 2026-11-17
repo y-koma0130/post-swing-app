@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { notify } from '@/server/features/notification/public'
+import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import { deleteAbsence } from '../application/usecases/deleteAbsence.usecase'
@@ -17,6 +18,7 @@ import { setDelayFlag } from '../application/usecases/setDelayFlag.usecase'
 import { startPayoutOnboarding } from '../application/usecases/startPayoutOnboarding.usecase'
 import { updateCoachProfile } from '../application/usecases/updateCoachProfile.usecase'
 import { updatePlans } from '../application/usecases/updatePlans.usecase'
+import { PLAN_MIN_PRICE_YEN } from '../domain/rules'
 import { generateCoachSlug, RANDOM_SLUG_LENGTH } from '../domain/services/generateCoachSlug.service'
 import { coachProfileSchema } from '../domain/values/Coach'
 import { absenceInputSchema } from '../domain/values/CoachAbsence'
@@ -144,6 +146,14 @@ export const updateCoachProfileAction = async (
   return actionSuccess('プロフィールを保存しました')
 }
 
+const yen = (value: number) => `${value.toLocaleString('ja-JP')}円`
+
+const PLANS_ERROR = {
+  not_found: 'コーチとして登録されていません',
+  duplicate_kind: 'プランの種類が重なっています',
+  below_minimum: `価格は、お試し${yen(PLAN_MIN_PRICE_YEN.trial)}・1スレッド${yen(PLAN_MIN_PRICE_YEN.single)}・月額${yen(PLAN_MIN_PRICE_YEN.monthly)}以上にしてください`,
+} as const
+
 /** コーチが自分のプランを保存する。フォームは種類ごとに `<kind>.price` のような名前で送る */
 export const updatePlansAction = async (
   _prev: ActionState,
@@ -168,10 +178,21 @@ export const updatePlansAction = async (
 
   const result = await updatePlans({ actor, plans: plans.data }, { isCoach, savePlans })
   if (!result.ok) {
-    return actionError('コーチとして登録されていません')
+    return actionError(PLANS_ERROR[result.error])
   }
   revalidatePath('/coach/settings')
-  return actionSuccess('プランを保存しました')
+  const monthly = plans.data.find((plan) => plan.kind === 'monthly')
+  const lowered = monthly ? await lowerMonthlyPrices(actor.userId, monthly.price) : null
+  if (lowered?.ok && lowered.value.failed > 0) {
+    return actionError(
+      `プランは保存しましたが、月額の生徒${lowered.value.failed}人の値下げを反映できませんでした。時間をおいてもう一度保存してください`
+    )
+  }
+  return actionSuccess(
+    lowered?.ok && lowered.value.lowered > 0
+      ? `プランを保存しました。月額を続けている${lowered.value.lowered}人も、次の請求から新しい価格になります`
+      : 'プランを保存しました'
+  )
 }
 
 /** 売上を受け取る口座の設定（Stripe）へ進む */

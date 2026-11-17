@@ -7,6 +7,7 @@ export type StartSubscriptionInput = Readonly<{
   /** 初月の支払い（ここから顧客・保存したカード・送金先を引き継ぐ） */
   paymentIntentId: string
   priceYen: number
+  systemFeeYen: number
   /** 2回目の請求日 */
   firstRenewalAt: Date
 }>
@@ -71,6 +72,7 @@ export const capturePurchase: CapturePurchase = async ({ purchaseId, now }, deps
           purchaseId: purchase.id,
           paymentIntentId,
           priceYen: purchase.priceYen,
+          systemFeeYen: purchase.systemFeeYen,
           firstRenewalAt: calcThreadPeriod(now).expiresAt,
         })
       : null

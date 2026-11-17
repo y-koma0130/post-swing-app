@@ -13,6 +13,7 @@ import {
   type ApproveApplicationError,
   approveApplication,
 } from '../application/usecases/approveApplication.usecase'
+import { closeThreadByStudent } from '../application/usecases/closeThreadByStudent.usecase'
 import {
   type DeclineApplicationError,
   declineApplication,
@@ -29,6 +30,7 @@ import type { ChatAttachmentRequest } from '../domain/services/checkChatAttachme
 import type { QuoteRequest } from '../domain/services/checkQuoteTarget.service'
 import { quoteKindSchema } from '../domain/values/ChatMessage'
 import { coachDeclineReasonSchema } from '../domain/values/DeclineReason'
+import { closeThreads } from '../infrastructure/repositories/maintenanceRepository'
 import {
   findDraftVideo,
   findDraftVideos,
@@ -253,4 +255,35 @@ export const declineApplicationAction = async (
   revalidatePath(`/coach/threads/${threadId}`)
   revalidatePath(`/t/${threadId}`)
   return actionSuccess('申し込みをお断りしました。生徒には請求されません')
+}
+
+/** 生徒が自分でスレッドを終える（添削を待っている提出がないとき） */
+export const closeThreadAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const threadId = formString(formData, 'threadId')
+  const result = await closeThreadByStudent(
+    { actor, threadId, now: new Date() },
+    {
+      findThread,
+      closeThreads,
+      notifyThreadClosed: (input) => notify({ kind: 'thread_closed', ...input }),
+    }
+  )
+  if (!result.ok) {
+    return actionError(
+      result.error === 'awaiting_reply'
+        ? 'コーチの添削が届いてから終えられます'
+        : 'このスレッドは終えられません'
+    )
+  }
+  revalidatePath(`/t/${threadId}`)
+  revalidatePath('/me')
+  revalidatePath(`/coach/threads/${threadId}`)
+  return actionSuccess('スレッドを終えました')
 }

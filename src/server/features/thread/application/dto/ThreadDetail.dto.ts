@@ -1,6 +1,7 @@
 import type { CoachAvailabilityDto } from '@/server/features/coach/application/dto/CoachAvailability.dto'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import type { ChatBlocker } from '../../domain/services/checkChatMessage.service'
+import type { StudentCloseBlocker } from '../../domain/services/checkStudentClose.service'
 import type { SubmissionBlocker } from '../../domain/services/checkSubmission.service'
 import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
@@ -53,6 +54,8 @@ export type ThreadDetailDto = {
   }
   /** 生徒がいま提出できない理由。提出できるなら null */
   submissionBlocker: SubmissionBlocker | null
+  /** 生徒がいま自分でスレッドを終えられない理由。終えられるなら null */
+  studentCloseBlocker: StudentCloseBlocker | null
   /** 生徒があと何通チャットを送れるか */
   remainingStudentMessages: number
   /** 生徒がいまチャットを送れない理由。送れるなら null */

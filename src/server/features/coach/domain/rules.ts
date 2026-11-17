@@ -1,4 +1,4 @@
-import type { Plan } from './values/Plan'
+import type { Plan, PlanKind } from './values/Plan'
 import { priceYenSchema } from './values/PriceYen'
 
 export const COACH_RULES = {
@@ -43,6 +43,16 @@ export const DEFAULT_PLANS: readonly Plan[] = [
     active: true,
   },
 ]
+
+/**
+ * プランの最低価格（円）。コーチはこれ以上で自由に決める（暫定）
+ * 月額は毎月1スレッドなので、1スレッドと同じにする
+ */
+export const PLAN_MIN_PRICE_YEN = {
+  trial: 550,
+  single: 3980,
+  monthly: 3980,
+} as const satisfies Record<PlanKind, number>
 
 /** 画面に並べる順（お試し → 1スレッド → 月額） */
 export const PLAN_DISPLAY_ORDER = { trial: 0, single: 1, monthly: 2 } as const

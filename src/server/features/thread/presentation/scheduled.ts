@@ -35,6 +35,7 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       },
       findExpiredOpenThreads,
       closeThreads,
+      notifyThreadClosed: (input) => notify({ kind: 'thread_closed', ...input }),
       findOpenThreadsExpiringBy,
       notifyThreadExpiring: (input) => notify({ kind: 'thread_expiring', ...input }),
       findUnrepliedSubmissionsSince,

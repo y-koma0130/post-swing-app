@@ -1,0 +1,1 @@
+ALTER TABLE `purchase` ADD `system_fee_yen` integer DEFAULT 0 NOT NULL;

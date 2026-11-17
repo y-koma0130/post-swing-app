@@ -1,8 +1,9 @@
 import 'server-only'
-import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
 import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
+import type { ActiveSubscription } from '../../application/usecases/lowerMonthlyPrices.usecase'
 import type { CheckoutCoach } from '../../application/usecases/startApplication.usecase'
 import { type Purchase, purchaseSchema } from '../../domain/values/Purchase'
 
@@ -110,6 +111,7 @@ export const savePendingPurchase: SavePendingPurchase = async (p) => {
     coachUserId: p.coachUserId,
     planKind: p.planKind,
     priceYen: p.priceYen,
+    systemFeeYen: p.systemFeeYen,
     status: p.status,
     createdAt: now,
     updatedAt: now,
@@ -270,4 +272,36 @@ export const markWaitlistNotified: MarkWaitlistNotified = async (
         inArray(waitlistEntry.studentUserId, studentUserIds)
       )
     )
+}
+
+export type FindActiveSubscriptions = (coachUserId: string) => Promise<ActiveSubscription[]>
+/** このコーチの、続いている月額（支払い済みで解約されていないもの） */
+export const findActiveSubscriptions: FindActiveSubscriptions = async (coachUserId) => {
+  const rows = await getDb()
+    .select({
+      purchaseId: purchase.id,
+      subscriptionId: purchase.stripeSubscriptionId,
+      priceYen: purchase.priceYen,
+      systemFeeYen: purchase.systemFeeYen,
+    })
+    .from(purchase)
+    .where(
+      and(
+        eq(purchase.coachUserId, coachUserId),
+        eq(purchase.planKind, 'monthly'),
+        eq(purchase.status, 'paid'),
+        isNotNull(purchase.stripeSubscriptionId)
+      )
+    )
+    .all()
+  return rows.flatMap((r) => (r.subscriptionId ? [{ ...r, subscriptionId: r.subscriptionId }] : []))
+}
+
+export type SavePurchasePrice = (purchaseId: string, priceYen: number) => Promise<void>
+/** 月額の値下げを反映した価格（次の請求から） */
+export const savePurchasePrice: SavePurchasePrice = async (purchaseId, priceYen) => {
+  await getDb()
+    .update(purchase)
+    .set({ priceYen, updatedAt: new Date() })
+    .where(eq(purchase.id, purchaseId))
 }

@@ -3,6 +3,9 @@ import { env } from 'cloudflare:workers'
 import { getStripe } from '@/server/utils/stripeClient'
 import type { CreateCheckoutSessionInput } from '../../application/usecases/startApplicationCheckout.usecase'
 
+/** 支払い画面・請求書に出すシステム利用料の名前 */
+export const SYSTEM_FEE_NAME = 'システム利用料'
+
 /** 申し込みの支払い画面を開いておく時間（Stripe の下限は30分）。下書きが消える前に終わらせる */
 const CHECKOUT_EXPIRES_SECONDS = 60 * 60
 
@@ -14,7 +17,7 @@ export type CreateCheckoutSession = (
  * 申し込みの支払い画面（Stripe Checkout）を作る
  *
  * - カードを仮押さえする（capture_method: manual）。コーチが承認したら確定し、断ったら外す
- * - 価格はその場で指定する（Stripe 側に商品・価格を作り置きしない）
+ * - 価格はその場で指定する（Stripe 側に商品・価格を作り置きしない）。システム利用料は別の行に出す
  * - 支払いはプラットフォームが受け、手数料を引いてコーチの口座へ送る（destination charge）
  * - どの申し込みかは metadata.purchaseId で Webhook に伝える
  * - 月額は初月をこの支払いで受け、カードを保存しておく（承認したときに、そのカードでサブスクリプションを始める）。
@@ -36,11 +39,23 @@ export const createCheckoutSession: CreateCheckoutSession = async (input) => {
           product_data: { name: input.productName },
         },
       },
+      ...(input.systemFeeYen > 0
+        ? [
+            {
+              quantity: 1,
+              price_data: {
+                currency: 'jpy',
+                unit_amount: input.systemFeeYen,
+                product_data: { name: SYSTEM_FEE_NAME },
+              },
+            },
+          ]
+        : []),
     ],
     customer_creation: 'always',
     payment_intent_data: {
       capture_method: 'manual',
-      application_fee_amount: input.platformFeeYen,
+      application_fee_amount: input.applicationFeeYen,
       transfer_data: { destination: input.destinationAccountId },
       description: input.productName,
       metadata,

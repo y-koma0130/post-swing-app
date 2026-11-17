@@ -41,6 +41,7 @@ const absence = (start: string, end: string): CoachAbsence => ({
 
 const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => {
   const closeThreads = vi.fn<Deps['closeThreads']>(async () => undefined)
+  const notifyThreadClosed = vi.fn<Deps['notifyThreadClosed']>(async () => undefined)
   const notifyThreadExpiring = vi.fn<Deps['notifyThreadExpiring']>(async () => undefined)
   const notifyReplyOverdue = vi.fn<Deps['notifyReplyOverdue']>(async () => undefined)
   const deleteMediaObject = vi.fn<Deps['deleteMediaObject']>(async () => undefined)
@@ -56,6 +57,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
     findAbsencesForCoaches: async () => new Map([['coach-1', absences]]),
     findExpiredOpenThreads: async () => [],
     closeThreads,
+    notifyThreadClosed,
     findOpenThreadsExpiringBy: async () => [],
     notifyThreadExpiring,
     findUnrepliedSubmissionsSince: async () => [],
@@ -75,6 +77,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
   }
   return {
     deps,
+    notifyThreadClosed,
     voidPayment,
     saveDecline,
     notifyApplicationExpired,
@@ -91,8 +94,8 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
 }
 
 describe('runThreadMaintenance', () => {
-  it('期限切れで、すべて添削済みのスレッドだけを終了する', async () => {
-    const { deps, closeThreads } = setup({
+  it('期限切れで、すべて添削済みのスレッドだけを終了し、生徒にレビューをお願いする', async () => {
+    const { deps, closeThreads, notifyThreadClosed } = setup({
       findExpiredOpenThreads: async () => [
         thread('done', [true, true]),
         thread('pending', [true, false]),
@@ -101,6 +104,10 @@ describe('runThreadMaintenance', () => {
     })
     const result = await runThreadMaintenance({ now }, deps)
     expect(closeThreads).toHaveBeenCalledWith(['done', 'empty'], now)
+    expect(notifyThreadClosed.mock.calls).toEqual([
+      [{ threadId: 'done', studentUserId: 'student-1' }],
+      [{ threadId: 'empty', studentUserId: 'student-1' }],
+    ])
     expect(result).toEqual({
       ok: true,
       value: {
