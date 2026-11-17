@@ -6,8 +6,17 @@ import { getActor } from '@/server/auth/getActor'
 import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
+import { capturePayment, voidPayment } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import {
+  type ApproveApplicationError,
+  approveApplication,
+} from '../application/usecases/approveApplication.usecase'
+import {
+  type DeclineApplicationError,
+  declineApplication,
+} from '../application/usecases/declineApplication.usecase'
 import {
   type SendChatMessageError,
   sendChatMessage,
@@ -19,13 +28,17 @@ import {
 import type { ChatAttachmentRequest } from '../domain/services/checkChatAttachment.service'
 import type { QuoteRequest } from '../domain/services/checkQuoteTarget.service'
 import { quoteKindSchema } from '../domain/values/ChatMessage'
+import { coachDeclineReasonSchema } from '../domain/values/DeclineReason'
 import {
   findDraftVideo,
   findDraftVideos,
   findThread,
   findThreadCards,
+  findThreadPayment,
   saveAbsenceAck,
+  saveApproval,
   saveChatMessage,
+  saveDecline,
   saveSubmission,
   saveThreadNotice,
 } from '../infrastructure/repositories/threadRepository'
@@ -33,6 +46,7 @@ import {
 const CHAT_ERROR = {
   not_found: '送れませんでした',
   closed: 'このスレッドは終了しています',
+  not_started: '申し込みが受け付けられてから、チャットを送れます',
   empty: 'メッセージを書いてください',
   too_long: 'メッセージは1000文字までです',
   no_submission: '最初の動画を提出してから、チャットを送れます',
@@ -155,4 +169,88 @@ export const submitSubmissionAction = async (
   revalidatePath(`/t/${threadId}`)
   revalidatePath(`/coach/threads/${threadId}`)
   return actionSuccess('提出しました')
+}
+
+const APPROVE_ERROR = {
+  not_found: '申し込みが見つかりません',
+  not_requested: 'この申し込みは、すでに受けるか決まっています',
+  approval_expired: '返事の期限を過ぎたため、受けられません',
+  capture_failed:
+    '生徒のカードで支払いを確定できませんでした。時間をおいてもう一度試すか、お断りしてください',
+} as const satisfies Record<ApproveApplicationError, string>
+
+/** コーチが申し込みを受ける（生徒への請求が確定し、添削を始められる） */
+export const approveApplicationAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const threadId = formString(formData, 'threadId')
+  const result = await approveApplication(
+    { actor, threadId, now: new Date() },
+    {
+      findThread,
+      findThreadPayment,
+      capturePayment,
+      saveApproval,
+      notifyApproved: (input) => notify({ kind: 'application_approved', ...input }),
+    }
+  )
+  if (!result.ok) {
+    return actionError(APPROVE_ERROR[result.error])
+  }
+  revalidatePath('/coach')
+  revalidatePath(`/coach/threads/${threadId}`)
+  revalidatePath(`/t/${threadId}`)
+  return actionSuccess('申し込みを受けました。添削を始められます')
+}
+
+const DECLINE_ERROR = {
+  not_found: '申し込みが見つかりません',
+  not_requested: 'この申し込みは、すでに受けるか決まっています',
+  approval_expired: '返事の期限を過ぎています',
+  message_too_long: 'ひとことは200文字までです',
+  void_failed: 'カードの仮押さえを外せませんでした。時間をおいてもう一度試してください',
+} as const satisfies Record<DeclineApplicationError, string>
+
+/** コーチが申し込みを断る（カードの仮押さえを外す。生徒には請求しない） */
+export const declineApplicationAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
+  const actor = await getActor()
+  if (!actor) {
+    return actionError('ログインし直してください')
+  }
+  const reason = coachDeclineReasonSchema.safeParse(formString(formData, 'reason'))
+  if (!reason.success) {
+    return actionError('理由を選んでください')
+  }
+  const threadId = formString(formData, 'threadId')
+  const result = await declineApplication(
+    {
+      actor,
+      threadId,
+      reason: reason.data,
+      message: formString(formData, 'message'),
+      now: new Date(),
+    },
+    {
+      findThread,
+      findThreadPayment,
+      voidPayment,
+      saveDecline,
+      notifyDeclined: (input) => notify({ kind: 'application_declined', ...input }),
+    }
+  )
+  if (!result.ok) {
+    return actionError(DECLINE_ERROR[result.error])
+  }
+  revalidatePath('/coach')
+  revalidatePath(`/coach/threads/${threadId}`)
+  revalidatePath(`/t/${threadId}`)
+  return actionSuccess('申し込みをお断りしました。生徒には請求されません')
 }

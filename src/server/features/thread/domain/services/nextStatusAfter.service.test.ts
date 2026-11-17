@@ -43,4 +43,12 @@ describe('nextStatusAfter', () => {
       'closed'
     )
   })
+
+  it('申し込みの下書き・承認待ち・お断りのあいだは変わらない', () => {
+    for (const status of ['draft', 'requested', 'declined'] as const) {
+      expect(
+        nextStatusAfter({ status, submissions: [submission(false)] }, 'student_submitted')
+      ).toBe(status)
+    }
+  })
 })

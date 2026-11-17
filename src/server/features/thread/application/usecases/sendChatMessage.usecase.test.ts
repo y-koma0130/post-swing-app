@@ -24,6 +24,7 @@ const thread: Thread = {
   startedAt: now,
   expiresAt: new Date('2026-12-20T00:00:00Z'),
   closedAt: null,
+  requestedAt: null,
   submissions: [
     { id: 's1', submittedAt: now, note: '', videos: [{ id: 'v1', angle: 'front' }], replied: true },
   ],

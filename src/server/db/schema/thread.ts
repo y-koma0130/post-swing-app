@@ -33,7 +33,10 @@ export const thread = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 生徒が最初の動画を送るときに書く */
     theme: text().notNull().default(''),
-    status: text({ enum: ['waiting_student', 'waiting_coach', 'closed'] }).notNull(),
+    status: text({
+      enum: ['draft', 'requested', 'waiting_student', 'waiting_coach', 'closed', 'declined'],
+    }).notNull(),
+    /** 申し込みのときは、承認した時点で開始と期限を決め直す */
     startedAt: integer({ mode: 'timestamp_ms' }).notNull(),
     expiresAt: integer({ mode: 'timestamp_ms' }).notNull(),
     closedAt: integer({ mode: 'timestamp_ms' }),
@@ -41,6 +44,15 @@ export const thread = sqliteTable(
     refundedAt: integer({ mode: 'timestamp_ms' }),
     /** 月額で、この請求の支払いから作ったスレッド（同じ請求で2つ作らないため） */
     stripeInvoiceId: text().unique(),
+    /** カードの仮押さえが済み、コーチの承認を待ち始めた日時 */
+    requestedAt: integer({ mode: 'timestamp_ms' }),
+    /** コーチが承認した・断った日時（期限切れで断った扱いにした日時も） */
+    decidedAt: integer({ mode: 'timestamp_ms' }),
+    declineReason: text({
+      enum: ['out_of_scope', 'unavailable', 'video_unclear', 'other', 'expired'],
+    }),
+    /** 断るときのひとこと（任意） */
+    declineMessage: text(),
     ...timestamps,
   },
   (t) => [

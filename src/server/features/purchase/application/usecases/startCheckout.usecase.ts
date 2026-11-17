@@ -29,6 +29,11 @@ export type CreateCheckoutSessionInput = Readonly<{
   destinationAccountId: string
   coachSlug: string
   studentUserId: string
+  /**
+   * 承認制の申し込みなら、そのスレッド。カードを仮押さえし（コーチが承認したら確定）、
+   * 終わったらスレッドの画面へ戻す。null なら、すぐに支払う（月額）
+   */
+  application: Readonly<{ threadId: string }> | null
 }>
 
 export type StartCheckoutParams = Readonly<{
@@ -63,7 +68,8 @@ export type StartCheckout = (
 ) => Promise<Result<{ url: string }, StartCheckoutError>>
 
 /**
- * 生徒が申し込み、Stripe の支払い画面へ進む（申し込めるかは checkPurchaseEligibility で決める）
+ * 生徒が月額を申し込み、Stripe の支払い画面へ進む（申し込めるかは checkPurchaseEligibility で決める）。
+ * お試し・1スレッドは承認制（startApplication → startApplicationCheckout）
  */
 export const startCheckout: StartCheckout = async (
   { actor, coachSlug, planKind, acknowledgedDelay, now },
@@ -101,6 +107,7 @@ export const startCheckout: StartCheckout = async (
     priceYen: plan.priceYen,
     status: 'pending',
     stripeSubscriptionId: null,
+    stripePaymentIntentId: null,
   })
   const session = await deps.createCheckoutSession({
     purchaseId,
@@ -111,6 +118,7 @@ export const startCheckout: StartCheckout = async (
     destinationAccountId,
     coachSlug,
     studentUserId: actor.userId,
+    application: null,
   })
   await deps.attachCheckoutSession(purchaseId, session.sessionId)
   return ok({ url: session.url })

@@ -19,6 +19,7 @@ const thread = (id: string, replied: boolean[]): Thread => ({
   startedAt: new Date('2026-11-14T00:00:00Z'),
   expiresAt: new Date('2026-12-14T00:00:00Z'),
   closedAt: null,
+  requestedAt: null,
   submissions: replied.map((r, i) => ({
     id: `${id}-s${i}`,
     submittedAt: now,
@@ -47,6 +48,10 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
   const findVideosToDelete = vi.fn<Deps['findVideosToDelete']>(async () => [])
   const findDraftVideosToDelete = vi.fn<Deps['findDraftVideosToDelete']>(async () => [])
   const deleteDraftVideos = vi.fn<Deps['deleteDraftVideos']>(async () => undefined)
+  const voidPayment = vi.fn<Deps['voidPayment']>(async () => ({ ok: true, value: null }))
+  const saveDecline = vi.fn<Deps['saveDecline']>(async () => undefined)
+  const notifyApplicationExpired = vi.fn<Deps['notifyApplicationExpired']>(async () => undefined)
+  const deleteDraftThreads = vi.fn<Deps['deleteDraftThreads']>(async () => undefined)
   const deps: Deps = {
     findAbsencesForCoaches: async () => new Map([['coach-1', absences]]),
     findExpiredOpenThreads: async () => [],
@@ -60,10 +65,20 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
     markVideosDeleted,
     findDraftVideosToDelete,
     deleteDraftVideos,
+    findExpiredApplications: async () => [],
+    voidPayment,
+    saveDecline,
+    notifyApplicationExpired,
+    findDraftThreadsToDelete: async () => [],
+    deleteDraftThreads,
     ...overrides,
   }
   return {
     deps,
+    voidPayment,
+    saveDecline,
+    notifyApplicationExpired,
+    deleteDraftThreads,
     closeThreads,
     notifyThreadExpiring,
     notifyReplyOverdue,
@@ -88,7 +103,15 @@ describe('runThreadMaintenance', () => {
     expect(closeThreads).toHaveBeenCalledWith(['done', 'empty'], now)
     expect(result).toEqual({
       ok: true,
-      value: { closed: 2, reminded: 0, overdue: 0, deletedVideos: 0, deletedDrafts: 0 },
+      value: {
+        closed: 2,
+        reminded: 0,
+        overdue: 0,
+        deletedVideos: 0,
+        deletedDrafts: 0,
+        expiredApplications: 0,
+        deletedDraftThreads: 0,
+      },
     })
   })
 
@@ -133,12 +156,28 @@ describe('runThreadMaintenance', () => {
           threadId: 'later',
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-14T01:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
         },
         // 12/13 20:00・21:00 に届いた → 期限 12/15 20:00・21:00 → この1日で過ぎた（2回分でも1回）
-        { threadId: 'due', coachUserId: 'coach-1', submittedAt: new Date('2026-12-13T11:00:00Z') },
-        { threadId: 'due', coachUserId: 'coach-1', submittedAt: new Date('2026-12-13T12:00:00Z') },
+        {
+          threadId: 'due',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-13T11:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+        },
+        {
+          threadId: 'due',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-13T12:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+        },
         // 12/12 に届いた → 期限はきのうより前で、もう知らせた
-        { threadId: 'old', coachUserId: 'coach-1', submittedAt: new Date('2026-12-12T01:00:00Z') },
+        {
+          threadId: 'old',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-12T01:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+        },
       ],
     })
     const result = await runThreadMaintenance({ now }, deps)
@@ -150,7 +189,12 @@ describe('runThreadMaintenance', () => {
     const { deps, notifyReplyOverdue } = setup(
       {
         findUnrepliedSubmissionsSince: async () => [
-          { threadId: 't1', coachUserId: 'coach-1', submittedAt: new Date('2026-12-10T01:00:00Z') },
+          {
+            threadId: 't1',
+            coachUserId: 'coach-1',
+            submittedAt: new Date('2026-12-10T01:00:00Z'),
+            threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          },
         ],
       },
       // 12/10〜12/13 不在 → 再開 12/14 0:00 → 期限 12/16 0:00（日本時間）→ この1日で過ぎた
@@ -177,5 +221,54 @@ describe('runThreadMaintenance', () => {
     expect(deleteMediaObject).toHaveBeenCalledWith('videos/t/d1')
     expect(deleteDraftVideos).toHaveBeenCalledWith(['d1'])
     expect(result.ok && result.value.deletedDrafts).toBe(1)
+  })
+
+  it('48時間たっても決まらない申し込みは、仮押さえを外して断った扱いにし、生徒に知らせる', async () => {
+    const { deps, voidPayment, saveDecline, notifyApplicationExpired } = setup({
+      findExpiredApplications: async () => [
+        { threadId: 'a1', studentUserId: 's1', purchaseId: 'p1' },
+        { threadId: 'a2', studentUserId: 's2', purchaseId: 'p2' },
+      ],
+    })
+    voidPayment.mockImplementation(async (purchaseId) =>
+      purchaseId === 'p1' ? { ok: true, value: null } : { ok: false, error: 'stripe_error' }
+    )
+    const result = await runThreadMaintenance({ now }, deps)
+    // 外せなかった a2 は承認待ちのまま残し、翌日にもう一度試す
+    expect(saveDecline.mock.calls).toEqual([
+      ['a1', { reason: 'expired', message: '', decidedAt: now }],
+    ])
+    expect(notifyApplicationExpired.mock.calls).toEqual([[{ threadId: 'a1', studentUserId: 's1' }]])
+    expect(result.ok && result.value.expiredApplications).toBe(1)
+  })
+
+  it('カードを登録しないまま24時間たった下書きは、動画ごと消す', async () => {
+    const { deps, deleteMediaObject, deleteDraftThreads } = setup({
+      findDraftThreadsToDelete: async () => [
+        { threadId: 'd1', videoR2Keys: ['videos/d1/a', 'videos/d1/b'] },
+        { threadId: 'd2', videoR2Keys: [] },
+      ],
+    })
+    const result = await runThreadMaintenance({ now }, deps)
+    expect(deleteMediaObject).toHaveBeenCalledWith('videos/d1/a')
+    expect(deleteMediaObject).toHaveBeenCalledWith('videos/d1/b')
+    expect(deleteDraftThreads).toHaveBeenCalledWith(['d1', 'd2'])
+    expect(result.ok && result.value.deletedDraftThreads).toBe(2)
+  })
+
+  it('返信の遅れは、申し込みを承認した時点から数える', async () => {
+    const { deps, notifyReplyOverdue } = setup({
+      findUnrepliedSubmissionsSince: async () => [
+        // 申し込みで 12/10 に届き、12/14 10:00 に承認 → 期限 12/16 10:00 → まだ
+        {
+          threadId: 'applied',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-10T01:00:00Z'),
+          threadStartedAt: new Date('2026-12-14T01:00:00Z'),
+        },
+      ],
+    })
+    await runThreadMaintenance({ now }, deps)
+    expect(notifyReplyOverdue).not.toHaveBeenCalled()
   })
 })

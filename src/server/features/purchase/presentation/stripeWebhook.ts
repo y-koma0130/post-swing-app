@@ -2,12 +2,16 @@ import 'server-only'
 import type Stripe from 'stripe'
 import { savePayoutStatus } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
-import { createThread, threadExists } from '@/server/features/thread/public'
+import { createThread, requestThreadApproval, threadExists } from '@/server/features/thread/public'
+import { recordAuthorization } from '../application/usecases/recordAuthorization.usecase'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
+import { cancelPaymentIntent } from '../infrastructure/external-services/paymentIntents'
 import { verifyStripeWebhook } from '../infrastructure/external-services/verifyStripeWebhook'
 import {
   findPurchase,
+  markPurchaseAuthorized,
   markPurchasePaid,
+  markPurchaseVoided,
   markSubscriptionCanceled,
 } from '../infrastructure/repositories/purchaseRepository'
 import {
@@ -34,7 +38,30 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
     case 'checkout.session.completed': {
       const session = event.data.object
       const purchaseId = session.metadata?.['purchaseId']
-      if (session.mode !== 'payment' || session.payment_status !== 'paid' || !purchaseId) return
+      if (session.mode !== 'payment' || !purchaseId) return
+      // 承認制の申し込み：カードを仮押さえした（支払いはまだ）。コーチの承認待ちにする
+      const intent = session.payment_intent
+      const paymentIntentId = typeof intent === 'string' ? intent : (intent?.id ?? null)
+      if (session.payment_status === 'unpaid' && paymentIntentId) {
+        const result = await recordAuthorization(
+          {
+            purchaseId,
+            paymentIntentId,
+            stripeCustomerId: customerId(session.customer),
+            now: new Date(event.created * 1000),
+          },
+          {
+            findPurchase,
+            markPurchaseAuthorized,
+            markPurchaseVoided,
+            requestApproval: requestThreadApproval,
+            cancelPaymentIntent,
+          }
+        )
+        if (!result.ok) throw new Error(`仮押さえを記録できません: ${purchaseId} ${result.error}`)
+        return
+      }
+      if (session.payment_status !== 'paid') return
       const result = await recordPayment(
         {
           purchaseId,

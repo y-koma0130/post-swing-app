@@ -2,10 +2,12 @@ import { err, ok, type Result } from '@/server/utils/result'
 import { CHAT_RULES } from '../rules'
 import type { ChatAttachment, ChatSender } from '../values/ChatMessage'
 import type { Thread } from '../values/Thread'
+import { isFinished, isInLesson } from '../values/ThreadStatus'
 import { countRemainingStudentMessages } from './countRemainingStudentMessages.service'
 
 export type ChatBlocker =
   | 'closed'
+  | 'not_started'
   | 'empty'
   | 'too_long'
   | 'no_submission'
@@ -27,8 +29,9 @@ export type CheckChatMessage = (
  */
 export const studentChatBlocker = (
   thread: Pick<Thread, 'status' | 'planKind' | 'submissions' | 'messages'>
-): Extract<ChatBlocker, 'closed' | 'no_submission' | 'limit_reached'> | null => {
-  if (thread.status === 'closed') return 'closed'
+): Extract<ChatBlocker, 'closed' | 'not_started' | 'no_submission' | 'limit_reached'> | null => {
+  if (isFinished(thread.status)) return 'closed'
+  if (!isInLesson(thread.status)) return 'not_started'
   if (thread.submissions.length === 0) return 'no_submission'
   if (countRemainingStudentMessages(thread) === 0) return 'limit_reached'
   return null
@@ -39,13 +42,15 @@ export const studentChatBlocker = (
  *
  * ドメインルール:
  * - 終了したスレッドには送れない
+ * - 申し込みの下書き・承認待ちのあいだは、どちらも送れない（承認してから会話を始める）
  * - 本文は1000文字まで。空なら送れない（コーチがドリル・動画を添えるときは本文なしでよい）
  * - 生徒はテキストだけ（動画は提出で送る）
  * - 生徒は、最初の提出をしてから送れる（テーマと動画がそろってから会話を始める）
  * - 生徒はスレッド全体の上限まで（コーチは無制限）
  */
 export const checkChatMessage: CheckChatMessage = ({ thread, sender, body, attachmentKind }) => {
-  if (thread.status === 'closed') return err('closed')
+  if (isFinished(thread.status)) return err('closed')
+  if (!isInLesson(thread.status)) return err('not_started')
   if (sender === 'student' && attachmentKind !== 'none') return err('attachment_not_allowed')
   const trimmed = body.trim()
   if (trimmed.length === 0 && attachmentKind === 'none') return err('empty')

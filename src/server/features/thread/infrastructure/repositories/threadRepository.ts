@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, type SQL } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import {
   absenceAck,
@@ -15,15 +15,18 @@ import {
 } from '@/server/db/schema'
 import type { ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
+import type { ThreadDecline } from '../../application/usecases/declineApplication.usecase'
 import type { NewChatMessage } from '../../application/usecases/sendChatMessage.usecase'
 import type { NewReply } from '../../application/usecases/sendReply.usecase'
 import type { NewSubmission } from '../../application/usecases/submitSubmission.usecase'
 import type { NewDraftVideo } from '../../application/usecases/uploadVideo.usecase'
+import type { ApprovedThread } from '../../domain/services/approveThread.service'
 import type { ThreadCard } from '../../domain/services/checkQuoteTarget.service'
 import { type ChatMessage, chatMessageSchema } from '../../domain/values/ChatMessage'
 import { type DraftVideo, isUnusedDraft } from '../../domain/values/Submission'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
 import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
+import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 
 export type FindThread = (threadId: string) => Promise<Thread | null>
 export const findThread: FindThread = async (threadId) => {
@@ -177,6 +180,7 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
       chatMessageId: video.chatMessageId,
       coachUserId: thread.coachUserId,
       studentUserId: thread.studentUserId,
+      threadStatus: thread.status,
     })
     .from(video)
     .innerJoin(thread, eq(thread.id, video.threadId))
@@ -189,7 +193,8 @@ export const findStoredVideo: FindStoredVideo = async (videoId) => {
     r2Key: row.r2Key,
     contentType: row.contentType,
     deleted: row.deletedAt !== null,
-    draft: isUnusedDraft(row),
+    // 申し込みの下書き（カードを登録する前）の動画も、まだコーチには見せない
+    draft: isUnusedDraft(row) || row.threadStatus === 'draft',
     members: { coachUserId: row.coachUserId, studentUserId: row.studentUserId },
   }
 }
@@ -423,4 +428,100 @@ export const saveThreadRead: SaveThreadRead = async ({ threadId, userId, at }) =
       target: [threadRead.threadId, threadRead.userId],
       set: { lastReadAt: at },
     })
+}
+
+/** 申し込み（下書き・承認待ち）の状態 */
+const APPLICATION_STATUSES = ['draft', 'requested'] as const
+
+export type FindOpenApplication = (
+  studentUserId: string,
+  coachUserId: string
+) => Promise<{ threadId: string } | null>
+/** このコーチへの、まだ決まっていない申し込み（下書き・承認待ち）。1人1件まで */
+export const findOpenApplication: FindOpenApplication = async (studentUserId, coachUserId) => {
+  const row = await getDb()
+    .select({ threadId: thread.id })
+    .from(thread)
+    .where(
+      and(
+        eq(thread.studentUserId, studentUserId),
+        eq(thread.coachUserId, coachUserId),
+        inArray(thread.status, [...APPLICATION_STATUSES])
+      )
+    )
+    .get()
+  return row ?? null
+}
+
+export type ApplicationThread = Readonly<{
+  id: string
+  purchaseId: string
+  coachUserId: string
+  studentUserId: string
+  status: ThreadStatus
+  submissionCount: number
+}>
+
+const findApplicationBy = async (where: SQL): Promise<ApplicationThread | null> => {
+  const row = await getDb()
+    .select({
+      id: thread.id,
+      purchaseId: thread.purchaseId,
+      coachUserId: thread.coachUserId,
+      studentUserId: thread.studentUserId,
+      status: thread.status,
+      submissionCount: count(submission.id),
+    })
+    .from(thread)
+    .leftJoin(submission, eq(submission.threadId, thread.id))
+    .where(where)
+    .groupBy(thread.id)
+    .get()
+  return row ?? null
+}
+
+export type FindApplicationThread = (threadId: string) => Promise<ApplicationThread | null>
+/** 申し込みのスレッドと、送った提出の数（カードの登録へ進めるかを決める） */
+export const findApplicationThread: FindApplicationThread = (threadId) =>
+  findApplicationBy(eq(thread.id, threadId))
+
+export type FindThreadByPurchase = (purchaseId: string) => Promise<ApplicationThread | null>
+/** 都度払いの申し込みのスレッド（申し込み1つにスレッド1つ） */
+export const findThreadByPurchase: FindThreadByPurchase = (purchaseId) =>
+  findApplicationBy(eq(thread.purchaseId, purchaseId))
+
+export type MarkThreadRequested = (threadId: string, requestedAt: Date) => Promise<void>
+export const markThreadRequested: MarkThreadRequested = async (threadId, requestedAt) => {
+  await getDb()
+    .update(thread)
+    .set({ status: 'requested', requestedAt, updatedAt: requestedAt })
+    .where(and(eq(thread.id, threadId), eq(thread.status, 'draft')))
+}
+
+export type SaveApproval = (
+  threadId: string,
+  approved: ApprovedThread & { decidedAt: Date }
+) => Promise<void>
+/** 承認したスレッドを始める（承認待ちのときだけ） */
+export const saveApproval: SaveApproval = async (threadId, approved) => {
+  await getDb()
+    .update(thread)
+    .set({ ...approved, updatedAt: approved.decidedAt })
+    .where(and(eq(thread.id, threadId), eq(thread.status, 'requested')))
+}
+
+export type SaveDecline = (threadId: string, decline: ThreadDecline) => Promise<void>
+/** 断った申し込みを終える（承認待ちのときだけ）。終了日も入れて、動画は終了と同じく期間をおいて消す */
+export const saveDecline: SaveDecline = async (threadId, decline) => {
+  await getDb()
+    .update(thread)
+    .set({
+      status: 'declined',
+      declineReason: decline.reason,
+      declineMessage: decline.message === '' ? null : decline.message,
+      decidedAt: decline.decidedAt,
+      closedAt: decline.decidedAt,
+      updatedAt: decline.decidedAt,
+    })
+    .where(and(eq(thread.id, threadId), eq(thread.status, 'requested')))
 }

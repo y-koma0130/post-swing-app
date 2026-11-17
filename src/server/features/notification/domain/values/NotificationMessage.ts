@@ -41,7 +41,31 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     coachUserId: z.string(),
     studentUserId: z.string(),
   }),
-  /** コーチへ：申し込みの支払いが済み、スレッドが始まった（メール） */
+  /** コーチへ：申し込みがあった。悩みと動画を見て、受けるか決める（メール） */
+  z.object({
+    kind: z.literal('application_received'),
+    threadId: z.string(),
+    coachUserId: z.string(),
+  }),
+  /** 生徒へ：申し込みが受け付けられた（LINE） */
+  z.object({
+    kind: z.literal('application_approved'),
+    threadId: z.string(),
+    studentUserId: z.string(),
+  }),
+  /** 生徒へ：コーチが申し込みを断った（LINE）。理由はスレッドの画面で見る */
+  z.object({
+    kind: z.literal('application_declined'),
+    threadId: z.string(),
+    studentUserId: z.string(),
+  }),
+  /** 生徒へ：期限までにコーチの返事がなく、申し込みが取り消された（LINE） */
+  z.object({
+    kind: z.literal('application_expired'),
+    threadId: z.string(),
+    studentUserId: z.string(),
+  }),
+  /** コーチへ：月額の支払いが済み、スレッドが始まった（メール） */
   z.object({ kind: z.literal('thread_started'), threadId: z.string(), coachUserId: z.string() }),
   /** コーチへ：届いた動画に、しばらく返信していない（メール） */
   z.object({ kind: z.literal('reply_overdue'), threadId: z.string(), coachUserId: z.string() }),

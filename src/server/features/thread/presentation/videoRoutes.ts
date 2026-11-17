@@ -20,6 +20,7 @@ import {
 const UPLOAD_ERROR = {
   not_found: { status: 404, message: 'スレッドが見つかりません' },
   closed: { status: 409, message: 'このスレッドは終了しています' },
+  not_started: { status: 409, message: '申し込みを受けてから送れます' },
   expired: { status: 409, message: 'このスレッドは期限が切れています' },
   awaiting_reply: { status: 409, message: 'コーチの添削が届いてから、次を提出できます' },
   submission_limit: { status: 409, message: 'このスレッドで提出できる回数に達しています' },

@@ -12,6 +12,7 @@ const purchase = {
   priceYen: 5000,
   status: 'paid' as const,
   stripeSubscriptionId: null,
+  stripePaymentIntentId: null,
   stripeCheckoutSessionId: 'cs_1',
 }
 

@@ -75,15 +75,9 @@ export const AbsenceForm = ({ coachName, absence, today, noteMaxLength, onDone }
           className={inputClass}
         />
       </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="pauseNewSignups"
-          defaultChecked={absence?.pauseNewSignups ?? false}
-          className="accent-mint"
-        />
-        不在中は新規の申し込みを止める
-      </label>
+      <p className="text-caption text-muted">
+        不在中は、新しい申し込みを受け付けません（申し込みは48時間以内に受けるか決めるため）。
+      </p>
       {startDate && endDate && startDate <= endDate && (
         <p className="bg-surface text-muted rounded-xl p-3 text-sm">
           {absencePreview(coachName, { startDate, endDate })}

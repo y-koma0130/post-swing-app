@@ -20,6 +20,7 @@ import {
 const REPLY_ERROR = {
   not_found: { status: 404, message: '提出が見つかりません' },
   closed: { status: 409, message: 'このスレッドは終了しています' },
+  not_started: { status: 409, message: '申し込みを受けてから添削できます' },
   already_replied: {
     status: 409,
     message: 'この提出にはもう添削を返しています。追加の説明はチャットで送ってください',

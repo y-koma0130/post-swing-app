@@ -30,6 +30,20 @@ export const findCoachForCheckout: FindCoachForCheckout = async (slug) => {
   }
 }
 
+export type FindCoachForCheckoutByUserId = (
+  coachUserId: string
+) => Promise<(CheckoutCoach & { slug: string }) | null>
+export const findCoachForCheckoutByUserId: FindCoachForCheckoutByUserId = async (coachUserId) => {
+  const row = await getDb()
+    .select({ slug: coachProfile.slug })
+    .from(coachProfile)
+    .where(eq(coachProfile.userId, coachUserId))
+    .get()
+  if (!row) return null
+  const coach = await findCoachForCheckout(row.slug)
+  return coach ? { ...coach, slug: row.slug } : null
+}
+
 export type FindCoachUserIdBySlug = (slug: string) => Promise<string | null>
 export const findCoachUserIdBySlug: FindCoachUserIdBySlug = async (slug) => {
   const row = await getDb()
@@ -59,7 +73,8 @@ export const countActiveThreads: CountActiveThreads = async (coachUserId) => {
 const hasPaidPurchase = async (
   studentUserId: string,
   coachUserId: string,
-  planKind: Purchase['planKind']
+  planKind: Purchase['planKind'],
+  statuses: Array<Purchase['status']>
 ): Promise<boolean> => {
   const row = await getDb()
     .select({ id: purchase.id })
@@ -69,21 +84,22 @@ const hasPaidPurchase = async (
         eq(purchase.studentUserId, studentUserId),
         eq(purchase.coachUserId, coachUserId),
         eq(purchase.planKind, planKind),
-        eq(purchase.status, 'paid')
+        inArray(purchase.status, statuses)
       )
     )
     .get()
   return row !== undefined
 }
 
+/** お試しを使ったか。承認待ち（仮押さえ）も使った扱い。断られたら使っていない扱いに戻る */
 export type HasPaidTrial = (studentUserId: string, coachUserId: string) => Promise<boolean>
 export const hasPaidTrial: HasPaidTrial = (studentUserId, coachUserId) =>
-  hasPaidPurchase(studentUserId, coachUserId, 'trial')
+  hasPaidPurchase(studentUserId, coachUserId, 'trial', ['authorized', 'paid'])
 
 /** 支払い済みで解約されていない月額 */
 export type HasActiveSubscription = (studentUserId: string, coachUserId: string) => Promise<boolean>
 export const hasActiveSubscription: HasActiveSubscription = (studentUserId, coachUserId) =>
-  hasPaidPurchase(studentUserId, coachUserId, 'monthly')
+  hasPaidPurchase(studentUserId, coachUserId, 'monthly', ['paid'])
 
 export type SavePendingPurchase = (p: Purchase) => Promise<void>
 export const savePendingPurchase: SavePendingPurchase = async (p) => {
@@ -134,6 +150,36 @@ export const markPurchasePaid: MarkPurchasePaid = async (purchaseId, payment) =>
     .update(purchase)
     .set({ status: 'paid', ...payment, updatedAt: new Date() })
     .where(eq(purchase.id, purchaseId))
+}
+
+export type MarkPurchaseAuthorized = (
+  purchaseId: string,
+  payment: { stripePaymentIntentId: string | null; stripeCustomerId: string | null }
+) => Promise<void>
+/** カードを仮押さえした（支払い画面に進んだままのときだけ）。開発用の申し込みでは Stripe の ID がない */
+export const markPurchaseAuthorized: MarkPurchaseAuthorized = async (purchaseId, payment) => {
+  await getDb()
+    .update(purchase)
+    .set({ status: 'authorized', ...payment, updatedAt: new Date() })
+    .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'pending')))
+}
+
+export type MarkPurchaseCaptured = (purchaseId: string) => Promise<void>
+/** 仮押さえした支払いを確定した */
+export const markPurchaseCaptured: MarkPurchaseCaptured = async (purchaseId) => {
+  await getDb()
+    .update(purchase)
+    .set({ status: 'paid', updatedAt: new Date() })
+    .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'authorized')))
+}
+
+export type MarkPurchaseVoided = (purchaseId: string) => Promise<void>
+/** 仮押さえを外した（請求していない） */
+export const markPurchaseVoided: MarkPurchaseVoided = async (purchaseId) => {
+  await getDb()
+    .update(purchase)
+    .set({ status: 'voided', updatedAt: new Date() })
+    .where(and(eq(purchase.id, purchaseId), inArray(purchase.status, ['pending', 'authorized'])))
 }
 
 export type MarkSubscriptionCanceled = (stripeSubscriptionId: string) => Promise<void>

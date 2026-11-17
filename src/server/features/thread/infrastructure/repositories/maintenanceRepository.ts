@@ -1,7 +1,16 @@
 import 'server-only'
-import { and, eq, gt, inArray, isNull, lt, lte, ne } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, lt, lte } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { chatMessage, reply, submission, thread, video } from '@/server/db/schema'
+import {
+  chatMessage,
+  reply,
+  submission,
+  thread,
+  threadNotice,
+  threadRead,
+  video,
+} from '@/server/db/schema'
+import { IN_LESSON_STATUSES } from '../../domain/rules'
 import type { Thread } from '../../domain/values/Thread'
 import { findThread } from './threadRepository'
 
@@ -14,7 +23,7 @@ export const findExpiredOpenThreads: FindExpiredOpenThreads = async (now) => {
   const rows = await getDb()
     .select({ id: thread.id })
     .from(thread)
-    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, now)))
+    .where(and(inArray(thread.status, [...IN_LESSON_STATUSES]), lte(thread.expiresAt, now)))
     .all()
   const threads = await Promise.all(rows.map((row) => findThread(row.id)))
   return threads.filter((t): t is Thread => t !== null)
@@ -48,24 +57,33 @@ export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =
       expiresAt: thread.expiresAt,
     })
     .from(thread)
-    .where(and(ne(thread.status, 'closed'), lte(thread.expiresAt, to)))
+    .where(and(inArray(thread.status, [...IN_LESSON_STATUSES]), lte(thread.expiresAt, to)))
     .all()
 
 export type FindUnrepliedSubmissionsSince = (
   since: Date
-) => Promise<Array<{ threadId: string; coachUserId: string; submittedAt: Date }>>
-/** since より後に届き、まだ添削していない提出（終了していないスレッド） */
+) => Promise<
+  Array<{ threadId: string; coachUserId: string; submittedAt: Date; threadStartedAt: Date }>
+>
+/** since より後に届き、まだ添削していない提出（レッスン中のスレッド） */
 export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = async (since) =>
   getDb()
     .select({
       threadId: submission.threadId,
       coachUserId: thread.coachUserId,
       submittedAt: submission.submittedAt,
+      threadStartedAt: thread.startedAt,
     })
     .from(submission)
     .innerJoin(thread, eq(thread.id, submission.threadId))
     .leftJoin(reply, eq(reply.submissionId, submission.id))
-    .where(and(ne(thread.status, 'closed'), isNull(reply.id), gt(submission.submittedAt, since)))
+    .where(
+      and(
+        inArray(thread.status, [...IN_LESSON_STATUSES]),
+        isNull(reply.id),
+        gt(submission.submittedAt, since)
+      )
+    )
     .all()
 
 export type FindVideosToDelete = (
@@ -77,7 +95,11 @@ export const findVideosToDelete: FindVideosToDelete = async (closedBefore) =>
     .from(video)
     .innerJoin(thread, eq(thread.id, video.threadId))
     .where(
-      and(eq(thread.status, 'closed'), lt(thread.closedAt, closedBefore), isNull(video.deletedAt))
+      and(
+        inArray(thread.status, ['closed', 'declined']),
+        lt(thread.closedAt, closedBefore),
+        isNull(video.deletedAt)
+      )
     )
     .all()
 
@@ -127,7 +149,7 @@ export const countAbsenceBacklog: CountAbsenceBacklog = async (absenceId) => {
         and(
           eq(submission.sentDuringAbsenceId, absenceId),
           isNull(reply.id),
-          ne(thread.status, 'closed')
+          inArray(thread.status, [...IN_LESSON_STATUSES])
         )
       )
       .all(),
@@ -140,4 +162,62 @@ export const countAbsenceBacklog: CountAbsenceBacklog = async (absenceId) => {
       .all(),
   ])
   return { submissionCount: submissions.length, chatCount: chats.length }
+}
+
+export type FindExpiredApplications = (
+  requestedBefore: Date
+) => Promise<Array<{ threadId: string; studentUserId: string; purchaseId: string }>>
+/** requestedBefore より前に承認を待ち始めて、まだ決まっていない申し込み */
+export const findExpiredApplications: FindExpiredApplications = async (requestedBefore) =>
+  getDb()
+    .select({
+      threadId: thread.id,
+      studentUserId: thread.studentUserId,
+      purchaseId: thread.purchaseId,
+    })
+    .from(thread)
+    .where(and(eq(thread.status, 'requested'), lt(thread.requestedAt, requestedBefore)))
+    .all()
+
+export type FindDraftThreadsToDelete = (
+  createdBefore: Date
+) => Promise<Array<{ threadId: string; videoR2Keys: string[] }>>
+/** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
+export const findDraftThreadsToDelete: FindDraftThreadsToDelete = async (createdBefore) => {
+  const db = getDb()
+  const threads = await db
+    .select({ id: thread.id })
+    .from(thread)
+    .where(and(eq(thread.status, 'draft'), lt(thread.createdAt, createdBefore)))
+    .all()
+  if (threads.length === 0) return []
+  const ids = threads.map((t) => t.id)
+  const videos = await db
+    .select({ threadId: video.threadId, r2Key: video.r2Key })
+    .from(video)
+    .where(and(inArray(video.threadId, ids), isNull(video.deletedAt)))
+    .all()
+  return ids.map((id) => ({
+    threadId: id,
+    videoR2Keys: videos.filter((v) => v.threadId === id).map((v) => v.r2Key),
+  }))
+}
+
+export type DeleteDraftThreads = (threadIds: string[]) => Promise<void>
+/**
+ * 下書きのスレッドを、提出・動画・既読の記録ごと消す（コーチには見えていないので、残す理由がない）。
+ * 申し込み（purchase）は支払いが済んでいない記録として残る
+ */
+export const deleteDraftThreads: DeleteDraftThreads = async (threadIds) => {
+  const db = getDb()
+  const drafts = and(inArray(thread.id, threadIds), eq(thread.status, 'draft'))
+  const ids = (await db.select({ id: thread.id }).from(thread).where(drafts).all()).map((t) => t.id)
+  if (ids.length === 0) return
+  await db.batch([
+    db.delete(video).where(inArray(video.threadId, ids)),
+    db.delete(threadNotice).where(inArray(threadNotice.threadId, ids)),
+    db.delete(submission).where(inArray(submission.threadId, ids)),
+    db.delete(threadRead).where(inArray(threadRead.threadId, ids)),
+    db.delete(thread).where(inArray(thread.id, ids)),
+  ])
 }

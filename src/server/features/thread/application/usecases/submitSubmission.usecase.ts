@@ -67,7 +67,8 @@ export type SubmitSubmission = (
 
 /**
  * 生徒が提出する（上げておいた動画1〜2本とメモをまとめる）。
- * いま提出できるかは checkSubmission、中身は checkSubmissionContents で決める
+ * いま提出できるかは checkSubmission、中身は checkSubmissionContents で決める。
+ * 申し込みの下書きでの提出（悩みと動画）は、カードを登録して承認待ちになるまでコーチに知らせない
  */
 export const submitSubmission: SubmitSubmission = async (params, deps) => {
   const thread = await deps.findThread(params.threadId)
@@ -91,7 +92,9 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
     return err(contents.error)
   }
 
-  const absence = absenceAtSend(calcCoachAvailability({ ...facts, now: params.now }))
+  // 申し込みの下書きでは、コーチにはまだ見えない（不在のお知らせも通知も、承認待ちになってから）
+  const draft = thread.status === 'draft'
+  const absence = draft ? null : absenceAtSend(calcCoachAvailability({ ...facts, now: params.now }))
   const submissionId = deps.generateId()
   await deps.saveSubmission({
     id: submissionId,
@@ -112,6 +115,8 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
       createdAt: params.now,
     })
   }
-  await deps.notifySubmitted({ threadId: thread.id, coachUserId: thread.coachUserId })
+  if (!draft) {
+    await deps.notifySubmitted({ threadId: thread.id, coachUserId: thread.coachUserId })
+  }
   return ok({ submissionId })
 }

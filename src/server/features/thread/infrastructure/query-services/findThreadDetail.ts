@@ -22,6 +22,7 @@ import {
 } from '@/server/features/coach/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
+import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import { studentChatBlocker } from '../../domain/services/checkChatMessage.service'
 import { checkSubmission } from '../../domain/services/checkSubmission.service'
@@ -62,6 +63,8 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         coachAvatarKey: coachProfile.avatarR2Key,
         coachSlug: coachProfile.slug,
         studentName: user.name,
+        declineReason: thread.declineReason,
+        declineMessage: thread.declineMessage,
       })
       .from(thread)
       .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
@@ -142,6 +145,14 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     startedAt: t.startedAt,
     expiresAt: expiry.expiresAt,
     extendedDays: expiry.extendedDays,
+    application: {
+      approvalDeadline:
+        t.status === 'requested' && t.requestedAt ? calcApprovalDeadline(t.requestedAt) : null,
+      decline:
+        t.status === 'declined' && people.declineReason
+          ? { reason: people.declineReason, message: people.declineMessage ?? '' }
+          : null,
+    },
     coachAvailability: toAvailabilityDto(availability),
     sendGuard: {
       video: decideSendGuard({ availability, target: 'video', acknowledged: false }),

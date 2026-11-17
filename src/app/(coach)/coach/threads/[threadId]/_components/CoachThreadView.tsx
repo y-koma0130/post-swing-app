@@ -41,7 +41,8 @@ type Submission = ThreadDetailDto['submissions'][number]
  * 複数の feature を組み合わせるので、features/ ではなくこの画面の _components/ に置く
  */
 export const CoachThreadView = ({ thread, drills }: Props) => {
-  const closed = thread.status === 'closed'
+  // 添削・チャットができるのはレッスン中だけ（申し込みは承認してから、終わったら閉じる）
+  const closed = thread.status !== 'waiting_coach' && thread.status !== 'waiting_student'
   const { submissions } = thread
   /** ドロワーで開いている提出。閉じていれば null */
   const [openIndex, setOpenIndex] = useState<number | null>(null)
@@ -90,8 +91,12 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                 <Button variant="secondary" size="sm" onClick={() => open(index)}>
                   大きく見る
                 </Button>
+              ) : closed ? (
+                <Button variant="secondary" size="sm" onClick={() => open(index)}>
+                  大きく見る
+                </Button>
               ) : (
-                <Button size="sm" onClick={() => open(index)} disabled={closed}>
+                <Button size="sm" onClick={() => open(index)}>
                   添削する
                 </Button>
               )}
@@ -178,7 +183,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
       {submissions.length > 0 && (
         <Drawer
           open={openIndex !== null}
-          title={`${submissionLabel(workIndex)}${submissions[workIndex]?.reply ? '' : 'を添削する'}`}
+          title={`${submissionLabel(workIndex)}${submissions[workIndex]?.reply || closed ? '' : 'を添削する'}`}
           onClose={() => setOpenIndex(null)}
           size="wide"
         >

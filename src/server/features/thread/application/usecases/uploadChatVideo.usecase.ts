@@ -5,6 +5,7 @@ import {
   type VideoUploadBlocker,
 } from '../../domain/services/checkVideoUpload.service'
 import type { Thread } from '../../domain/values/Thread'
+import { isFinished, isInLesson } from '../../domain/values/ThreadStatus'
 import type { NewDraftVideo } from './uploadVideo.usecase'
 
 export type UploadChatVideoParams = Readonly<{
@@ -24,7 +25,7 @@ type Dependencies = Readonly<{
   generateId: () => string
 }>
 
-export type UploadChatVideoError = 'not_found' | 'closed' | VideoUploadBlocker
+export type UploadChatVideoError = 'not_found' | 'closed' | 'not_started' | VideoUploadBlocker
 
 export type UploadChatVideo = (
   params: UploadChatVideoParams,
@@ -40,8 +41,11 @@ export const uploadChatVideo: UploadChatVideo = async (params, deps) => {
   if (!thread || thread.coachUserId !== params.actor.userId) {
     return err('not_found')
   }
-  if (thread.status === 'closed') {
+  if (isFinished(thread.status)) {
     return err('closed')
+  }
+  if (!isInLesson(thread.status)) {
+    return err('not_started')
   }
   const upload = checkVideoUpload({ ...params, angle: 'other' })
   if (!upload.ok) {

@@ -15,6 +15,9 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月額' } as const
 const STATUS_LABEL = {
+  draft: '申し込み途中',
+  requested: '承認待ち',
+  declined: 'お断り',
   waiting_coach: '添削待ち',
   waiting_student: '生徒の番',
   closed: '終了',

@@ -1,0 +1,96 @@
+import Link from 'next/link'
+import { ApplicationCheckoutForm } from '@/app/features/apply/components/ApplicationCheckoutForm'
+import { DECLINE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
+import { formatDateTime } from '@/app/utils/format'
+import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
+
+type Props = {
+  thread: Pick<
+    ThreadDetailDto,
+    'id' | 'status' | 'coachName' | 'coachSlug' | 'application' | 'submissions'
+  >
+  /** カードの登録から戻ってきたところ */
+  justApplied: boolean
+}
+
+const STEPS = [
+  '悩みと動画を送る',
+  'カードを登録する（まだ請求されません）',
+  'コーチが内容を見て、受け付けたら請求',
+] as const
+
+/**
+ * 申し込み（承認制）のあいだの案内。下書き・承認待ち・お断りで出し分ける。
+ * レッスンが始まったら何も出さない
+ */
+export const ApplicationStatus = ({ thread, justApplied }: Props) => {
+  if (thread.status === 'draft') {
+    const step = thread.submissions.length === 0 ? 0 : 1
+    return (
+      <section className="bg-surface space-y-4 rounded-2xl p-5">
+        <h2 className="text-heading">申し込みの手順</h2>
+        <ol className="space-y-2">
+          {STEPS.map((label, i) => (
+            <li
+              key={label}
+              className={`flex items-center gap-3 text-sm ${i === step ? 'text-ink font-bold' : 'text-muted'}`}
+            >
+              <span
+                className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                  i < step
+                    ? 'bg-mint text-ink'
+                    : i === step
+                      ? 'border-mint border-2'
+                      : 'border-line border'
+                }`}
+              >
+                {i < step ? '✓' : i + 1}
+              </span>
+              {label}
+            </li>
+          ))}
+        </ol>
+        {step === 1 && (
+          <ApplicationCheckoutForm
+            threadId={thread.id}
+            devAuthorizeHref={import.meta.env.DEV ? `/api/dev/purchase?thread=${thread.id}` : null}
+          />
+        )}
+      </section>
+    )
+  }
+  if (thread.status === 'requested') {
+    const deadline = thread.application.approvalDeadline
+    return (
+      <section role="status" className="bg-mint-soft space-y-1 rounded-2xl p-5 text-sm">
+        <p className="text-ink font-bold">
+          {justApplied ? '申し込みました。' : ''}
+          {thread.coachName}さんが内容を確認しています
+        </p>
+        <p className="text-body">
+          {deadline ? `${formatDateTime(deadline)}までに` : ''}
+          お返事します。受け付けられたときに請求され、添削が始まります（まだ請求されていません）。
+        </p>
+      </section>
+    )
+  }
+  if (thread.status === 'declined') {
+    const decline = thread.application.decline
+    return (
+      <section className="bg-surface space-y-2 rounded-2xl p-5 text-sm">
+        <p className="text-ink font-bold">今回の申し込みはお受けできませんでした</p>
+        {decline && <p className="text-body">{DECLINE_REASON_LABEL[decline.reason]}</p>}
+        {decline?.message && (
+          <p className="border-line text-body border-l-2 pl-3 whitespace-pre-wrap">
+            {thread.coachName}さんより：{decline.message}
+          </p>
+        )}
+        <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
+        <Link href={`/c/${thread.coachSlug}`} className="text-mint inline-block font-bold">
+          {thread.coachName}さんのページへ
+        </Link>
+      </section>
+    )
+  }
+  return null
+}
