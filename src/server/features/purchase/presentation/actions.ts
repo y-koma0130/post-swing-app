@@ -20,15 +20,14 @@ import { formChecked, formString } from '@/server/utils/formData'
 import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
 import { refundThread } from '../application/usecases/refundThread.usecase'
-import { startApplication } from '../application/usecases/startApplication.usecase'
+import {
+  type StartApplicationError,
+  startApplication,
+} from '../application/usecases/startApplication.usecase'
 import {
   type StartApplicationCheckoutError,
   startApplicationCheckout,
 } from '../application/usecases/startApplicationCheckout.usecase'
-import {
-  type StartCheckoutError,
-  startCheckout,
-} from '../application/usecases/startCheckout.usecase'
 import { createBillingPortalSession } from '../infrastructure/external-services/createBillingPortalSession'
 import { createCheckoutSession } from '../infrastructure/external-services/createCheckoutSession'
 import { refundStripePayment } from '../infrastructure/external-services/refundStripePayment'
@@ -56,7 +55,7 @@ const CHECKOUT_ERROR_MESSAGE = {
   full: '今月は満枠です。キャンセル待ちに登録できます',
   trial_used: 'お試しはすでに利用済みです',
   already_subscribed: 'すでに月額で申し込んでいます',
-} as const satisfies Record<StartCheckoutError, string>
+} as const satisfies Record<StartApplicationError, string>
 
 const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
   ...CHECKOUT_ERROR_MESSAGE,
@@ -66,11 +65,8 @@ const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
   full: '受付枠が埋まってしまいました。キャンセル待ちに登録できます',
 } as const satisfies Record<StartApplicationCheckoutError, string>
 
-/**
- * プランを選んで申し込む。お試し・1スレッドは、悩みと動画を送る下書きへ（支払いはコーチの承認後）。
- * 月額は、そのまま Stripe の支払い画面へ
- */
-export const startCheckoutAction = async (
+/** プランを選んで申し込む（悩みと動画を送る下書きへ。請求はコーチが承認したとき） */
+export const startApplicationAction = async (
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> => {
@@ -92,46 +88,30 @@ export const startCheckoutAction = async (
     return actionError('確認できませんでした。少し待ってから、もう一度ボタンを押してください')
   }
 
-  const acknowledgedDelay = formChecked(formData, 'acknowledgeDelay')
-  if (planKind.data !== 'monthly') {
-    const application = await startApplication(
-      { actor, coachSlug, planKind: planKind.data, acknowledgedDelay, now: new Date() },
-      {
-        findCoachForCheckout,
-        countActiveThreads,
-        hasPaidTrial,
-        hasActiveSubscription,
-        findCoachAvailability,
-        findOpenApplication,
-        savePendingPurchase,
-        createThread,
-        generateId: () => crypto.randomUUID(),
-      }
-    )
-    if (!application.ok) {
-      return actionError(CHECKOUT_ERROR_MESSAGE[application.error])
-    }
-    redirect(`/t/${application.value.threadId}`)
-  }
-
-  const result = await startCheckout(
-    { actor, coachSlug, planKind: planKind.data, acknowledgedDelay, now: new Date() },
+  const application = await startApplication(
+    {
+      actor,
+      coachSlug,
+      planKind: planKind.data,
+      acknowledgedDelay: formChecked(formData, 'acknowledgeDelay'),
+      now: new Date(),
+    },
     {
       findCoachForCheckout,
       countActiveThreads,
       hasPaidTrial,
       hasActiveSubscription,
       findCoachAvailability,
+      findOpenApplication,
       savePendingPurchase,
-      createCheckoutSession,
-      attachCheckoutSession,
+      createThread,
       generateId: () => crypto.randomUUID(),
     }
   )
-  if (!result.ok) {
-    return actionError(CHECKOUT_ERROR_MESSAGE[result.error])
+  if (!application.ok) {
+    return actionError(CHECKOUT_ERROR_MESSAGE[application.error])
   }
-  redirect(result.value.url)
+  redirect(`/t/${application.value.threadId}`)
 }
 
 /** 悩みと動画を送った申し込みの、カードの登録（仮押さえ）へ進む */

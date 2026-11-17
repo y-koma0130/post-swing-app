@@ -9,7 +9,22 @@ import {
   type PurchaseBlocker,
 } from '../../domain/services/checkPurchaseEligibility.service'
 import type { Purchase } from '../../domain/values/Purchase'
-import type { CheckoutCoach, CreateCheckoutSessionInput } from './startCheckout.usecase'
+import type { CheckoutCoach } from './startApplication.usecase'
+
+/**
+ * 申し込みの支払い画面（Stripe Checkout）。カードを仮押さえし（コーチが承認したら確定）、
+ * 終わったらスレッドの画面へ戻す
+ */
+export type CreateCheckoutSessionInput = Readonly<{
+  purchaseId: string
+  threadId: string
+  productName: string
+  priceYen: number
+  platformFeeYen: number
+  destinationAccountId: string
+  /** 月額：承認したあと、2か月目からの請求に使うカードを保存しておく */
+  saveCardForRenewal: boolean
+}>
 
 export type StartApplicationCheckoutParams = Readonly<{
   actor: Actor
@@ -59,6 +74,7 @@ export type StartApplicationCheckout = (
  * - 下書きを作ってから時間がたっているので、申し込めるかをもう一度 checkPurchaseEligibility で確かめる
  *   （返信遅れの了承は、プランを選んだときに済んでいる）
  * - 価格は、下書きを作ったときの値（申し込みに保存した値）
+ * - 月額も初月は同じく仮押さえ。カードを保存し、承認したときにそのカードでサブスクリプションを始める
  */
 export const startApplicationCheckout: StartApplicationCheckout = async (
   { actor, threadId, now },
@@ -101,14 +117,12 @@ export const startApplicationCheckout: StartApplicationCheckout = async (
 
   const session = await deps.createCheckoutSession({
     purchaseId: purchase.id,
-    mode: 'payment',
-    productName: `${coach.name}：${eligibility.value.plan.name}`,
+    productName: `${coach.name}：${eligibility.value.plan.name}${purchase.planKind === 'monthly' ? '（初月）' : ''}`,
     priceYen: purchase.priceYen,
     platformFeeYen: calcPlatformFee(purchase.priceYen),
     destinationAccountId: eligibility.value.destinationAccountId,
-    coachSlug: coach.slug,
-    studentUserId: actor.userId,
-    application: { threadId: thread.id },
+    threadId: thread.id,
+    saveCardForRenewal: purchase.planKind === 'monthly',
   })
   await deps.attachCheckoutSession(purchase.id, session.sessionId)
   return ok({ url: session.url })

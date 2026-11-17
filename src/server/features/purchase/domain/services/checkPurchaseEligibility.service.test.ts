@@ -26,21 +26,14 @@ const check = (overrides: Partial<Parameters<typeof checkPurchaseEligibility>[0]
   })
 
 describe('checkPurchaseEligibility', () => {
-  it('申し込めるなら、プラン・送金先・支払い方を返す', () => {
+  it('申し込めるなら、プランと送金先を返す', () => {
     expect(check()).toEqual({
       ok: true,
       value: {
         plan: { name: '1スレッド', priceYen: 5000 },
         destinationAccountId: 'acct_1',
-        mode: 'payment',
       },
     })
-  })
-
-  it('月額はサブスクリプション', () => {
-    const monthly = { ...coach, plans: coach.plans.map((p) => ({ ...p, active: true })) }
-    const result = check({ coach: monthly, planKind: 'monthly' })
-    expect(result.ok && result.value.mode).toBe('subscription')
   })
 
   it('受付を止めたプラン・決済を受けられないコーチには申し込めない', () => {

@@ -5,6 +5,7 @@ import { voidPurchase } from './application/usecases/voidPurchase.usecase'
 import {
   cancelPaymentIntent,
   capturePaymentIntent,
+  startSubscription,
 } from './infrastructure/external-services/paymentIntents'
 import {
   findPurchase,
@@ -32,12 +33,18 @@ const guard = async <T, E extends string>(
   }
 }
 
-/** コーチが承認した申し込みの、仮押さえした支払いを確定する */
+/** コーチが承認した申し込みの、仮押さえした支払いを確定する（月額はサブスクリプションも始める） */
 export const capturePayment = (purchaseId: string) =>
   guard('支払いの確定', () =>
     capturePurchase(
-      { purchaseId },
-      { findPurchase, capturePaymentIntent, markPurchaseCaptured, allowWithoutStripe }
+      { purchaseId, now: new Date() },
+      {
+        findPurchase,
+        capturePaymentIntent,
+        startSubscription,
+        markPurchaseCaptured,
+        allowWithoutStripe,
+      }
     )
   )
 

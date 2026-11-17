@@ -31,7 +31,8 @@ export type RecordPayment = (
 ) => Promise<Result<{ threadCreated: boolean }, 'purchase_not_found'>>
 
 /**
- * 支払いが済んだ（Stripe の Webhook から呼ぶ）。申し込みを支払い済みにし、スレッドを作る
+ * 支払いが済んだ（Stripe の Webhook から呼ぶ）。申し込みを支払い済みにし、スレッドを作る。
+ * いまは月額の2か月目からの請求だけ（初月とお試し・1スレッドは、申し込みの承認で始まる）
  *
  * ドメインルール:
  * - 同じ支払いの通知が何度届いても、スレッドは1つだけ

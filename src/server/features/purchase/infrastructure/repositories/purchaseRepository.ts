@@ -3,7 +3,7 @@ import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
 import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
-import type { CheckoutCoach } from '../../application/usecases/startCheckout.usecase'
+import type { CheckoutCoach } from '../../application/usecases/startApplication.usecase'
 import { type Purchase, purchaseSchema } from '../../domain/values/Purchase'
 
 export type FindCoachForCheckout = (slug: string) => Promise<CheckoutCoach | null>
@@ -164,12 +164,15 @@ export const markPurchaseAuthorized: MarkPurchaseAuthorized = async (purchaseId,
     .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'pending')))
 }
 
-export type MarkPurchaseCaptured = (purchaseId: string) => Promise<void>
-/** 仮押さえした支払いを確定した */
-export const markPurchaseCaptured: MarkPurchaseCaptured = async (purchaseId) => {
+export type MarkPurchaseCaptured = (
+  purchaseId: string,
+  payment: { stripeSubscriptionId: string | null }
+) => Promise<void>
+/** 仮押さえした支払いを確定した（月額なら、始めたサブスクリプションも） */
+export const markPurchaseCaptured: MarkPurchaseCaptured = async (purchaseId, payment) => {
   await getDb()
     .update(purchase)
-    .set({ status: 'paid', updatedAt: new Date() })
+    .set({ status: 'paid', ...payment, updatedAt: new Date() })
     .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'authorized')))
 }
 

@@ -65,7 +65,7 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     threadId: z.string(),
     studentUserId: z.string(),
   }),
-  /** コーチへ：月額の支払いが済み、スレッドが始まった（メール） */
+  /** コーチへ：月額の2か月目からの支払いが済み、新しい月のスレッドが始まった（メール） */
   z.object({ kind: z.literal('thread_started'), threadId: z.string(), coachUserId: z.string() }),
   /** コーチへ：届いた動画に、しばらく返信していない（メール） */
   z.object({ kind: z.literal('reply_overdue'), threadId: z.string(), coachUserId: z.string() }),
