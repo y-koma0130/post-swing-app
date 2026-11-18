@@ -4,7 +4,14 @@ import { Card } from '@/app/components/ui/Card'
 import { CoachSuspendButton } from '@/app/features/admin/components/CoachSuspendButton'
 import { InviteCoachForm } from '@/app/features/admin/components/InviteCoachForm'
 import { RefundThreadButton } from '@/app/features/admin/components/RefundThreadButton'
+import { RevokeGrantButton } from '@/app/features/admin/components/RevokeGrantButton'
+import { formatFeeRate, grantStateText } from '@/app/utils/feeText'
 import { formatMonthDay, formatYen } from '@/app/utils/format'
+import type { CoachFeeGrantSummaryDto } from '@/server/features/campaign/application/dto/CoachFeeGrantSummary.dto'
+import {
+  getGrantableCampaigns,
+  getGrantsForAdmin,
+} from '@/server/features/campaign/presentation/queries'
 import { getCoachesForAdmin } from '@/server/features/coach/presentation/queries'
 import type { AdminThreadRowDto } from '@/server/features/thread/application/dto/AdminThreadRow.dto'
 import { getThreadsForAdmin } from '@/server/features/thread/presentation/queries'
@@ -31,9 +38,16 @@ const waitingDays = (row: AdminThreadRowDto, now: Date): number | null =>
 
 /** 管理画面。本番は Cloudflare Access の奥に置く */
 const AdminPage = async () => {
-  const [coaches, threads] = await Promise.all([getCoachesForAdmin(), getThreadsForAdmin()])
+  const [coaches, threads, campaigns] = await Promise.all([
+    getCoachesForAdmin(),
+    getThreadsForAdmin(),
+    getGrantableCampaigns(),
+  ])
   // 管理者でなければ、画面があること自体を知らせない
-  if (!coaches || !threads) notFound()
+  if (!coaches || !threads || !campaigns) notFound()
+  const grants =
+    (await getGrantsForAdmin(coaches.map((coach) => coach.userId))) ??
+    new Map<string, CoachFeeGrantSummaryDto[]>()
   const now = new Date()
 
   return (
@@ -42,7 +56,7 @@ const AdminPage = async () => {
 
       <Card className="space-y-4">
         <h2 className="text-heading">コーチを招待</h2>
-        <InviteCoachForm />
+        <InviteCoachForm campaigns={campaigns} />
       </Card>
 
       <Card>
@@ -56,6 +70,7 @@ const AdminPage = async () => {
               <th className="py-2 font-normal">決済</th>
               <th className="py-2 font-normal">受付</th>
               <th className="py-2 font-normal">招待日</th>
+              <th className="py-2 font-normal">特典</th>
               <th className="py-2 font-normal" />
             </tr>
           </thead>
@@ -74,6 +89,25 @@ const AdminPage = async () => {
                   {coach.suspended ? '停止中' : '受付中'}
                 </td>
                 <td className="py-2">{formatMonthDay(coach.invitedAt)}</td>
+                <td className="space-y-2 py-2">
+                  {(grants.get(coach.userId) ?? []).map((grant) => (
+                    <div key={grant.grantId} className="space-y-1">
+                      <p>
+                        {grant.campaignName}（手数料{formatFeeRate(grant.feeRate)}）
+                        <span className="text-muted block text-xs">
+                          {grantStateText(grant.state, grant.durationDays)}
+                        </span>
+                      </p>
+                      {grant.state.kind !== 'revoked' && grant.state.kind !== 'ended' && (
+                        <RevokeGrantButton
+                          grantId={grant.grantId}
+                          coachName={coach.name}
+                          campaignName={grant.campaignName}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </td>
                 <td className="py-2">
                   <CoachSuspendButton
                     coachUserId={coach.userId}

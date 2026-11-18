@@ -1,4 +1,5 @@
 export * from './auth'
+export * from './campaign'
 export * from './coach'
 export * from './notification'
 export * from './purchase'

@@ -6,6 +6,8 @@ import { AvatarUploader } from '@/app/features/coach-settings/components/AvatarU
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
+import { coachFeeText } from '@/app/utils/feeText'
+import { getCurrentCoachFee } from '@/server/features/campaign/presentation/queries'
 import {
   getCurrentCoach,
   refreshCurrentCoachPayout,
@@ -27,6 +29,7 @@ const CoachSettingsPage = async () => {
     payout?.ok === true
       ? { ...current.settings, chargesEnabled: payout.value.chargesEnabled }
       : current.settings
+  const fee = await getCurrentCoachFee()
 
   return (
     <Page layout="form">
@@ -34,6 +37,7 @@ const CoachSettingsPage = async () => {
       <Card className="space-y-4">
         <h2 className="text-heading">売上の受け取り</h2>
         <PayoutSection settings={settings} />
+        {fee && <p className="text-body text-sm">{coachFeeText(fee)}</p>}
       </Card>
       <Card className="space-y-4">
         <h2 className="text-heading">プロフィール</h2>

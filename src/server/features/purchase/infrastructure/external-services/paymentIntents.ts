@@ -11,21 +11,25 @@ const isCardProblem = (error: unknown): boolean =>
   error instanceof Stripe.errors.StripeInvalidRequestError
 
 export type CapturePaymentIntent = (
-  paymentIntentId: string,
-  idempotencyKey: string
+  input: Readonly<{ paymentIntentId: string; applicationFeeYen: number; idempotencyKey: string }>
 ) => Promise<boolean>
 
 /**
- * 仮押さえした支払いを確定する。確定済みなら true（同じ承認が2回届いても1回だけ請求する）。
- * 仮押さえが切れているなど、確定できなければ false
+ * 仮押さえした支払いを、この手数料（Application Fee）で確定する。確定済みなら true
+ * （同じ承認が2回届いても1回だけ請求する）。仮押さえが切れているなど、確定できなければ false
  */
-export const capturePaymentIntent: CapturePaymentIntent = async (
+export const capturePaymentIntent: CapturePaymentIntent = async ({
   paymentIntentId,
-  idempotencyKey
-) => {
+  applicationFeeYen,
+  idempotencyKey,
+}) => {
   const stripe = getStripe()
   try {
-    await stripe.paymentIntents.capture(paymentIntentId, {}, { idempotencyKey })
+    await stripe.paymentIntents.capture(
+      paymentIntentId,
+      { application_fee_amount: applicationFeeYen },
+      { idempotencyKey }
+    )
     return true
   } catch (error) {
     if (!isCardProblem(error)) throw error
@@ -130,7 +134,12 @@ export const startSubscription: StartSubscription = async (input) => {
 }
 
 export type ChangeSubscriptionPrice = (
-  input: Readonly<{ subscriptionId: string; priceYen: number; systemFeeYen: number }>
+  input: Readonly<{
+    subscriptionId: string
+    priceYen: number
+    systemFeeYen: number
+    platformFeeRate: number
+  }>
 ) => Promise<void>
 
 /**
@@ -160,4 +169,57 @@ export const changeSubscriptionPrice: ChangeSubscriptionPrice = async (input) =>
     application_fee_percent: calcSubscriptionFeePercent(input),
     proration_behavior: 'none',
   })
+}
+
+export type SetInvoiceApplicationFee = (
+  invoiceId: string,
+  applicationFeeYen: number
+) => Promise<void>
+
+/**
+ * 下書きの請求書（月額の毎月の請求）の手数料を入れ直す。確定のあとでは変えられない（Stripe）
+ */
+export const setInvoiceApplicationFee: SetInvoiceApplicationFee = async (
+  invoiceId,
+  applicationFeeYen
+) => {
+  await getStripe().invoices.update(invoiceId, { application_fee_amount: applicationFeeYen })
+}
+
+export type FindInvoiceApplicationFee = (
+  invoiceId: string
+) => Promise<{ applicationFeeId: string; amountYen: number; paymentIntentId: string } | null>
+
+/** 支払われた請求書で、実際に取った Application Fee（請求書の支払い → 決済 → 手数料をたどる） */
+export const findInvoiceApplicationFee: FindInvoiceApplicationFee = async (invoiceId) => {
+  const stripe = getStripe()
+  const payments = await stripe.invoicePayments.list({ invoice: invoiceId, limit: 10 })
+  const paid = payments.data.find((p) => p.status === 'paid' && p.payment.type === 'payment_intent')
+  const intentId = idOf(paid?.payment.payment_intent ?? null)
+  if (!intentId) return null
+  const intent = await stripe.paymentIntents.retrieve(intentId, {
+    expand: ['latest_charge.application_fee'],
+  })
+  const charge = intent.latest_charge
+  if (!charge || typeof charge === 'string') return null
+  const fee = charge.application_fee
+  if (!fee || typeof fee === 'string') return null
+  return { applicationFeeId: fee.id, amountYen: fee.amount, paymentIntentId: intentId }
+}
+
+export type RefundApplicationFee = (
+  input: Readonly<{ applicationFeeId: string; amountYen: number; idempotencyKey: string }>
+) => Promise<void>
+
+/** Application Fee の一部をコーチの口座へ戻す（手数料を多く取っていたときの差額） */
+export const refundApplicationFee: RefundApplicationFee = async ({
+  applicationFeeId,
+  amountYen,
+  idempotencyKey,
+}) => {
+  await getStripe().applicationFees.createRefund(
+    applicationFeeId,
+    { amount: amountYen },
+    { idempotencyKey }
+  )
 }

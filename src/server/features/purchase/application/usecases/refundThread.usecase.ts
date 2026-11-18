@@ -4,6 +4,7 @@ import {
   type RefundBlocker,
   type RefundSource,
 } from '../../domain/services/checkRefund.service'
+import { paymentIdFor } from '../../domain/values/Payment'
 import type { Purchase } from '../../domain/values/Purchase'
 
 type Dependencies = Readonly<{
@@ -22,6 +23,8 @@ type Dependencies = Readonly<{
   ) => Promise<{ refundId: string }>
   /** 返金したスレッドを終了する（thread が持つ） */
   markThreadRefunded: (threadId: string, refundedAt: Date) => Promise<void>
+  /** 支払いの記録に、返金した額と戻した手数料を残す（記録がない以前の支払いは何もしない） */
+  markPaymentRefunded: (paymentId: string, refundedAt: Date) => Promise<void>
 }>
 
 export type RefundThread = (
@@ -45,5 +48,12 @@ export const refundThread: RefundThread = async ({ threadId, now }, deps) => {
   // Stripe の返金が済んでから記録する。記録で失敗しても、やり直せば冪等キーで同じ返金になる
   const { refundId } = await deps.refundStripePayment(source.value, `refund-thread-${threadId}`)
   await deps.markThreadRefunded(threadId, now)
+  // スレッドを作った支払い：月額の2か月目からは請求書、それ以外（単発・お試し、月額の初月）は承認での確定
+  await deps.markPaymentRefunded(
+    payment.stripeInvoiceId
+      ? paymentIdFor({ kind: 'invoice', invoiceId: payment.stripeInvoiceId })
+      : paymentIdFor({ kind: 'capture', purchaseId: payment.purchaseId }),
+    now
+  )
   return ok({ refundId })
 }

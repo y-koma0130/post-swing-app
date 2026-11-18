@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth'
 import { coachProfile } from './coach'
 
@@ -38,6 +38,45 @@ export const purchase = sqliteTable(
   (t) => [
     index('purchase_student_coach_idx').on(t.studentUserId, t.coachUserId),
     index('purchase_coach_idx').on(t.coachUserId),
+  ]
+)
+
+/**
+ * 実際にお金が動いた1回ごとの記録（承認での確定、月額の毎月の請求）。
+ * そのときの手数料率と、使った特典を残す。id は支払いから決まる（capture-<申し込み>、invoice-<請求書>）ので、
+ * 同じ支払いを2回記録しない
+ */
+export const payment = sqliteTable(
+  'payment',
+  {
+    id: text().primaryKey(),
+    purchaseId: text()
+      .notNull()
+      .references(() => purchase.id),
+    coachUserId: text().notNull(),
+    kind: text({ enum: ['capture', 'invoice'] }).notNull(),
+    priceYen: integer().notNull(),
+    systemFeeYen: integer().notNull(),
+    /** 使った手数料率 */
+    platformFeeRate: real().notNull(),
+    /** 価格の手数料（システム利用料は含めない） */
+    platformFeeYen: integer().notNull(),
+    /** 使った特典（coach_fee_grant）。なければ null */
+    feeGrantId: text(),
+    /** 請求のあとで Application Fee を返金して戻した額（invoice.created が届かず多く取ったとき） */
+    feeAdjustedYen: integer().notNull().default(0),
+    /** 生徒に返金した額と、そのとき戻した Application Fee */
+    refundedYen: integer().notNull().default(0),
+    refundedFeeYen: integer().notNull().default(0),
+    refundedAt: integer({ mode: 'timestamp_ms' }),
+    stripePaymentIntentId: text(),
+    stripeInvoiceId: text().unique(),
+    paidAt: integer({ mode: 'timestamp_ms' }).notNull(),
+    createdAt: integer({ mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [
+    index('payment_purchase_idx').on(t.purchaseId),
+    index('payment_coach_idx').on(t.coachUserId, t.paidAt),
   ]
 )
 
