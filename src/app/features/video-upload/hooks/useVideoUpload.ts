@@ -17,7 +17,13 @@ type UploadInput = {
   durationSec: number | null
   /** 変換したときに測ったフレームレート。再生画面のコマ送りに使う */
   frameRate: number | null
+  /** この画面を離れても進み具合を受け取りたいとき（画面の外で提出を進めるとき） */
+  onProgress?: ((progress: number) => void) | undefined
 }
+
+export type UploadOutcome =
+  | Readonly<{ ok: true; videoId: string }>
+  | Readonly<{ ok: false; message: string }>
 
 const readVideoId = (responseText: string): string | null => {
   try {
@@ -46,15 +52,15 @@ const parseMessage = (responseText: string): string => {
 }
 
 /**
- * 提出に使う動画を1本上げる（下書き）。上げられたら動画の ID を返す。
+ * 提出に使う動画を1本上げる（下書き）。上げられたら動画の ID を、失敗したら文言を返す。
  * 進み具合を出すため fetch ではなく XMLHttpRequest を使う（本体はそのまま送り、角度などはヘッダーに載せる）
  */
 export const useVideoUpload = () => {
   const [state, setState] = useState<UploadState>({ kind: 'idle' })
 
   const upload = useCallback(
-    ({ threadId, purpose, file, angle, durationSec, frameRate }: UploadInput) =>
-      new Promise<string | null>((resolve) => {
+    ({ threadId, purpose, file, angle, durationSec, frameRate, onProgress }: UploadInput) =>
+      new Promise<UploadOutcome>((resolve) => {
         const xhr = new XMLHttpRequest()
         xhr.open(
           'POST',
@@ -70,22 +76,26 @@ export const useVideoUpload = () => {
         }
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
-            setState({ kind: 'uploading', progress: event.loaded / event.total })
+            const progress = event.loaded / event.total
+            setState({ kind: 'uploading', progress })
+            onProgress?.(progress)
           }
         }
         xhr.onload = () => {
           const videoId = readVideoId(xhr.responseText)
           if (xhr.status >= 200 && xhr.status < 300 && videoId) {
             setState({ kind: 'done' })
-            resolve(videoId)
+            resolve({ ok: true, videoId })
           } else {
-            setState({ kind: 'error', message: parseMessage(xhr.responseText) })
-            resolve(null)
+            const message = parseMessage(xhr.responseText)
+            setState({ kind: 'error', message })
+            resolve({ ok: false, message })
           }
         }
         xhr.onerror = () => {
-          setState({ kind: 'error', message: parseMessage('') })
-          resolve(null)
+          const message = parseMessage('')
+          setState({ kind: 'error', message })
+          resolve({ ok: false, message })
         }
         setState({ kind: 'uploading', progress: 0 })
         xhr.send(file)

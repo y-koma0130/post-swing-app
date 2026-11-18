@@ -9,6 +9,7 @@ import {
   availabilityBanner,
   chatReplyHint,
   extensionNote,
+  replyTargetAfterApprovalMessage,
   replyTargetMessage,
   sendConfirmMessage,
 } from '@/app/features/coach-availability/utils/availabilityText'
@@ -197,7 +198,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                     }
                     replyHint={
                       availability.kind === 'available'
-                        ? replyTargetMessage(availability.replyTargetHours)
+                        ? (applying ? replyTargetAfterApprovalMessage : replyTargetMessage)(
+                            availability.replyTargetHours
+                          )
                         : null
                     }
                     prominent={false}
@@ -231,7 +234,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                   }
                   replyHint={
                     availability.kind === 'available'
-                      ? replyTargetMessage(availability.replyTargetHours)
+                      ? (applying ? replyTargetAfterApprovalMessage : replyTargetMessage)(
+                          availability.replyTargetHours
+                        )
                       : null
                   }
                   prominent

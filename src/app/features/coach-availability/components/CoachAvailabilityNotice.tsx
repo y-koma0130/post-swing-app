@@ -5,7 +5,7 @@ import type {
 import {
   absentMessage,
   delayedMessage,
-  replyTargetMessage,
+  replyTargetAfterApprovalMessage,
   upcomingMessage,
 } from '../utils/availabilityText'
 
@@ -33,7 +33,7 @@ export const CoachAvailabilityNotice = ({ coachName, availability, upcomingAbsen
   }
   return (
     <div className="text-muted space-y-1 text-sm">
-      <p>{replyTargetMessage(availability.replyTargetHours)}</p>
+      <p>{replyTargetAfterApprovalMessage(availability.replyTargetHours)}</p>
       {upcomingAbsence && (
         <p>
           {upcomingMessage(upcomingAbsence)}

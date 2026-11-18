@@ -118,9 +118,9 @@ export const ChatComposer = ({
   // 動画を添えるときは、先に上げてから送る
   const uploadThenSubmit = async () => {
     if (panel === 'video' && videoSelected) {
-      const videoId = await slotRef.current?.upload()
-      if (!videoId || !videoIdRef.current) return
-      videoIdRef.current.value = videoId
+      const uploaded = await slotRef.current?.upload()
+      if (!uploaded?.ok || !videoIdRef.current) return
+      videoIdRef.current.value = uploaded.videoId
     }
     submitNow()
   }
