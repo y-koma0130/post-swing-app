@@ -219,16 +219,30 @@ export const updatePlansAction = async (
   )
 }
 
+/** Stripe との通信が失敗したとき、コーチに出す文言 */
+const PAYOUT_STRIPE_ERROR_MESSAGE =
+  'Stripe とつながりませんでした。少し時間をおいて、もう一度お試しください。続くときは運営にお問い合わせください'
+
 /** 売上を受け取る口座の設定（Stripe）へ進む */
-export const startPayoutOnboardingAction = async (): Promise<void> => {
+export const startPayoutOnboardingAction = async (
+  _prev: ActionState,
+  _formData: FormData
+): Promise<ActionState> => {
   const actor = await getActor()
   if (!actor) {
     redirect('/coach/login')
   }
-  const result = await startPayoutOnboarding(
-    { actor },
-    { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
-  )
+  let result: Awaited<ReturnType<typeof startPayoutOnboarding>>
+  try {
+    result = await startPayoutOnboarding(
+      { actor },
+      { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
+    )
+  } catch (error) {
+    // Stripe の設定不足（本番の有効化前など）もここに来る。中身はログで確かめる
+    console.error('[stripe] 口座の設定を始められませんでした', actor.userId, error)
+    return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
+  }
   if (!result.ok) {
     redirect('/coach')
   }
@@ -236,7 +250,10 @@ export const startPayoutOnboardingAction = async (): Promise<void> => {
 }
 
 /** 売上・入金を確かめる Stripe の画面へ */
-export const openPayoutDashboardAction = async (): Promise<void> => {
+export const openPayoutDashboardAction = async (
+  _prev: ActionState,
+  _formData: FormData
+): Promise<ActionState> => {
   const actor = await getActor()
   if (!actor) {
     redirect('/coach/login')
@@ -245,7 +262,14 @@ export const openPayoutDashboardAction = async (): Promise<void> => {
   if (accountId === null) {
     redirect('/coach/settings')
   }
-  redirect(await createDashboardLink(accountId))
+  let url: string
+  try {
+    url = await createDashboardLink(accountId)
+  } catch (error) {
+    console.error('[stripe] 売上の画面を開けませんでした', actor.userId, error)
+    return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
+  }
+  redirect(url)
 }
 
 /** 管理者がコーチの受付を止める・再開する */
