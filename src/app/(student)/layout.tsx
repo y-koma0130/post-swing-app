@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Logo } from '@/app/components/Logo'
 import { SiteFooter } from '@/app/components/SiteFooter'
+import { BackgroundSubmissionBar } from '@/app/features/video-upload/components/BackgroundSubmissionBar'
 import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
 
 type Props = {
@@ -33,6 +34,7 @@ const StudentLayout = async ({ children }: Props) => {
           {nav.label}
         </Link>
       </header>
+      <BackgroundSubmissionBar />
       {children}
       <SiteFooter />
     </div>
