@@ -1,0 +1,30 @@
+name: post-swing-app
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    # vinext は .vinext/dev/lock.json に PID を残す。コンテナを作り直すと古い PID が
+    # 別のプロセスと重なって「起動済み」と誤判定されるため、起動前に消す
+    command: >
+      sh -c "rm -f .vinext/dev/lock.json
+      && pnpm install --frozen-lockfile
+      && pnpm dev --host 0.0.0.0 --port 5173"
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - .:/app
+      # node_modules はホスト（macOS）と別のバイナリが必要なのでコンテナ側に持つ
+      - node_modules:/app/node_modules
+      - pnpm-store:/pnpm/store
+      # ローカルの D1・R2 などのデータ（SQLite）。macOS とのファイル共有越しだと SQLite のロックが
+      # 効かず壊れることがあるので、コンテナ側のボリュームに置く
+      - cloudflare-state:/app/.cloudflare/state
+    environment:
+      - npm_config_store_dir=/pnpm/store
+
+volumes:
+  node_modules:
+  pnpm-store:
+  cloudflare-state:

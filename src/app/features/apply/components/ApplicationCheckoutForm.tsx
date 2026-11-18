@@ -1,0 +1,35 @@
+'use client'
+
+import { useActionState } from 'react'
+import { Button } from '@/app/components/ui/Button'
+import { FormMessage } from '@/app/components/ui/FormMessage'
+import { startApplicationCheckoutAction } from '@/server/features/purchase/presentation/actions'
+import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
+
+type Props = {
+  threadId: string
+  /** 開発中だけ：Stripe を通さずに申し込むリンク */
+  devAuthorizeHref: string | null
+}
+
+/** 悩みと動画を送った申し込みの、カードの登録（仮押さえ）へ進む */
+export const ApplicationCheckoutForm = ({ threadId, devAuthorizeHref }: Props) => {
+  const [state, action, pending] = useActionState(startApplicationCheckoutAction, IDLE_ACTION_STATE)
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="threadId" value={threadId} />
+      <FormMessage state={state} />
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        カードを登録して申し込む
+      </Button>
+      <p className="text-caption text-muted text-center">
+        いまは請求されません。コーチが受け付けたときに請求されます
+      </p>
+      {devAuthorizeHref && (
+        <a href={devAuthorizeHref} className="text-caption text-muted block text-center underline">
+          （開発用）Stripe を通さずに申し込む
+        </a>
+      )}
+    </form>
+  )
+}

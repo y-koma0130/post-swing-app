@@ -1,0 +1,8 @@
+language js(typescript)
+
+// `as const` 以外の型アサーションを禁止する（import { a as b } の別名は対象外）
+`$value as $type` as $expr where {
+  $expr <: TsAsExpression(),
+  not $type <: r"const",
+  register_diagnostic(span=$value, message="型アサーション（as）は禁止です。型ガード・zod の parse・satisfies を使ってください。")
+}

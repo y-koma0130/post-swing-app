@@ -1,0 +1,29 @@
+# ローカル開発用の秘密情報。`.dev.vars` にコピーして値を入れる（.dev.vars はコミットしない）
+# 本番は Workers Secrets に同じ名前で入れる
+
+# 公開URL。ログインのコールバックや、LINE・Stripe からの戻り先に使う
+APP_URL=http://localhost:5173
+# `openssl rand -base64 32` などで作ったランダムな値
+BETTER_AUTH_SECRET=
+# 開発中はメールを送らずログに出すので、空でもよい
+EMAIL_FROM=SwingPost <noreply@example.com>
+# LINE ログインのチャネル。空なら LINE ログインを出さない（開発中はメールのコードで代用）
+LINE_LOGIN_CHANNEL_ID=
+LINE_LOGIN_CHANNEL_SECRET=
+# 管理画面（/admin）を守る Cloudflare Access。開発中は使わない（空でよい）
+ACCESS_TEAM_DOMAIN=
+ACCESS_AUD=
+# Stripe のテストモードのキー（sk_test_…）と、`stripe listen` が表示する Webhook の署名シークレット（whsec_…）
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+# LINE 公式アカウント（Messaging API）のチャネル。空なら通知は送らずにログに出す
+LINE_MESSAGING_CHANNEL_SECRET=
+LINE_MESSAGING_ACCESS_TOKEN=
+# 公式アカウントの友だち追加URL（https://line.me/R/ti/p/@…）。空なら案内を出さない
+LINE_ADD_FRIEND_URL=
+# Stripe の Connect のイベント用エンドポイントの署名シークレット（本番・ステージングで別に作る。stripe listen では空でよい）
+STRIPE_CONNECT_WEBHOOK_SECRET=
+
+# Cloudflare Turnstile（ボット対策）。空なら、開発中は Cloudflare のテスト用のキー（いつも通る）を使う
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
