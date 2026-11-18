@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_YEN } from '@/app/features/apply/utils/systemFeeText'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import { COACH_LP_URL, CONTACT_EMAIL, OPERATOR_NAME } from '@/app/utils/externalLinks'
 
 export const metadata: Metadata = { title: '特定商取引法に基づく表記' }
-
-const fee = `${SYSTEM_FEE_YEN.toLocaleString('ja-JP')}円`
 
 const ROWS = [
   ['販売事業者', OPERATOR_NAME],
@@ -19,7 +17,7 @@ const ROWS = [
   ['販売価格', '各コーチの受付ページに表示（税込）'],
   [
     '商品代金以外の必要料金',
-    `システム利用料 ${fee}（税込）／申し込みごと（月額プランは毎月）。インターネット接続の通信料`,
+    `システム利用料 ${SYSTEM_FEE_RULE_TEXT}／申し込みごと（月額プランは毎月）。インターネット接続の通信料`,
   ],
   ['支払い方法', 'クレジットカード（Stripe）'],
   [

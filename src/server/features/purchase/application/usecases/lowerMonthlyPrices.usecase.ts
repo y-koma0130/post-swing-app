@@ -1,4 +1,5 @@
 import { ok, type Result } from '@/server/utils/result'
+import { calcSystemFee } from '../../domain/services/calcSystemFee.service'
 import { decideSubscriptionPrice } from '../../domain/services/decideSubscriptionPrice.service'
 
 export type ActiveSubscription = Readonly<{
@@ -15,7 +16,10 @@ type Dependencies = Readonly<{
   changeSubscriptionPrice: (
     input: Readonly<{ subscriptionId: string; priceYen: number; systemFeeYen: number }>
   ) => Promise<boolean>
-  savePurchasePrice: (purchaseId: string, priceYen: number) => Promise<void>
+  savePurchasePrice: (
+    purchaseId: string,
+    price: Readonly<{ priceYen: number; systemFeeYen: number }>
+  ) => Promise<void>
 }>
 
 export type LowerMonthlyPrices = (
@@ -25,7 +29,8 @@ export type LowerMonthlyPrices = (
 
 /**
  * コーチが月額の価格を保存したあと、値下げなら、いまの生徒の月額にも次の請求から反映する
- * （どうするかは decideSubscriptionPrice。値上げは何もしない）
+ * （どうするかは decideSubscriptionPrice。値上げは何もしない）。システム利用料も新しい価格で計算し直す
+ * （価格の5%が200円を超えていた月額は、値下げで利用料も下がる。上がることはない）
  */
 export const lowerMonthlyPrices: LowerMonthlyPrices = async (
   { coachUserId, monthlyPriceYen },
@@ -39,16 +44,17 @@ export const lowerMonthlyPrices: LowerMonthlyPrices = async (
       newPlanPriceYen: monthlyPriceYen,
     })
     if (priceYen === null) continue
+    const systemFeeYen = Math.min(sub.systemFeeYen, calcSystemFee(priceYen))
     const changed = await deps.changeSubscriptionPrice({
       subscriptionId: sub.subscriptionId,
       priceYen,
-      systemFeeYen: sub.systemFeeYen,
+      systemFeeYen,
     })
     if (!changed) {
       failed += 1
       continue
     }
-    await deps.savePurchasePrice(sub.purchaseId, priceYen)
+    await deps.savePurchasePrice(sub.purchaseId, { priceYen, systemFeeYen })
     lowered += 1
   }
   return ok({ lowered, failed })

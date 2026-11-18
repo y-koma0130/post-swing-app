@@ -8,7 +8,7 @@ import { formatYen } from '@/app/utils/format'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { SYSTEM_FEE_NOTE, SYSTEM_FEE_YEN } from '../utils/systemFeeText'
+import { SYSTEM_FEE_NOTE, systemFeeFor } from '../utils/systemFeeText'
 
 type Props = {
   coachSlug: string
@@ -71,9 +71,9 @@ export const PlanCheckoutForm = ({
                 </span>
                 <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
                 <span className="text-caption text-muted mt-1 block">
-                  ＋システム利用料{formatYen(SYSTEM_FEE_YEN)}
+                  ＋システム利用料{formatYen(systemFeeFor(plan.priceYen))}
                   {plan.kind === 'monthly' ? '／月' : ''}（お支払い{' '}
-                  {formatYen(plan.priceYen + SYSTEM_FEE_YEN)}
+                  {formatYen(plan.priceYen + systemFeeFor(plan.priceYen))}
                   {plan.kind === 'monthly' ? '／月' : ''}）
                 </span>
               </span>

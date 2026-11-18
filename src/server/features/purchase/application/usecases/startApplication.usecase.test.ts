@@ -54,7 +54,8 @@ describe('startApplication', () => {
       coachUserId: 'coach-1',
       planKind: 'single',
       priceYen: 4980,
-      systemFeeYen: 200,
+      // 価格の5%（200円より高い）
+      systemFeeYen: 249,
       status: 'pending',
       stripeSubscriptionId: null,
       stripePaymentIntentId: null,

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_YEN } from '@/app/features/apply/utils/systemFeeText'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import {
   COACH_TERMS_URL,
   CONTACT_EMAIL,
@@ -54,8 +54,8 @@ const TermsPage = () => (
     <h2>3. 料金と支払い</h2>
     <ul>
       <li>
-        料金は、コーチが決めたプランの価格と、申し込みごとのシステム利用料（{SYSTEM_FEE_YEN}
-        円・税込。月額プランは毎月）です。システム利用料は、本サービスの利用の対価として運営者が受け取ります。
+        料金は、コーチが決めたプランの価格と、申し込みごとのシステム利用料（{SYSTEM_FEE_RULE_TEXT}
+        。月額プランは毎月）です。システム利用料は、本サービスの利用の対価として運営者が受け取ります。
       </li>
       <li>支払いはクレジットカードで、Stripe を通じて行います。</li>
       <li>

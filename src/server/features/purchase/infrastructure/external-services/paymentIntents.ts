@@ -134,8 +134,8 @@ export type ChangeSubscriptionPrice = (
 ) => Promise<void>
 
 /**
- * 月額の価格を変える（次の請求から。日割りはしない）。システム利用料の行はそのまま、
- * 手数料の割合を新しい価格に合わせる
+ * 月額の価格とシステム利用料を変える（次の請求から。日割りはしない）。
+ * 手数料の割合も新しい価格に合わせる
  */
 export const changeSubscriptionPrice: ChangeSubscriptionPrice = async (input) => {
   const stripe = getStripe()
@@ -143,12 +143,20 @@ export const changeSubscriptionPrice: ChangeSubscriptionPrice = async (input) =>
   const planItem = subscription.items.data.find(
     (item) => idOf(item.price.product) !== SYSTEM_FEE_PRODUCT_ID
   )
+  const feeItem = subscription.items.data.find(
+    (item) => idOf(item.price.product) === SYSTEM_FEE_PRODUCT_ID
+  )
   const product = planItem ? idOf(planItem.price.product) : null
   if (!planItem || !product) {
     throw new Error(`月額の価格の行が見つかりません: ${input.subscriptionId}`)
   }
+  // システム利用料の行は、金額が変わるときだけ差し替える（以前の0円の申し込みには行がない）
+  const feeItems =
+    feeItem && feeItem.price.unit_amount !== input.systemFeeYen
+      ? [{ id: feeItem.id, price_data: monthlyPrice(SYSTEM_FEE_PRODUCT_ID, input.systemFeeYen) }]
+      : []
   await stripe.subscriptions.update(input.subscriptionId, {
-    items: [{ id: planItem.id, price_data: monthlyPrice(product, input.priceYen) }],
+    items: [{ id: planItem.id, price_data: monthlyPrice(product, input.priceYen) }, ...feeItems],
     application_fee_percent: calcSubscriptionFeePercent(input),
     proration_behavior: 'none',
   })

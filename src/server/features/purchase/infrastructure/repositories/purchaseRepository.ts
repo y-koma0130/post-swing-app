@@ -297,11 +297,17 @@ export const findActiveSubscriptions: FindActiveSubscriptions = async (coachUser
   return rows.flatMap((r) => (r.subscriptionId ? [{ ...r, subscriptionId: r.subscriptionId }] : []))
 }
 
-export type SavePurchasePrice = (purchaseId: string, priceYen: number) => Promise<void>
-/** 月額の値下げを反映した価格（次の請求から） */
-export const savePurchasePrice: SavePurchasePrice = async (purchaseId, priceYen) => {
+export type SavePurchasePrice = (
+  purchaseId: string,
+  price: Readonly<{ priceYen: number; systemFeeYen: number }>
+) => Promise<void>
+/** 月額の値下げを反映した価格とシステム利用料（次の請求から） */
+export const savePurchasePrice: SavePurchasePrice = async (
+  purchaseId,
+  { priceYen, systemFeeYen }
+) => {
   await getDb()
     .update(purchase)
-    .set({ priceYen, updatedAt: new Date() })
+    .set({ priceYen, systemFeeYen, updatedAt: new Date() })
     .where(eq(purchase.id, purchaseId))
 }
