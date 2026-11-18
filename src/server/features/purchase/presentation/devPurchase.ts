@@ -7,7 +7,7 @@ import {
   findApplicationThread,
   requestThreadApproval,
 } from '@/server/features/thread/public'
-import { PURCHASE_RULES } from '../domain/rules'
+import { calcSystemFee } from '../domain/services/calcSystemFee.service'
 import {
   findCoachForCheckout,
   markPurchaseAuthorized,
@@ -64,7 +64,7 @@ export const handleDevPurchase = async (request: Request): Promise<Response> => 
     coachUserId: coach.userId,
     planKind: plan.kind,
     priceYen: plan.priceYen,
-    systemFeeYen: PURCHASE_RULES.systemFeeYen,
+    systemFeeYen: calcSystemFee(plan.priceYen),
     status: 'pending',
     stripeSubscriptionId: null,
     stripePaymentIntentId: null,
