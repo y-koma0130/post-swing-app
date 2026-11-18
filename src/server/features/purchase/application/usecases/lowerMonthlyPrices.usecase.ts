@@ -14,8 +14,15 @@ type Dependencies = Readonly<{
   findActiveSubscriptions: (coachUserId: string) => Promise<ActiveSubscription[]>
   /** 次の請求からの価格を変える（Stripe）。変えられなければ false */
   changeSubscriptionPrice: (
-    input: Readonly<{ subscriptionId: string; priceYen: number; systemFeeYen: number }>
+    input: Readonly<{
+      subscriptionId: string
+      priceYen: number
+      systemFeeYen: number
+      platformFeeRate: number
+    }>
   ) => Promise<boolean>
+  /** いまのコーチの手数料率（キャンペーンの特典を含む。campaign） */
+  resolveFeeAt: (coachUserId: string, at: Date) => Promise<Readonly<{ rate: number }>>
   savePurchasePrice: (
     purchaseId: string,
     price: Readonly<{ priceYen: number; systemFeeYen: number }>
@@ -23,7 +30,7 @@ type Dependencies = Readonly<{
 }>
 
 export type LowerMonthlyPrices = (
-  params: Readonly<{ coachUserId: string; monthlyPriceYen: number }>,
+  params: Readonly<{ coachUserId: string; monthlyPriceYen: number; now: Date }>,
   dependencies: Dependencies
 ) => Promise<Result<{ lowered: number; failed: number }, never>>
 
@@ -33,9 +40,11 @@ export type LowerMonthlyPrices = (
  * （価格の5%が200円を超えていた月額は、値下げで利用料も下がる。上がることはない）
  */
 export const lowerMonthlyPrices: LowerMonthlyPrices = async (
-  { coachUserId, monthlyPriceYen },
+  { coachUserId, monthlyPriceYen, now },
   deps
 ) => {
+  // サブスクリプションの手数料の割合（予備。毎月の請求では請求書ごとに入れ直す）は、いまの率で計算する
+  const { rate: platformFeeRate } = await deps.resolveFeeAt(coachUserId, now)
   let lowered = 0
   let failed = 0
   for (const sub of await deps.findActiveSubscriptions(coachUserId)) {
@@ -49,6 +58,7 @@ export const lowerMonthlyPrices: LowerMonthlyPrices = async (
       subscriptionId: sub.subscriptionId,
       priceYen,
       systemFeeYen,
+      platformFeeRate,
     })
     if (!changed) {
       failed += 1

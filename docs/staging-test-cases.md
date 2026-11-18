@@ -5,7 +5,7 @@ staging（https://staging.swingpost.app）で、Stripe のテストモードを�
 
 ## 準備
 
-- [ ] staging の Stripe（テストモード）の Webhook が2つある：自分のアカウント用（`checkout.session.completed`・`invoice.paid`・`customer.subscription.deleted`）と Connect 用（`account.updated`）。送り先は `https://staging.swingpost.app/api/webhooks/stripe`
+- [ ] staging の Stripe（テストモード）の Webhook が2つある：自分のアカウント用（`checkout.session.completed`・`invoice.created`・`invoice.paid`・`customer.subscription.deleted`）と Connect 用（`account.updated`）。送り先は `https://staging.swingpost.app/api/webhooks/stripe`
 - [ ] テスト用のコーチが、売上の受け取り口座（Connect のテストアカウント）の設定まで終わっている（コーチのホームに「まだ申し込みを受け付けていません」が出ない）
 - [ ] 生徒用に、LINE でログインできるテストアカウントがある（通知の確認用。公式アカウントを友だち追加しておく）
 - [ ] カード番号：通常は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`、本人認証（3Dセキュア）は `4000 0025 0000 3155`
@@ -65,3 +65,15 @@ staging（https://staging.swingpost.app）で、Stripe のテストモードを�
 | F1 | 添削を受けたあと、生徒が「このスレッドを終える」 | スレッドが終了し、レビューを書ける。生徒に LINE「スレッドが終わりました（レビューのお願い）」 |
 | F2 | Stripe のダッシュボードで `checkout.session.completed` を再送 | 承認待ちが2つにならない。コーチへのメールも増えない |
 | F3 | 生徒が LINE の公式アカウントを友だち追加していない | 通知は届かない（アプリの画面には出る） |
+
+## G. キャンペーン（先行募集・手数料0%）
+
+| # | やること | 確かめること |
+|---|---|---|
+| G1 | 管理画面でコーチを招待するとき「先行募集」を選ぶ | 「特典も付けました」。コーチの行に「先行募集（手数料0%）未開始」。招待の欄の残りが1つ減る |
+| G2 | そのコーチの設定画面 | 「最初の生徒の申し込みを承認した日から90日間、手数料0%」 |
+| G3 | そのコーチが初めて1スレッドを承認 | 確定した支払いの Application Fee がシステム利用料だけ（200円）。コーチへの送金が価格の100%。設定画面が「いまは手数料0%です（◯月◯日まで）」。管理画面の特典が「◯月◯日まで」 |
+| G4 | 同じコーチが月額を承認し、2か月目の請求（「無料期間を今すぐ終了」） | 請求書の Application Fee がシステム利用料だけ（`invoice.created` で入れ直される）。手数料の差額を戻した記録はない |
+| G5 | `invoice.created` の Webhook を一時的に外して、2か月目の請求を起こす | 10%＋利用料で請求されたあと、`invoice.paid` で差額が Application Fee の返金として戻る。翌朝の Cron のログに「手数料の差額を戻した請求」 |
+| G6 | 管理画面で特典を「取り消す」 | 「取り消し済み」。招待の欄の残りが1つ戻る。次の承認から手数料10% |
+| G7 | 期間が過ぎたあとの承認・月額の請求 | 手数料10%に戻る |

@@ -1,7 +1,10 @@
 import vinext from 'vinext/server/fetch-handler'
 import { applyDevMigrations } from './server/db/applyDevMigrations'
 import { handleNotificationBatch } from './server/features/notification/presentation/handleNotificationBatch'
-import { runDailyWaitlistNotification } from './server/features/purchase/presentation/scheduled'
+import {
+  runDailyFeeAdjustmentSummary,
+  runDailyWaitlistNotification,
+} from './server/features/purchase/presentation/scheduled'
 import {
   runAbsenceEndedNotification,
   runDailyThreadMaintenance,
@@ -34,5 +37,6 @@ export default {
     // スレッドを終了してから、空いた枠をキャンセル待ちに知らせる
     await runDailyThreadMaintenance(now)
     await runDailyWaitlistNotification(now)
+    await runDailyFeeAdjustmentSummary(now)
   },
 } satisfies ExportedHandler<Env>

@@ -31,6 +31,7 @@ import {
 import { createBillingPortalSession } from '../infrastructure/external-services/createBillingPortalSession'
 import { createCheckoutSession } from '../infrastructure/external-services/createCheckoutSession'
 import { refundStripePayment } from '../infrastructure/external-services/refundStripePayment'
+import { markPaymentRefunded } from '../infrastructure/repositories/paymentRepository'
 import {
   attachCheckoutSession,
   countActiveThreads,
@@ -198,7 +199,13 @@ export const refundThreadAction = async (
   try {
     const result = await refundThread(
       { threadId: formString(formData, 'threadId'), now: new Date() },
-      { findThreadPayment, findPurchaseForRefund, refundStripePayment, markThreadRefunded }
+      {
+        findThreadPayment,
+        findPurchaseForRefund,
+        refundStripePayment,
+        markThreadRefunded,
+        markPaymentRefunded,
+      }
     )
     if (!result.ok) {
       return actionError(REFUND_ERROR_MESSAGE[result.error])

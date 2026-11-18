@@ -20,6 +20,7 @@ const setup = (failOn: string | null = null) => {
     findActiveSubscriptions: async () => subs,
     changeSubscriptionPrice,
     savePurchasePrice,
+    resolveFeeAt: async () => ({ rate: 0.1 }),
   }
   return { deps, changeSubscriptionPrice, savePurchasePrice }
 }
@@ -27,11 +28,14 @@ const setup = (failOn: string | null = null) => {
 describe('lowerMonthlyPrices', () => {
   it('新しい価格より高い月額だけ、次の請求から下げる。利用料は新しい価格で計算し直し、上げはしない', async () => {
     const { deps, changeSubscriptionPrice, savePurchasePrice } = setup()
-    const result = await lowerMonthlyPrices({ coachUserId: 'c1', monthlyPriceYen: 4480 }, deps)
+    const result = await lowerMonthlyPrices(
+      { coachUserId: 'c1', monthlyPriceYen: 4480, now: new Date() },
+      deps
+    )
     expect(result).toEqual({ ok: true, value: { lowered: 2, failed: 0 } })
     expect(changeSubscriptionPrice.mock.calls).toEqual([
-      [{ subscriptionId: 'sub_1', priceYen: 4480, systemFeeYen: 200 }],
-      [{ subscriptionId: 'sub_3', priceYen: 4480, systemFeeYen: 224 }],
+      [{ subscriptionId: 'sub_1', priceYen: 4480, systemFeeYen: 200, platformFeeRate: 0.1 }],
+      [{ subscriptionId: 'sub_3', priceYen: 4480, systemFeeYen: 224, platformFeeRate: 0.1 }],
     ])
     expect(savePurchasePrice.mock.calls).toEqual([
       ['p1', { priceYen: 4480, systemFeeYen: 200 }],
@@ -41,7 +45,10 @@ describe('lowerMonthlyPrices', () => {
 
   it('Stripe で変えられなかった月額は、記録も変えない', async () => {
     const { deps, savePurchasePrice } = setup('sub_1')
-    const result = await lowerMonthlyPrices({ coachUserId: 'c1', monthlyPriceYen: 4480 }, deps)
+    const result = await lowerMonthlyPrices(
+      { coachUserId: 'c1', monthlyPriceYen: 4480, now: new Date() },
+      deps
+    )
     expect(result).toEqual({ ok: true, value: { lowered: 1, failed: 1 } })
     expect(savePurchasePrice.mock.calls).toEqual([['p3', { priceYen: 4480, systemFeeYen: 224 }]])
   })

@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { grantCampaignToCoach } from '@/server/features/campaign/public'
 import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
@@ -68,7 +69,19 @@ const inviteInputSchema = z.object({
   email: z.email('メールアドレスの形が正しくありません'),
   name: z.string().trim().min(1, '名前を入れてください').max(50),
   slug: optionalSlugSchema,
+  /** 付けるキャンペーン（任意。空なら付けない） */
+  campaignCode: z
+    .string()
+    .trim()
+    .transform((value) => (value === '' ? null : value)),
 })
+
+const GRANT_ERROR_MESSAGE = {
+  campaign_not_found: 'キャンペーンが見つかりません',
+  campaign_inactive: 'キャンペーンは終了しています',
+  already_granted: 'このコーチにはすでに付いています',
+  limit_reached: 'キャンペーンの枠がいっぱいです',
+} as const
 
 /** 管理者がコーチを招待する */
 export const inviteCoachAction = async (
@@ -82,6 +95,7 @@ export const inviteCoachAction = async (
     email: formString(formData, 'email'),
     name: formString(formData, 'name'),
     slug: formString(formData, 'slug'),
+    campaignCode: formString(formData, 'campaignCode'),
   })
   if (!input.success) {
     return actionError(firstIssue(input.error))
@@ -105,7 +119,17 @@ export const inviteCoachAction = async (
     )
   }
   revalidatePath('/admin')
-  return actionSuccess(`${input.data.name} さんを招待し、ログインの案内をメールで送りました`)
+  const invited = `${input.data.name} さんを招待し、ログインの案内をメールで送りました`
+  if (input.data.campaignCode === null) {
+    return actionSuccess(invited)
+  }
+  const granted = await grantCampaignToCoach(result.value.userId, input.data.campaignCode)
+  if (!granted.ok) {
+    return actionError(
+      `${invited}。ただし特典は付けられませんでした（${GRANT_ERROR_MESSAGE[granted.error]}）`
+    )
+  }
+  return actionSuccess(`${invited}（特典も付けました）`)
 }
 
 /** コーチが自分のプロフィールを保存する */
