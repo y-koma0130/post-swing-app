@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { EmptyState } from '@/app/components/ui/EmptyState'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
 import { CoachThreadSections } from '@/app/features/thread/components/CoachThreadSections'
@@ -38,15 +39,14 @@ const CoachHomePage = async () => {
     <Page layout="list">
       {availability && <AvailabilityBanner availability={availability.availability} />}
       {!settings.chargesEnabled && (
-        <Card className="border-warning/30 bg-warning-soft space-y-1">
-          <p className="font-bold">まだ申し込みを受け付けていません</p>
-          <p className="text-body text-sm">
+        <Notice tone="warning" emphasis title="まだ申し込みを受け付けていません">
+          <p>
             売上を受け取る口座を設定すると、受付ページから申し込めるようになります。
             <Link href="/coach/settings" className="ml-1 underline">
               設定へ
             </Link>
           </p>
-        </Card>
+        </Notice>
       )}
       <PageHeader
         title="スレッド"

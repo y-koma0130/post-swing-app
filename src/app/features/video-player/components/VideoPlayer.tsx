@@ -2,6 +2,7 @@
 
 import { type CSSProperties, type ReactNode, useCallback, useEffect } from 'react'
 import { Button } from '@/app/components/ui/Button'
+import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import { useVideoPlayer, type VideoSize } from '../hooks/useVideoPlayer'
 import { formatFps, formatTimecode, PLAYBACK_RATES } from '../utils/frame'
 
@@ -122,7 +123,7 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
             1コマ ▶︎
           </ControlButton>
 
-          <fieldset className="border-line ml-2 flex rounded-full border p-0.5">
+          <fieldset className={`${segmentGroupClass} ml-2`}>
             <legend className="sr-only">再生速度</legend>
             {PLAYBACK_RATES.map((rate) => (
               <button
@@ -131,9 +132,7 @@ export const VideoPlayer = ({ src, frameRate = null, renderOverlay, onVideoEleme
                 aria-pressed={state.rate === rate}
                 disabled={disabled}
                 onClick={() => setRate(rate)}
-                className={`text-caption rounded-full px-3 py-1 font-bold disabled:opacity-40 ${
-                  state.rate === rate ? 'bg-ink text-white' : 'text-muted'
-                }`}
+                className={segmentClass(state.rate === rate)}
               >
                 {rate}x
               </button>

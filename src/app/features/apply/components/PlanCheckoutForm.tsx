@@ -90,7 +90,7 @@ export const PlanCheckoutForm = ({
         />
       )}
       {needsAck && (
-        <label className="bg-warning-soft flex items-start gap-2 rounded-xl p-3 text-sm">
+        <label className="bg-warning-soft flex items-start gap-2 rounded-xl p-4 text-sm">
           <input
             type="checkbox"
             name="acknowledgeDelay"

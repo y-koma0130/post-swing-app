@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/app/components/ui/Button'
+import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import { useVideoPlayer, type VideoSize } from '../hooks/useVideoPlayer'
 import { formatTimecode, PLAYBACK_RATES, type PlaybackRate, stepFrameTime } from '../utils/frame'
 import { linkedTime, needsResync, offsetOf } from '../utils/linkedPlayback'
@@ -324,7 +325,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
           >
             1コマ ▶︎
           </Button>
-          <fieldset className="border-line ml-2 flex rounded-full border p-0.5">
+          <fieldset className={`${segmentGroupClass} ml-2`}>
             <legend className="sr-only">再生速度</legend>
             {PLAYBACK_RATES.map((value) => (
               <button
@@ -333,9 +334,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
                 aria-pressed={rate === value}
                 disabled={disabled}
                 onClick={() => setRate(value)}
-                className={`text-caption rounded-full px-3 py-1 font-bold disabled:opacity-40 ${
-                  rate === value ? 'bg-ink text-white' : 'text-muted'
-                }`}
+                className={segmentClass(rate === value)}
               >
                 {value}x
               </button>

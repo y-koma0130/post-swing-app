@@ -1,3 +1,5 @@
+import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
+
 type Props = {
   title: string
   description: string
@@ -12,14 +14,10 @@ type Props = {
 export const DrillDetails = ({ title, description, videoUrl }: Props) =>
   description || videoUrl ? (
     <details className="group bg-mint-soft rounded-xl px-3 py-2">
-      <summary className="text-ink flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
-        <span>ドリル：{title}</span>
-        <span className="text-caption text-muted shrink-0 font-normal group-open:hidden">
-          {videoUrl ? 'お手本とやり方を見る' : 'やり方を見る'}
-        </span>
-        <span className="text-caption text-muted hidden shrink-0 font-normal group-open:inline">
-          閉じる
-        </span>
+      {/* 狭いときは、ボタンを下の行に回して名前を折り返さない */}
+      <summary className={`${summaryClass} text-ink flex-wrap text-sm font-bold`}>
+        <span className="min-w-[8rem] flex-1">ドリル：{title}</span>
+        <DisclosureToggle closedLabel={videoUrl ? 'お手本を見る' : 'やり方を見る'} />
       </summary>
       <div className="mt-2 space-y-2">
         {videoUrl && (

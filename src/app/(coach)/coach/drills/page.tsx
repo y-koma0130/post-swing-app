@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { EmptyState } from '@/app/components/ui/EmptyState'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { DeleteDrillButton } from '@/app/features/drill/components/DeleteDrillButton'
 import { DrillForm } from '@/app/features/drill/components/DrillForm'
@@ -26,13 +27,19 @@ const DrillsPage = async () => {
         <h2 className="text-heading">新しいドリル</h2>
         <DrillForm />
       </Card>
+      {drills.length === 0 && (
+        <EmptyState
+          title="まだドリルはありません"
+          description="上のフォームから、よく使う練習方法をお手本の動画つきで登録しましょう。"
+        />
+      )}
       <ul className="space-y-3">
         {drills.map((drill) => (
           <li key={drill.id}>
             <Card className="space-y-2">
               <div className="flex items-start justify-between gap-4">
                 <h2 className="text-heading">{drill.title}</h2>
-                <DeleteDrillButton drillId={drill.id} />
+                <DeleteDrillButton drillId={drill.id} title={drill.title} />
               </div>
               {drill.videoId ? (
                 // biome-ignore lint/a11y/useMediaCaption: コーチが撮ったお手本の動画で、字幕はない

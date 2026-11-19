@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { Notice } from '@/app/components/ui/Notice'
 import { RETAKE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import {
@@ -48,13 +49,15 @@ export const RetakeNotice = ({
   const declineForm = useRef<HTMLFormElement>(null)
 
   return (
-    <section className="border-warning/30 bg-warning-soft space-y-3 rounded-2xl border p-4">
+    <Notice
+      tone="warning"
+      emphasis
+      title={`${coachName}さんから撮り直しのお願い`}
+      className="space-y-3"
+    >
       <div className="space-y-1">
-        <h2 className="text-heading">{coachName}さんから撮り直しのお願い</h2>
-        <p className="text-body text-sm font-bold">{RETAKE_REASON_LABEL[request.reason]}</p>
-        {request.message && (
-          <p className="text-body text-sm whitespace-pre-wrap">{request.message}</p>
-        )}
+        <p className="font-bold">{RETAKE_REASON_LABEL[request.reason]}</p>
+        {request.message && <p className="whitespace-pre-wrap">{request.message}</p>}
         <p className="text-caption text-muted">
           撮り直した動画は、提出の回数には数えません。今すぐ撮れないときは「今は撮れない」を押すと、いまの動画で添削が届きます。
         </p>
@@ -95,7 +98,7 @@ export const RetakeNotice = ({
           onDone={() => setDrawerOpen(false)}
         />
       </Drawer>
-    </section>
+    </Notice>
   )
 }
 

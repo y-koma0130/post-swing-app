@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Notice } from '@/app/components/ui/Notice'
 import { ApplicationCheckoutForm } from '@/app/features/apply/components/ApplicationCheckoutForm'
 import { ApplicationConfirmation } from '@/app/features/apply/components/ApplicationConfirmation'
 import { DECLINE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
@@ -35,8 +36,7 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
   if (thread.status === 'draft') {
     const step = thread.submissions.length === 0 ? 0 : 1
     return (
-      <section className="bg-surface space-y-4 rounded-2xl p-5">
-        <h2 className="text-heading">申し込みの手順</h2>
+      <Notice title="申し込みの手順" className="space-y-4">
         <ol className="space-y-2">
           {STEPS.map((label, i) => (
             <li
@@ -73,40 +73,39 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
             devAuthorizeHref={import.meta.env.DEV ? `/api/dev/purchase?thread=${thread.id}` : null}
           />
         )}
-      </section>
+      </Notice>
     )
   }
   if (thread.status === 'requested') {
     const deadline = thread.application.approvalDeadline
     return (
-      <section role="status" className="bg-mint-soft space-y-1 rounded-2xl p-5 text-sm">
-        <p className="text-ink font-bold">
-          {justApplied ? '申し込みました。' : ''}
-          {thread.coachName}さんが内容を確認しています
-        </p>
-        <p className="text-body">
+      <Notice
+        tone="mint"
+        status
+        title={`${justApplied ? '申し込みました。' : ''}${thread.coachName}さんが内容を確認しています`}
+      >
+        <p>
           {deadline ? `${formatDateTime(deadline)}までに` : ''}
           お返事します。受け付けられたときに請求され、添削が始まります（まだ請求されていません）。
         </p>
-      </section>
+      </Notice>
     )
   }
   if (thread.status === 'declined') {
     const decline = thread.application.decline
     return (
-      <section className="bg-surface space-y-2 rounded-2xl p-5 text-sm">
-        <p className="text-ink font-bold">今回の申し込みはお受けできませんでした</p>
-        {decline && <p className="text-body">{DECLINE_REASON_LABEL[decline.reason]}</p>}
+      <Notice title="今回の申し込みはお受けできませんでした">
+        {decline && <p>{DECLINE_REASON_LABEL[decline.reason]}</p>}
         {decline?.message && (
           <p className="border-line text-body border-l-2 pl-3 whitespace-pre-wrap">
             {thread.coachName}さんより：{decline.message}
           </p>
         )}
         <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
-        <Link href={`/c/${thread.coachSlug}`} className="text-mint inline-block font-bold">
+        <Link href={`/c/${thread.coachSlug}`} className="text-mint-text inline-block font-bold">
           {thread.coachName}さんのページへ
         </Link>
-      </section>
+      </Notice>
     )
   }
   return null

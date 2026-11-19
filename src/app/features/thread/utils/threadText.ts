@@ -8,6 +8,7 @@ import type {
 import type { RoundFrequency } from '@/server/features/thread/domain/values/GolfProfile'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { RetakeReason } from '@/server/features/thread/domain/values/RetakeRequest'
+import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
 /** 撮った角度の呼び方 */
@@ -48,9 +49,9 @@ export const submissionLabel = (index: number): string => `${ordinalLabel(index)
 /** 生徒がいま提出できない理由 */
 export const SUBMISSION_BLOCKER_MESSAGE = {
   awaiting_reply: 'コーチの添削を待っています。届いたら LINE でお知らせします。',
-  submission_limit: 'このスレッドで提出できる回数は、すべて使いました。',
-  expired: 'このスレッドは期限が切れました。',
-  closed: 'このスレッドは終了しました。',
+  submission_limit: 'このレッスンで提出できる回数は、すべて使いました。',
+  expired: 'このレッスンは期限が切れました。',
+  closed: 'このレッスンは終了しました。',
 } as const satisfies Record<SubmissionBlocker, string>
 
 /** 提出できないときの、ボタンに出す短い言い方 */
@@ -63,10 +64,10 @@ export const SUBMISSION_BLOCKER_SHORT = {
 
 /** 生徒がいまチャットを送れない理由 */
 export const STUDENT_CHAT_BLOCKER_MESSAGE = {
-  closed: 'このスレッドは終了しました',
+  closed: 'このレッスンは終了しました',
   not_started: '申し込みが受け付けられると、コーチにチャットで質問できます',
   no_submission: '最初の動画を提出すると、コーチにチャットで質問できます',
-  limit_reached: 'このスレッドで送れるメッセージは、すべて使いました',
+  limit_reached: 'このレッスンで送れるメッセージは、すべて使いました',
 } as const satisfies Record<
   Extract<ChatBlocker, 'closed' | 'not_started' | 'no_submission' | 'limit_reached'>,
   string
@@ -161,3 +162,23 @@ export const RETAKE_REASONS = [
   'quality',
   'other',
 ] as const satisfies RetakeReason[]
+
+/** スレッドの状態の呼び方（一覧・カルテ・運営画面で同じ言い方にする）。生徒には承認待ちを「コーチの確認待ち」と言う */
+export const THREAD_STATUS_LABEL = {
+  coach: {
+    draft: '申し込み途中',
+    requested: '承認待ち',
+    waiting_coach: '添削待ち',
+    waiting_student: 'レッスン中',
+    closed: '完了',
+    declined: 'お断り',
+  },
+  student: {
+    draft: '申し込み途中',
+    requested: 'コーチの確認待ち',
+    waiting_coach: '添削待ち',
+    waiting_student: 'レッスン中',
+    closed: '完了',
+    declined: 'お断り',
+  },
+} as const satisfies Record<'coach' | 'student', Record<ThreadStatus, string>>

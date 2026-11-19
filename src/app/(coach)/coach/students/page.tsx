@@ -8,7 +8,7 @@ import { formatMonthDay } from '@/app/utils/format'
 import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
 import { getMyStudents } from '@/server/features/student-chart/presentation/queries'
 
-export const metadata: Metadata = { title: '生徒' }
+export const metadata: Metadata = { title: '生徒一覧' }
 
 /** コーチの生徒の一覧（レッスンがあった生徒）。押すとカルテを開く */
 const StudentsPage = async () => {
@@ -20,7 +20,7 @@ const StudentsPage = async () => {
   return (
     <Page layout="list">
       <PageHeader
-        title="生徒"
+        title="生徒一覧"
         description="生徒ごとのカルテ（メモ・タグ・レッスンの記録）です。生徒には見えません。"
       />
       {students.length === 0 ? (

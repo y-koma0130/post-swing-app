@@ -1,6 +1,7 @@
 'use client'
 
 import { type KeyboardEvent, type MouseEvent, useRef, useState } from 'react'
+import { iconButtonClass, segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 
 type GuideAngle = 'front' | 'back'
 
@@ -78,11 +79,11 @@ export const ShootingGuide = ({
         onClose={() => setOpen(false)}
         onClick={onDialogClick}
         onKeyDown={onKeyDown}
-        className="bg-surface m-auto max-h-[94dvh] w-[min(94vw,30rem)] overflow-hidden rounded-2xl p-0 shadow-xl backdrop:bg-black/60"
+        className="bg-surface rounded-card m-auto max-h-[94dvh] w-[min(94vw,30rem)] overflow-hidden p-0 shadow-xl backdrop:bg-black/60"
       >
         <div className="flex max-h-[94dvh] flex-col">
           <div className="border-line-soft flex items-center justify-between gap-3 border-b bg-white px-3 py-2">
-            <div role="tablist" aria-label="撮る角度" className="flex gap-1">
+            <div role="tablist" aria-label="撮る角度" className={segmentGroupClass}>
               {ANGLES.map((a) => (
                 <button
                   key={a}
@@ -90,9 +91,7 @@ export const ShootingGuide = ({
                   role="tab"
                   aria-selected={current === a}
                   onClick={() => setCurrent(a)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                    current === a ? 'bg-mint-soft text-ink' : 'text-muted hover:text-ink'
-                  }`}
+                  className={segmentClass(current === a)}
                 >
                   {GUIDES[a].tab}
                 </button>
@@ -102,7 +101,7 @@ export const ShootingGuide = ({
               type="button"
               onClick={close}
               aria-label="閉じる"
-              className="text-muted hover:text-ink rounded-full px-2 text-2xl leading-none"
+              className={`${iconButtonClass} text-2xl`}
             >
               ×
             </button>
@@ -145,7 +144,7 @@ const CameraIcon = () => (
   <svg
     aria-hidden
     viewBox="0 0 24 24"
-    className="text-mint size-4"
+    className="text-mint-text size-4"
     fill="none"
     stroke="currentColor"
     strokeWidth={2}

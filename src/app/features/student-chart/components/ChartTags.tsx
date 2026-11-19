@@ -2,6 +2,8 @@
 
 import { type FormEvent, useState, useTransition } from 'react'
 import { Button } from '@/app/components/ui/Button'
+import { iconButtonClass } from '@/app/components/ui/choiceStyles'
+import { inputClass } from '@/app/components/ui/fieldStyles'
 import { saveChartTagsAction } from '@/server/features/student-chart/presentation/actions'
 
 type Props = {
@@ -54,7 +56,7 @@ export const ChartTags = ({ studentUserId, tags: initial }: Props) => {
               aria-label={`${tag}を外す`}
               disabled={pending}
               onClick={() => save(tags.filter((t) => t !== tag))}
-              className="text-muted hover:text-ink rounded-full px-1"
+              className={`${iconButtonClass} px-1`}
             >
               ×
             </button>
@@ -69,7 +71,7 @@ export const ChartTags = ({ studentUserId, tags: initial }: Props) => {
           maxLength={20}
           placeholder="例：スライス、初心者"
           aria-label="足すタグ"
-          className="border-line focus:border-mint min-w-0 flex-1 rounded-full border bg-white px-3 py-1.5 text-sm outline-none"
+          className={`${inputClass} min-w-0 flex-1 py-1.5`}
         />
         <Button type="submit" variant="secondary" size="sm" pending={pending}>
           足す

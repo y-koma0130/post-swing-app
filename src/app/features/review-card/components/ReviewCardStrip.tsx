@@ -51,7 +51,7 @@ export const ReviewCardStrip = ({ reply, videoLabel, onOpen, renderAction }: Pro
           <p className="text-body text-sm leading-relaxed whitespace-pre-wrap">{reply.comment}</p>
         )}
         {reply.drills.length > 0 && (
-          <p className="text-caption text-ink bg-mint-soft rounded-md px-2 py-1">
+          <p className="text-caption text-ink bg-mint-soft rounded-lg px-2 py-1">
             ドリル：{reply.drills.map((d) => d.title).join('・')}
           </p>
         )}
@@ -59,7 +59,7 @@ export const ReviewCardStrip = ({ reply, videoLabel, onOpen, renderAction }: Pro
           {cards.map((card, index) => (
             <li key={card.id} className="flex items-start justify-between gap-2">
               <p className="text-caption min-w-0">
-                <span className="text-mint font-bold">{title(card, index)}</span>
+                <span className="text-mint-text font-bold">{title(card, index)}</span>
                 {card.comment && <span className="text-body ml-2">{card.comment}</span>}
               </p>
               {renderAction?.(card)}

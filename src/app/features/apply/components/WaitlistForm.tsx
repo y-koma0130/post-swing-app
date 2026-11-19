@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { Notice } from '@/app/components/ui/Notice'
 import { joinWaitlistAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
@@ -16,9 +17,9 @@ export const WaitlistForm = ({ coachSlug, onWaitlist }: Props) => {
 
   if (onWaitlist) {
     return (
-      <p className="bg-mint-soft text-ink rounded-xl p-4 text-sm">
-        キャンセル待ちに登録済みです。空きが出たら LINE でお知らせします。
-      </p>
+      <Notice tone="mint" status>
+        <p>キャンセル待ちに登録済みです。空きが出たら LINE でお知らせします。</p>
+      </Notice>
     )
   }
   return (

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const ITEMS = [
   { href: '/coach', label: 'ホーム' },
-  { href: '/coach/students', label: '生徒' },
+  { href: '/coach/students', label: '生徒一覧' },
   { href: '/coach/drills', label: 'ドリル' },
   { href: '/coach/availability', label: '不在・返信' },
   { href: '/coach/settings', label: '設定' },
@@ -21,7 +21,8 @@ const isActive = (pathname: string, href: string): boolean =>
 export const CoachNav = () => {
   const pathname = usePathname()
   return (
-    <nav className="order-last -mx-2.5 flex w-full [scrollbar-width:none] items-center gap-0.5 overflow-x-auto text-sm whitespace-nowrap sm:order-none sm:mx-0 sm:ml-auto sm:w-auto sm:gap-1">
+    // スマホでは5つを等分に並べ、どれも切れずに収まるようにする（文字も少し小さく）
+    <nav className="text-caption order-last grid w-full grid-cols-5 items-center gap-0.5 whitespace-nowrap sm:order-none sm:ml-auto sm:flex sm:w-auto sm:gap-1 sm:text-sm">
       {ITEMS.map((item) => {
         const active = isActive(pathname, item.href)
         return (
@@ -29,7 +30,7 @@ export const CoachNav = () => {
             key={item.href}
             href={item.href}
             aria-current={active ? 'page' : undefined}
-            className={`rounded-full px-2.5 py-1.5 transition-colors sm:px-3 ${
+            className={`focus-visible:ring-mint rounded-full px-1 py-1.5 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none sm:px-3 ${
               active ? 'bg-mint-soft text-ink font-semibold' : 'text-muted hover:text-ink'
             }`}
           >

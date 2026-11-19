@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/app/components/ui/Badge'
 import { ButtonLink } from '@/app/components/ui/Button'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page } from '@/app/components/ui/Page'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
@@ -68,11 +69,8 @@ const CoachLandingPage = async ({ params }: Props) => {
   return (
     <Page layout="student">
       {ownPage && (
-        <div className="bg-mint-soft space-y-2 rounded-xl p-4 text-sm">
-          <p className="text-ink font-bold">あなたの受付ページです</p>
-          <p className="text-body">
-            生徒にはこのように見えます。プロフィールやプランは設定から変えられます。
-          </p>
+        <Notice tone="mint" title="あなたの受付ページです">
+          <p>生徒にはこのように見えます。プロフィールやプランは設定から変えられます。</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/coach" className="text-ink font-bold">
               ← コーチ画面に戻る
@@ -81,7 +79,7 @@ const CoachLandingPage = async ({ params }: Props) => {
               設定を開く
             </Link>
           </div>
-        </div>
+        </Notice>
       )}
       <header className="flex items-center gap-4">
         <CoachAvatar name={coach.name} url={coach.avatarUrl} size={72} />
@@ -112,11 +110,15 @@ const CoachLandingPage = async ({ params }: Props) => {
       <HowItWorks />
       <ReviewSummary summary={reviews} />
       {ownPage ? (
-        <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">
-          生徒はここの「動画を送って添削してもらう」から申し込みます（あなた自身は申し込めません）
-        </p>
+        <Notice className="text-center">
+          <p>
+            生徒はここの「動画を送って添削してもらう」から申し込みます（あなた自身は申し込めません）
+          </p>
+        </Notice>
       ) : closedMessage ? (
-        <p className="bg-surface text-muted rounded-xl p-4 text-center text-sm">{closedMessage}</p>
+        <Notice className="text-center">
+          <p>{closedMessage}</p>
+        </Notice>
       ) : (
         // スクロールしても申し込みボタンが画面の下に残る
         <div className="border-line-soft sticky bottom-0 -mx-6 border-t bg-white/90 px-6 py-3 backdrop-blur">

@@ -1,8 +1,7 @@
 import { formatYen } from '@/app/utils/format'
+import { PLAN_KIND_LABEL } from '@/app/utils/planText'
 import type { MyPurchaseDto } from '@/server/features/purchase/application/dto/MyPurchase.dto'
 import { BillingPortalButton } from './BillingPortalButton'
-
-const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月額' } as const
 
 type Props = {
   purchases: MyPurchaseDto[]
@@ -20,7 +19,7 @@ export const MyPurchaseList = ({ purchases, showCoach }: Props) => (
       <li key={p.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
         <div className="min-w-0">
           <p className="font-bold">
-            {PLAN_LABEL[p.planKind]}
+            {PLAN_KIND_LABEL[p.planKind]}
             {p.status === 'canceled' && (
               <span className="text-muted ml-2 text-sm font-normal">解約済み</span>
             )}

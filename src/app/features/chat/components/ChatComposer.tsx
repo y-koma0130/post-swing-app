@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
+import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass } from '@/app/components/ui/fieldStyles'
 import { VideoSlot, type VideoSlotHandle } from '@/app/features/video-upload/components/VideoSlot'
@@ -143,7 +144,7 @@ export const ChatComposer = ({
               <button
                 type="button"
                 onClick={() => setQuote(null)}
-                className="text-muted hover:text-ink text-sm"
+                className={`${iconButtonClass} text-lg`}
                 aria-label="引用を外す"
               >
                 ×

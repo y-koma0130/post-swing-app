@@ -21,7 +21,7 @@ export const SignOutButton = ({ redirectTo }: Props) => {
       onClick={signOut}
       disabled={pending}
       aria-busy={pending || undefined}
-      className="text-muted hover:text-ink active:text-ink text-sm disabled:cursor-wait"
+      className="text-muted hover:text-ink active:text-ink focus-visible:ring-mint rounded text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-wait"
     >
       {pending ? 'ログアウトしています…' : 'ログアウト'}
     </button>

@@ -91,7 +91,7 @@ export const ThreadTimeline = ({
                 aria-label="ここから新着"
               >
                 <span className="bg-mint h-px flex-1" />
-                <span className="text-caption text-mint font-bold">ここから新着</span>
+                <span className="text-caption text-mint-text font-bold">ここから新着</span>
                 <span className="bg-mint h-px flex-1" />
               </li>
             )}
@@ -159,7 +159,7 @@ const MessageBubble = ({
       )}
       {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-muted text-[10px]">{formatDateTime(message.sentAt)}</p>
+        <p className="text-caption text-muted">{formatDateTime(message.sentAt)}</p>
         {quoteMode === 'button' && <QuoteButton target={target} />}
       </div>
     </div>
