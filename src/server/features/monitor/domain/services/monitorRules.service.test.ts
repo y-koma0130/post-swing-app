@@ -3,7 +3,7 @@ import { localDateSchema } from '@/server/utils/localDate'
 import { MONITOR_RULES } from '../rules'
 import { monitorCodeTextSchema } from '../values/MonitorCode'
 import { checkMonitorCodeUse } from './checkMonitorCodeUse.service'
-import { checkMonitorOffer } from './checkMonitorOffer.service'
+import { checkMonitorOffer, checkMonitorOfferChange } from './checkMonitorOffer.service'
 import { generateMonitorCode } from './generateMonitorCode.service'
 
 const offer = { label: '知人用', priceYen: 0, maxUses: 3, expiresOn: null }
@@ -50,6 +50,36 @@ describe('checkMonitorOffer', () => {
       ok: false,
       error: 'price_below_minimum',
     })
+  })
+})
+
+describe('checkMonitorOfferChange', () => {
+  it('呼び名・期限・人数は変えられる', () => {
+    const next = {
+      ...offer,
+      label: 'インスタ募集',
+      maxUses: 5,
+      expiresOn: localDateSchema.parse('2026-12-31'),
+    }
+    expect(checkMonitorOfferChange({ current: offer, next, usedCount: 2 })).toEqual({
+      ok: true,
+      value: next,
+    })
+  })
+
+  it('価格は変えられない（無料から割引にも）', () => {
+    expect(
+      checkMonitorOfferChange({ current: offer, next: { ...offer, priceYen: 1000 }, usedCount: 0 })
+    ).toEqual({ ok: false, error: 'price_locked' })
+  })
+
+  it('人数は、申し込んだ数までなら減らせる', () => {
+    expect(
+      checkMonitorOfferChange({ current: offer, next: { ...offer, maxUses: 2 }, usedCount: 2 }).ok
+    ).toBe(true)
+    expect(
+      checkMonitorOfferChange({ current: offer, next: { ...offer, maxUses: 1 }, usedCount: 2 })
+    ).toEqual({ ok: false, error: 'max_uses_below_used' })
   })
 })
 

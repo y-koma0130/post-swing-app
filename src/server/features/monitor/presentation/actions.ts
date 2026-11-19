@@ -9,7 +9,7 @@ import type { ErrorOf } from '@/server/utils/result'
 import { saveMonitorCode } from '../application/usecases/saveMonitorCode.usecase'
 import { MONITOR_RULES } from '../domain/rules'
 import { monitorOfferSchema } from '../domain/values/MonitorCode'
-import { findSinglePrice } from '../infrastructure/query-services/monitorUsage'
+import { countCodeUses, findSinglePrice } from '../infrastructure/query-services/monitorUsage'
 import {
   codeTaken,
   countActiveCodes,
@@ -23,6 +23,8 @@ const SAVE_ERROR = {
   code_unavailable: 'コードを作れませんでした。もう一度お試しください',
   price_not_discounted: 'モニター価格は、1レッスンの価格より安くしてください',
   price_below_minimum: `有料にするなら${MONITOR_RULES.minPaidPriceYen}円以上にしてください（無料は0円）`,
+  price_locked: '価格は変えられません。変えるときは、このコードを止めて新しく作ってください',
+  max_uses_below_used: '先着の人数は、すでに申し込んだ人数より少なくできません',
 } as const satisfies Record<ErrorOf<typeof saveMonitorCode>, string>
 
 /**
@@ -61,6 +63,7 @@ export const saveMonitorCodeAction = async (
     {
       findSinglePrice,
       findMonitorCode,
+      countCodeUses,
       countActiveCodes,
       codeTaken,
       saveMonitorCode: saveMonitorCodeRow,
