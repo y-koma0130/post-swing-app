@@ -61,11 +61,11 @@ const CHECKOUT_ERROR_MESSAGE = {
   full: '今月は満枠です。キャンセル待ちに登録できます',
   trial_used: 'お試しはすでに利用済みです',
   already_subscribed: 'すでに月額で申し込んでいます',
-  monitor_single_only: 'プロモコードは1レッスンだけに使えます',
-  code_not_found: 'プロモコードが見つかりません。もう一度確かめてください',
-  code_stopped: 'このプロモコードの募集は終わりました',
-  code_expired: 'このプロモコードは期限が切れています',
-  code_full: 'このプロモコードの募集は、定員に達しました',
+  monitor_single_only: 'プロモーションコードは1レッスンだけに使えます',
+  code_not_found: 'プロモーションコードが見つかりません。もう一度確かめてください',
+  code_stopped: 'このプロモーションコードの募集は終わりました',
+  code_expired: 'このプロモーションコードは期限が切れています',
+  code_full: 'このプロモーションコードの募集は、定員に達しました',
   already_monitor: 'このコーチのモニターには、すでに申し込んでいます',
 } as const satisfies Record<StartApplicationError, string>
 

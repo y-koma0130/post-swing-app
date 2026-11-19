@@ -39,7 +39,7 @@ const STATE_TONE = {
 } as const satisfies Record<MonitorCodeState, BadgeTone>
 
 /**
- * モニター募集のプロモコード（設定画面）。コードを入れた人だけが、1レッスンをモニター価格で申し込める。
+ * モニター募集のプロモーションコード（設定画面）。コードを入れた人だけが、1レッスンをモニター価格で申し込める。
  * 無料は知人に、割引はフォロワーに、のようにコードを分けて使える
  */
 export const MonitorCodesCard = ({ codes, singlePriceYen, siteUrl, coachSlug }: Props) => {
@@ -47,7 +47,7 @@ export const MonitorCodesCard = ({ codes, singlePriceYen, siteUrl, coachSlug }: 
   return (
     <Card className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-heading">モニター募集（プロモコード）</h2>
+        <h2 className="text-heading">モニター募集（プロモーションコード）</h2>
         <p className="text-muted text-sm">
           コードを入れた人だけが、1レッスンをモニター価格で申し込めます。モニターは、添削の公開を許可することが条件です。月の受付枠にも数えます。
         </p>

@@ -15,7 +15,7 @@ export type ResolveMonitorCode = (
 ) => Promise<Result<MonitorCodeUse, ResolveMonitorCodeError>>
 
 /**
- * 生徒が入れたプロモコードを、使えるモニター価格に変える（申し込みの画面と、申し込みを作るとき）
+ * 生徒が入れたプロモーションコードを、使えるモニター価格に変える（申し込みの画面と、申し込みを作るとき）
  *
  * - そのコーチのコードだけ（ほかのコーチのコードは見つからない扱い）
  * - 使えるかは checkMonitorCodeUse で決める

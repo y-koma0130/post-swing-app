@@ -33,7 +33,7 @@ export type StartApplicationParams = Readonly<{
   planKind: PlanKind
   /** 返信が遅れがちなとき、遅れることを了承したか */
   acknowledgedDelay: boolean
-  /** モニターのプロモコード（入れていなければ null）。1レッスンだけに使える */
+  /** モニターのプロモーションコード（入れていなければ null）。1レッスンだけに使える */
   monitorCode: string | null
   now: Date
 }>
@@ -49,7 +49,7 @@ type Dependencies = Readonly<{
     studentUserId: string,
     coachUserId: string
   ) => Promise<{ threadId: string } | null>
-  /** 生徒が入れたプロモコードを、使えるモニター価格に変える（monitor が持つ） */
+  /** 生徒が入れたプロモーションコードを、使えるモニター価格に変える（monitor が持つ） */
   resolveMonitorCode: (input: {
     coachUserId: string
     studentUserId: string
@@ -85,7 +85,7 @@ export type StartApplication = (
  *
  * - 申し込めるかは checkPurchaseEligibility で決める
  * - このコーチへのまだ決まっていない申し込みがあれば、新しく作らずにそれを返す（1人1件）
- * - プロモコードがあれば、1レッスンをモニター価格で申し込む（使えるかは monitor の resolveMonitorCode）。
+ * - プロモーションコードがあれば、1レッスンをモニター価格で申し込む（使えるかは monitor の resolveMonitorCode）。
  *   先着の人数は、申し込みを作るときにもう一度数える
  */
 export const startApplication: StartApplication = async (

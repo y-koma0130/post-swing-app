@@ -19,7 +19,7 @@ type Props = {
   turnstileSiteKey: string
   /** コーチが不在・返信遅れのとき、了承チェックの文言。了承が要らなければ null */
   delayAckLabel: string | null
-  /** 使えるプロモコードを入れたとき、モニターの1レッスン。なければ null（ふだんのプランを出す） */
+  /** 使えるプロモーションコードを入れたとき、モニターの1レッスン。なければ null（ふだんのプランを出す） */
   monitor?: Readonly<{ code: string; priceYen: number }> | null | undefined
 }
 

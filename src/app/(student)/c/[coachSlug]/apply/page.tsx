@@ -22,7 +22,7 @@ type Props = {
   searchParams: Promise<{ code?: string }>
 }
 
-/** 申し込み：プランを選ぶ（プロモコードがあれば、モニターの1レッスン）。お試し・1レッスンは、このあとスレッドの画面で悩みと動画を送り、カードを登録する（月額はすぐ支払う） */
+/** 申し込み：プランを選ぶ（プロモーションコードがあれば、モニターの1レッスン）。お試し・1レッスンは、このあとスレッドの画面で悩みと動画を送り、カードを登録する（月額はすぐ支払う） */
 const ApplyPage = async ({ params, searchParams }: Props) => {
   const { coachSlug } = await params
   const { code: rawCode } = await searchParams

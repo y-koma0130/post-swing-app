@@ -7,7 +7,7 @@ import { findMonitorCodeByText } from './infrastructure/repositories/monitorCode
  * monitor がほかの feature に公開する関数（ほかの feature は、monitor の domain・dto と、このファイルだけを使う）
  */
 
-/** 生徒が入れたプロモコードを、使えるモニター価格に変える（purchase が申し込みを作るときに使う） */
+/** 生徒が入れたプロモーションコードを、使えるモニター価格に変える（purchase が申し込みを作るときに使う） */
 export const resolveMonitorCodeForStudent = (input: {
   coachUserId: string
   studentUserId: string

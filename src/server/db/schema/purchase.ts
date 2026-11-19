@@ -29,7 +29,7 @@ export const purchase = sqliteTable(
     /** 生徒が別に払うシステム利用料（申し込んだ時点の値。月額は毎月）。以前の申し込みは0 */
     systemFeeYen: integer().notNull().default(0),
     status: text({ enum: ['pending', 'authorized', 'paid', 'voided', 'canceled'] }).notNull(),
-    /** モニターのプロモコードで申し込んだとき、そのコード（価格はモニター価格。0円ならカードを使わない） */
+    /** モニターのプロモーションコードで申し込んだとき、そのコード（価格はモニター価格。0円ならカードを使わない） */
     monitorCodeId: text().references(() => monitorCode.id),
     stripeCheckoutSessionId: text().unique(),
     /** カードを仮押さえした支払い（承認で確定、断ったら取り消す） */

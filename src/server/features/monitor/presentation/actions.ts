@@ -26,7 +26,7 @@ const SAVE_ERROR = {
 } as const satisfies Record<ErrorOf<typeof saveMonitorCode>, string>
 
 /**
- * コーチがモニター募集のプロモコードを作る・変える・作り直す・止める。
+ * コーチがモニター募集のプロモーションコードを作る・変える・作り直す・止める。
  * フォームの intent：save（作る・変える）・regenerate（コードを作り直す）・toggle（受付中と停止を切り替える）
  */
 export const saveMonitorCodeAction = async (
@@ -72,7 +72,7 @@ export const saveMonitorCodeAction = async (
   revalidatePath('/coach/settings')
   const message =
     codeId === null
-      ? `プロモコード ${result.value.code} を作りました`
+      ? `プロモーションコード ${result.value.code} を作りました`
       : intent === 'regenerate'
         ? `コードを ${result.value.code} に作り直しました。前のコードは使えません`
         : intent === 'toggle'

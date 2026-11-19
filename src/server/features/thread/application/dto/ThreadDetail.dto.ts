@@ -56,7 +56,7 @@ export type ThreadDetailDto = {
     decline: { reason: DeclineReason; message: string } | null
     /** 下書きのとき、申し込みの最終確認に出す金額（申し込んだ時点の値）。それ以外は null */
     checkout: { priceYen: number; systemFeeYen: number } | null
-    /** モニターのプロモコードでの申し込みか（公開の許可が条件。0円ならカードを登録しない） */
+    /** モニターのプロモーションコードでの申し込みか（公開の許可が条件。0円ならカードを登録しない） */
     monitor: boolean
   }
   /**

@@ -11,7 +11,7 @@ type Props = {
   priceYen: number
   systemFeeYen: number
   maxSubmissions: number
-  /** モニターのプロモコードでの申し込み（0円なら無料） */
+  /** モニターのプロモーションコードでの申し込み（0円なら無料） */
   monitor: boolean
 }
 

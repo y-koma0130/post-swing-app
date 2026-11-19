@@ -153,7 +153,7 @@ describe('startApplication', () => {
     expect(createThread).not.toHaveBeenCalled()
   })
 
-  it('プロモコードがあれば、1レッスンをモニター価格（無料ならシステム利用料も0円）で申し込む', async () => {
+  it('プロモーションコードがあれば、1レッスンをモニター価格（無料ならシステム利用料も0円）で申し込む', async () => {
     const { deps, savePendingPurchase } = setup()
     expect((await startApplication({ ...params, monitorCode: 'ABCD2345' }, deps)).ok).toBe(true)
     expect(savePendingPurchase).toHaveBeenCalledWith(
@@ -173,7 +173,7 @@ describe('startApplication', () => {
     expect((await startApplication(params, deps)).ok).toBe(false)
   })
 
-  it('プロモコードは1レッスンだけ。使えないコードなら、申し込みを作らない', async () => {
+  it('プロモーションコードは1レッスンだけ。使えないコードなら、申し込みを作らない', async () => {
     const trial = setup()
     expect(
       await startApplication({ ...params, planKind: 'trial', monitorCode: 'ABCD2345' }, trial.deps)

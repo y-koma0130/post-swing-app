@@ -11,7 +11,7 @@ import {
 } from '../infrastructure/query-services/monitorUsage'
 import { findMonitorCodeByText } from '../infrastructure/repositories/monitorCodeRepository'
 
-/** ログイン中のコーチのプロモコード（コーチでなければ null）と、1レッスンの通常価格 */
+/** ログイン中のコーチのプロモーションコード（コーチでなければ null）と、1レッスンの通常価格 */
 export const getMyMonitorCodes = async (): Promise<{
   codes: MonitorCodeDto[]
   singlePriceYen: number | null
@@ -26,7 +26,7 @@ export const getMyMonitorCodes = async (): Promise<{
 }
 
 /**
- * 申し込みの画面で、生徒が入れたプロモコードを確かめる。
+ * 申し込みの画面で、生徒が入れたプロモーションコードを確かめる。
  * ログインしていなければ、生徒ごとの条件（モニターは1回まで）を見ずに確かめる
  */
 export const previewMonitorCode = async (coachSlug: string, code: string) => {

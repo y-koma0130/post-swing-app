@@ -51,7 +51,7 @@ const freshCode = async (deps: Dependencies): Promise<string | null> => {
 }
 
 /**
- * コーチがモニター募集のプロモコードを作る・変える（本人のコーチだけ）
+ * コーチがモニター募集のプロモーションコードを作る・変える（本人のコーチだけ）
  *
  * - 内容は checkMonitorOffer で確かめる（1レッスンより安く、0円か50円以上）
  * - 受付中にしておけるコードは MONITOR_RULES.maxActiveCodes まで

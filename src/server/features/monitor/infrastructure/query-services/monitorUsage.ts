@@ -99,7 +99,7 @@ export const listMonitorCodes: ListMonitorCodes = async (coachUserId) => {
 }
 
 export type FindCoachUserIdBySlug = (slug: string) => Promise<string | null>
-/** 受付ページの URL のコーチ（申し込みの画面でプロモコードを確かめるとき） */
+/** 受付ページの URL のコーチ（申し込みの画面でプロモーションコードを確かめるとき） */
 export const findCoachUserIdBySlug: FindCoachUserIdBySlug = async (slug) => {
   const row = await getDb()
     .select({ userId: coachProfile.userId })

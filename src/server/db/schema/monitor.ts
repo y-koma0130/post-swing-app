@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { coachProfile } from './coach'
 
 /**
- * モニター募集のプロモコード（コーチが発行する）。コードを入れた生徒は、1レッスンをモニター価格で申し込める。
+ * モニター募集のプロモーションコード（コーチが発行する）。コードを入れた生徒は、1レッスンをモニター価格で申し込める。
  * 使った数は、このコードで申し込んだ purchase から数える
  */
 export const monitorCode = sqliteTable(

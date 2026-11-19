@@ -1,7 +1,7 @@
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import type { LocalDate } from '@/server/utils/localDate'
 
-/** コーチの設定画面に出すプロモコード */
+/** コーチの設定画面に出すプロモーションコード */
 export type MonitorCodeDto = Readonly<{
   id: string
   code: string

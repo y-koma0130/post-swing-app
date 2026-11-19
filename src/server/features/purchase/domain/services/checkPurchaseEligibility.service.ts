@@ -45,7 +45,7 @@ export type CheckPurchaseEligibility = (
     signupGuard: SignupGuard
     /** 生徒が「返信が遅れること」を了承したか */
     acknowledgedDelay: boolean
-    /** モニターのプロモコードで申し込むか（1レッスンを受付中にしていなくても申し込める） */
+    /** モニターのプロモーションコードで申し込むか（1レッスンを受付中にしていなくても申し込める） */
     monitor?: boolean | undefined
   }>
 ) => Result<EligiblePurchase, PurchaseBlocker>
@@ -55,7 +55,7 @@ export type CheckPurchaseEligibility = (
  *
  * ドメインルール:
  * - コーチが決済を受けられ、そのプランが受付中で、管理者が受付を止めていないこと
- *   （モニターは、プランを受付中にしていなくてもよい。募集はプロモコードで決まる）
+ *   （モニターは、プランを受付中にしていなくてもよい。募集はプロモーションコードで決まる）
  * - 自分自身には申し込めない
  * - コーチが不在中で新規を止めていれば申し込めない。不在・返信遅れのときは了承が要る
  * - 受付枠が残っていること（満枠ならキャンセル待ちへ）

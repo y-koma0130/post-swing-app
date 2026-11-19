@@ -5,12 +5,12 @@ import { Button, textButtonClass } from '@/app/components/ui/Button'
 import { inputClass } from '@/app/components/ui/fieldStyles'
 import type { ResolveMonitorCodeError } from '@/server/features/monitor/application/dto/MonitorCodeUse.dto'
 
-/** プロモコードが使えない理由の言い方 */
+/** プロモーションコードが使えない理由の言い方 */
 const CODE_ERROR_TEXT = {
-  code_not_found: 'プロモコードが見つかりません。もう一度確かめてください',
-  code_stopped: 'このプロモコードの募集は終わりました',
-  code_expired: 'このプロモコードは期限が切れています',
-  code_full: 'このプロモコードの募集は、定員に達しました',
+  code_not_found: 'プロモーションコードが見つかりません。もう一度確かめてください',
+  code_stopped: 'このプロモーションコードの募集は終わりました',
+  code_expired: 'このプロモーションコードは期限が切れています',
+  code_full: 'このプロモーションコードの募集は、定員に達しました',
   already_monitor: 'このコーチのモニターには、すでに申し込んでいます',
 } as const satisfies Record<ResolveMonitorCodeError, string>
 
@@ -26,7 +26,7 @@ type Props = {
 }
 
 /**
- * プロモコードの入力。コーチから聞いた人だけが使うので、目立たない文字のボタンから開く。
+ * プロモーションコードの入力。知らない人がほとんどなので、目立たない文字のボタンから開く。
  * 入れると同じ画面を ?code= 付きで開き直し、使えるコードならプランの代わりにモニターの1レッスンが出る。
  * 使えないコードだったときは、理由と一緒に開いた状態で出す
  */
@@ -41,7 +41,7 @@ export const PromoCodeForm = ({ code, error, applied, basePath }: Props) => {
   if (applied) {
     return (
       <p className="text-caption text-muted">
-        プロモコード {code} を使っています。
+        プロモーションコード {code} を使っています。
         <a href={basePath} className="text-ink ml-1 underline">
           使わずに申し込む
         </a>
@@ -57,7 +57,7 @@ export const PromoCodeForm = ({ code, error, applied, basePath }: Props) => {
           onClick={() => dialogRef.current?.showModal()}
           className={textButtonClass()}
         >
-          プロモコードをお持ちの方
+          プロモーションコードをお持ちの方
         </button>
       </div>
       <dialog
@@ -67,9 +67,8 @@ export const PromoCodeForm = ({ code, error, applied, basePath }: Props) => {
       >
         <form method="get" className="space-y-4">
           <h2 id={titleId} className="text-heading">
-            プロモコード
+            プロモーションコード
           </h2>
-          <p className="text-muted text-sm">コーチから聞いたコードを入れてください。</p>
           <input
             name="code"
             defaultValue={code ?? ''}
@@ -78,7 +77,7 @@ export const PromoCodeForm = ({ code, error, applied, basePath }: Props) => {
             autoCapitalize="characters"
             autoComplete="off"
             placeholder="例：ABCD2345"
-            aria-label="プロモコード"
+            aria-label="プロモーションコード"
             className={`${inputClass} font-mono uppercase`}
           />
           {error && (

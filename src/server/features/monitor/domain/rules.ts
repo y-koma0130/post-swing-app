@@ -1,6 +1,6 @@
 import type { PurchaseStatus } from '@/server/features/purchase/domain/values/Purchase'
 
-/** モニター募集（プロモコード）のルール（あとで見直せるように、ここに置く） */
+/** モニター募集（プロモーションコード）のルール（あとで見直せるように、ここに置く） */
 export const MONITOR_RULES = {
   /** コードの長さ */
   codeLength: 8,

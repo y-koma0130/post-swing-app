@@ -34,7 +34,7 @@ export const purchaseSchema = z.object({
   stripeSubscriptionId: z.string().nullable(),
   /** カードを仮押さえした支払い。開発用の申し込みでは null */
   stripePaymentIntentId: z.string().nullable(),
-  /** モニターのプロモコードで申し込んだとき、そのコード */
+  /** モニターのプロモーションコードで申し込んだとき、そのコード */
   monitorCodeId: z.string().nullable(),
 })
 
