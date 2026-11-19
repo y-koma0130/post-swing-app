@@ -1,4 +1,5 @@
 import type { Annotation } from '@/server/features/thread/domain/values/Annotation'
+import { compareLayout, type Rect } from '../utils/compareLayout'
 import {
   angleDegrees,
   angleMarker,
@@ -110,10 +111,71 @@ export const renderAnnotatedFrame = async (
   for (const annotation of annotations) {
     drawAnnotation(ctx, annotation, width, height)
   }
-  return new Promise((resolve, reject) => {
+  return toPngBlob(canvas)
+}
+
+const toPngBlob = (canvas: HTMLCanvasElement): Promise<Blob> =>
+  new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob)
       else reject(new Error('画像を作れませんでした'))
     }, 'image/png')
   })
+
+/** 1本分（動画のコマと線）を rect の中に描く。線の位置は rect の中で 0〜1 */
+const drawPane = (
+  ctx: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  annotations: readonly Annotation[],
+  rect: Rect,
+  label: string
+) => {
+  ctx.save()
+  ctx.translate(rect.x, rect.y)
+  ctx.drawImage(video, 0, 0, rect.width, rect.height)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  for (const annotation of annotations) {
+    drawAnnotation(ctx, annotation, rect.width, rect.height)
+  }
+  // 左上に呼び方（「1回目・正面」など）
+  const fontSize = Math.max(Math.round(rect.width * 0.04), 14)
+  ctx.font = `bold ${fontSize}px sans-serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  const padding = fontSize * 0.5
+  const labelWidth = ctx.measureText(label).width + padding * 2
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+  ctx.beginPath()
+  ctx.roundRect(padding, padding, labelWidth, fontSize * 1.6, fontSize * 0.8)
+  ctx.fill()
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillText(label, padding * 2, padding + fontSize * 0.8)
+  ctx.restore()
+}
+
+/**
+ * 2本の動画のいまのコマに、それぞれの線を重ねて、1枚の PNG に並べる（比較の添削カード）
+ * 並べ方は compareLayout（縦長どうしは左右、横長があれば上下）
+ */
+export const renderComparedFrame = async (
+  left: { video: HTMLVideoElement; annotations: readonly Annotation[]; label: string },
+  right: { video: HTMLVideoElement; annotations: readonly Annotation[]; label: string }
+): Promise<Blob> => {
+  const layout = compareLayout(
+    { width: left.video.videoWidth, height: left.video.videoHeight },
+    { width: right.video.videoWidth, height: right.video.videoHeight }
+  )
+  const canvas = document.createElement('canvas')
+  canvas.width = layout.width
+  canvas.height = layout.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('画像を作れませんでした')
+  }
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(0, 0, layout.width, layout.height)
+  drawPane(ctx, left.video, left.annotations, layout.left, left.label)
+  drawPane(ctx, right.video, right.annotations, layout.right, right.label)
+  return toPngBlob(canvas)
 }
