@@ -13,6 +13,12 @@ export const MAX_FEED_SLIDES = 10
 /** 添削の画像として選べる枚数（表紙・まとめ・最後を除いた残り） */
 export const MAX_CARD_SLIDES = MAX_FEED_SLIDES - 3
 
+/**
+ * シェア画像を作る機能を画面に出すか。どんな形で出すかを練り直すあいだは止めておく
+ * （止めているあいだは、添削画面のリンクを出さず、作成画面も開けない）
+ */
+export const SHARE_IMAGE_ENABLED = false
+
 export const DEFAULT_HEADLINE = 'スイング添削してみました'
 
 /** 画像に出す色（アプリの色の名前と同じ値） */

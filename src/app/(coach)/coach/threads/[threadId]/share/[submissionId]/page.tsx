@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ShareImageBuilder } from '@/app/features/share-image/components/ShareImageBuilder'
-import { studentLabel } from '@/app/features/share-image/utils/shareLayout'
+import { SHARE_IMAGE_ENABLED, studentLabel } from '@/app/features/share-image/utils/shareLayout'
 import {
   cardTitle,
   cardVideoLabelOf,
@@ -25,6 +25,7 @@ type Props = {
  * 生徒が公開を許可しているときだけ作れる。画像の処理はブラウザの中だけで行う
  */
 const SharePage = async ({ params }: Props) => {
+  if (!SHARE_IMAGE_ENABLED) notFound()
   const { threadId, submissionId } = await params
   if (!(await getActor())) redirect('/coach/login')
   const [thread, current] = await Promise.all([getCoachThread(threadId), getCurrentCoach()])

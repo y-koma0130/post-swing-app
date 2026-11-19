@@ -9,6 +9,7 @@ import { Drawer } from '@/app/components/ui/Drawer'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
+import { SHARE_IMAGE_ENABLED } from '@/app/features/share-image/utils/shareLayout'
 import { GolfProfileSummary } from '@/app/features/thread/components/GolfProfileSummary'
 import { RetakeRequestPanel } from '@/app/features/thread/components/RetakeRequestPanel'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
@@ -185,20 +186,22 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                   />
                 )}
               />
-              <div className="flex justify-end">
-                {thread.shareConsent?.allowPublish ? (
-                  <Link
-                    href={`/coach/threads/${thread.id}/share/${submission.id}`}
-                    className={textButtonClass()}
-                  >
-                    シェア画像を作る
-                  </Link>
-                ) : (
-                  <span className="text-caption text-muted">
-                    シェア画像：生徒が公開を許可していません
-                  </span>
-                )}
-              </div>
+              {SHARE_IMAGE_ENABLED && (
+                <div className="flex justify-end">
+                  {thread.shareConsent?.allowPublish ? (
+                    <Link
+                      href={`/coach/threads/${thread.id}/share/${submission.id}`}
+                      className={textButtonClass()}
+                    >
+                      シェア画像を作る
+                    </Link>
+                  ) : (
+                    <span className="text-caption text-muted">
+                      シェア画像：生徒が公開を許可していません
+                    </span>
+                  )}
+                </div>
+              )}
             </Card>
           )
         }
