@@ -118,6 +118,7 @@ describe('runThreadMaintenance', () => {
         deletedDrafts: 0,
         expiredApplications: 0,
         deletedDraftThreads: 0,
+        failed: [],
       },
     })
   })
@@ -284,6 +285,39 @@ describe('runThreadMaintenance', () => {
     ])
     expect(notifyApplicationExpired.mock.calls).toEqual([[{ threadId: 'a1', studentUserId: 's1' }]])
     expect(result.ok && result.value.expiredApplications).toBe(1)
+  })
+
+  it('1つの処理が失敗しても、ほかの処理は続ける（失敗したものは結果に残し、翌日にもう一度）', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { deps, saveDecline, closeThreads } = setup({
+      findExpiredOpenThreads: async () => [thread('done', [true])],
+      findExpiredApplications: async () => [
+        { threadId: 'a1', studentUserId: 's1', purchaseId: 'p1' },
+      ],
+    })
+    closeThreads.mockRejectedValue(new Error('D1 が一時的に使えない'))
+    const result = await runThreadMaintenance({ now }, deps)
+    expect(saveDecline).toHaveBeenCalledTimes(1)
+    expect(result.ok && result.value.failed).toEqual(['close_expired'])
+    expect(result.ok && result.value.expiredApplications).toBe(1)
+    error.mockRestore()
+  })
+
+  it('R2 から消せなかった動画だけを残し、ほかの動画は消したと記録する', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { deps, deleteMediaObject, markVideosDeleted, findVideosToDelete } = setup()
+    findVideosToDelete.mockResolvedValue([
+      { id: 'v1', r2Key: 'videos/t/v1' },
+      { id: 'v2', r2Key: 'videos/t/v2' },
+    ])
+    deleteMediaObject.mockImplementation(async (key) => {
+      if (key === 'videos/t/v1') throw new Error('R2 の一時的な失敗')
+    })
+    const result = await runThreadMaintenance({ now }, deps)
+    expect(markVideosDeleted).toHaveBeenCalledWith(['v2'], now)
+    expect(result.ok && result.value.deletedVideos).toBe(1)
+    expect(result.ok && result.value.failed).toEqual([])
+    error.mockRestore()
   })
 
   it('カードを登録しないまま24時間たった下書きは、動画ごと消す', async () => {

@@ -1,12 +1,12 @@
 import { Fragment, type ReactNode } from 'react'
-import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
-import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
+import { DrillDetails } from '@/app/components/DrillDetails'
+import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
+import { QuoteButton } from '@/app/components/quote/QuoteContext'
+import { QuotePreview } from '@/app/components/quote/QuotePreview'
 import { formatDateTime } from '@/app/utils/format'
+import { quoteAnchorId } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import { buildTimeline, firstNewItemKey, type TimelineItem } from '../utils/buildTimeline'
-import { quoteAnchorId } from '../utils/threadText'
-import { DrillDetails } from './DrillDetails'
-import { QuotePreview } from './QuotePreview'
 import { TIMELINE_END_ID, TIMELINE_NEW_ID } from './ScrollToLatest'
 
 type Submission = ThreadDetailDto['submissions'][number]

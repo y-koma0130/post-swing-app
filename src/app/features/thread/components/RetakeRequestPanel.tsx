@@ -5,10 +5,10 @@ import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
 import { formatDateTime } from '@/app/utils/format'
+import { RETAKE_REASON_LABEL, RETAKE_REASONS } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import { requestRetakeAction } from '@/server/features/thread/presentation/retakeActions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { RETAKE_REASON_LABEL, RETAKE_REASONS } from '../utils/threadText'
 
 type Request = ThreadDetailDto['retake']['requests'][number]
 

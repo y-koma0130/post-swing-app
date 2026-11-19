@@ -121,7 +121,12 @@ describe('capturePurchase', () => {
       priceYen: 3980,
     })
     expect((await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).ok).toBe(true)
-    expect(capturePaymentIntent).toHaveBeenCalled()
+    // 価格の10%（398円）＋システム利用料200円
+    expect(capturePaymentIntent).toHaveBeenCalledWith({
+      paymentIntentId: 'pi_1',
+      applicationFeeYen: 598,
+      idempotencyKey: 'capture-purchase-1-598',
+    })
     expect(startSubscription).toHaveBeenCalledWith({
       purchaseId: 'purchase-1',
       paymentIntentId: 'pi_1',
@@ -167,15 +172,40 @@ describe('capturePurchase', () => {
     expect(savePayment).not.toHaveBeenCalled()
   })
 
-  it('Stripe を通っていない申し込みは、開発中だけ確定できる', async () => {
+  it('申し込みがなければ not_found。請求も記録もしない', async () => {
+    const { deps, capturePaymentIntent, savePayment, markPurchaseCaptured } = captureDeps(null)
+    expect(await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(capturePaymentIntent).not.toHaveBeenCalled()
+    expect(savePayment).not.toHaveBeenCalled()
+    expect(markPurchaseCaptured).not.toHaveBeenCalled()
+  })
+
+  it('Stripe を通っていない申し込みは、本番では確定せず、記録もしない', async () => {
     const devPurchase = { ...authorized, stripePaymentIntentId: null }
-    expect(
-      (await capturePurchase({ purchaseId: 'p', now }, captureDeps(devPurchase).deps)).ok
-    ).toBe(false)
-    expect(
-      (await capturePurchase({ purchaseId: 'p', now }, captureDeps(devPurchase, true, true).deps))
-        .ok
-    ).toBe(true)
+    const { deps, savePayment, markPurchaseCaptured, startGrantsOnApproval } =
+      captureDeps(devPurchase)
+    expect(await capturePurchase({ purchaseId: 'p', now }, deps)).toEqual({
+      ok: false,
+      error: 'capture_failed',
+    })
+    expect(savePayment).not.toHaveBeenCalled()
+    expect(markPurchaseCaptured).not.toHaveBeenCalled()
+    expect(startGrantsOnApproval).not.toHaveBeenCalled()
+  })
+
+  it('Stripe を通っていない申し込みは、開発中だけ確定できる（Stripe は呼ばない）', async () => {
+    const devPurchase = { ...authorized, stripePaymentIntentId: null }
+    const { deps, capturePaymentIntent, markPurchaseCaptured } = captureDeps(
+      devPurchase,
+      true,
+      true
+    )
+    expect((await capturePurchase({ purchaseId: 'p', now }, deps)).ok).toBe(true)
+    expect(capturePaymentIntent).not.toHaveBeenCalled()
+    expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', { stripeSubscriptionId: null })
   })
 })
 

@@ -17,6 +17,7 @@ import {
 } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import type { ErrorOf } from '@/server/utils/result'
 import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
 import { refundThread } from '../application/usecases/refundThread.usecase'
@@ -189,7 +190,7 @@ const REFUND_ERROR_MESSAGE = {
   already_refunded: 'すでに返金しています',
   not_paid: '支払いが済んでいない申し込みです',
   no_stripe_payment: 'Stripe を通っていない支払いなので、返金できません',
-} as const
+} as const satisfies Record<ErrorOf<typeof refundThread>, string>
 
 /** 管理者がスレッドの支払いを返金し、スレッドを終了する */
 export const refundThreadAction = async (

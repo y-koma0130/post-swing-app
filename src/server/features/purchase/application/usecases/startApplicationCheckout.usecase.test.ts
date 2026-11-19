@@ -79,26 +79,59 @@ describe('startApplicationCheckout', () => {
     expect(attachCheckoutSession).toHaveBeenCalledWith('purchase-1', 'cs_1')
   })
 
-  it('本人の下書きだけ。悩みと動画を送ってから', async () => {
-    const { deps, createCheckoutSession } = setup()
+  it('本人の下書きでなければ not_found で、支払い画面を作らない', async () => {
+    const { deps, createCheckoutSession, attachCheckoutSession } = setup()
     expect(
       await startApplicationCheckout(
         { actor: { userId: 'other', name: '' }, threadId: 'thread-1', now },
         deps
       )
     ).toEqual({ ok: false, error: 'not_found' })
-    expect(
-      await startApplicationCheckout(
-        { actor, threadId: 'thread-1', now },
-        setup({ findApplicationThread: async () => ({ ...draft, submissionCount: 0 }) }).deps
-      )
-    ).toEqual({ ok: false, error: 'no_submission' })
-    expect(
-      await startApplicationCheckout(
-        { actor, threadId: 'thread-1', now },
-        setup({ findApplicationThread: async () => ({ ...draft, status: 'requested' }) }).deps
-      )
-    ).toEqual({ ok: false, error: 'not_draft' })
+    expect(createCheckoutSession).not.toHaveBeenCalled()
+    expect(attachCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('悩みと動画を送っていなければ、支払い画面を作らない', async () => {
+    const { deps, createCheckoutSession } = setup({
+      findApplicationThread: async () => ({ ...draft, submissionCount: 0 }),
+    })
+    expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'no_submission',
+    })
+    expect(createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('下書きでなければ（申し込み済み）、支払い画面を作らない', async () => {
+    const { deps, createCheckoutSession } = setup({
+      findApplicationThread: async () => ({ ...draft, status: 'requested' }),
+    })
+    expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_draft',
+    })
+    expect(createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('仮押さえ済みの申し込みは、もう一度支払い画面を作らない', async () => {
+    const { deps, createCheckoutSession } = setup({
+      findPurchase: async () => ({ ...purchase, status: 'authorized' }),
+    })
+    expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('コーチが見つからなければ not_found で、支払い画面を作らない', async () => {
+    const { deps, createCheckoutSession } = setup({
+      findCoachForCheckoutByUserId: async () => null,
+    })
+    expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
     expect(createCheckoutSession).not.toHaveBeenCalled()
   })
 

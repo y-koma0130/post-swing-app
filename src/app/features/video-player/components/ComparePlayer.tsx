@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  type CSSProperties,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -10,10 +9,11 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/app/components/ui/Button'
-import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
-import { useVideoPlayer, type VideoSize } from '../hooks/useVideoPlayer'
-import { formatTimecode, PLAYBACK_RATES, type PlaybackRate, stepFrameTime } from '../utils/frame'
-import { linkedTime, needsResync, offsetOf } from '../utils/linkedPlayback'
+import { usePlayerShortcuts } from '../hooks/usePlayerShortcuts'
+import { useVideoPlayer } from '../hooks/useVideoPlayer'
+import { formatTimecode, frameStyle, type PlaybackRate, stepFrameTime } from '../utils/frame'
+import { formatOffset, linkedTime, needsResync, offsetOf } from '../utils/linkedPlayback'
+import { PlaybackRateGroup } from './PlaybackRateGroup'
 import type { RenderOverlay } from './VideoPlayer'
 
 export type ComparePane = {
@@ -33,28 +33,8 @@ type Props = {
   onActivatePane: (pane: 'left' | 'right') => void
 }
 
-/** 文字入力中やボタン上のキー操作は、プレイヤーのショートカットにしない */
-const isTypingTarget = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-
-const FALLBACK_SIZE: VideoSize = { width: 9, height: 16 }
-
-/** 動画の箱の大きさ（縦横比は動画に合わせる。高さは画面に収める） */
-const frameStyle = (size: VideoSize | null): CSSProperties => {
-  const { width, height } = size ?? FALLBACK_SIZE
-  // 並べたとき（タブレット・PC）は高め、縦に積むとき（スマホ）は2本が画面に収まる高さ
-  return {
-    width: `min(100%, calc(var(--compare-max-h) * ${width / height}))`,
-    aspectRatio: `${width} / ${height}`,
-  }
-}
-
-const formatOffset = (offsetSec: number): string => {
-  const rounded = Math.round(offsetSec * 100) / 100
-  if (rounded === 0) return 'ずれ 0秒'
-  return `右が ${Math.abs(rounded).toFixed(2)}秒 ${rounded > 0 ? '先' : '後'}`
-}
+/** 並べたとき（タブレット・PC）は高め、縦に積むとき（スマホ）は2本が画面に収まる高さ（CSS 変数で切り替える） */
+const COMPARE_MAX_HEIGHT = 'var(--compare-max-h)'
 
 /**
  * 2本の動画を並べて、タイミングを合わせて再生・コマ送りする（比較）
@@ -122,7 +102,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
       l.seek(nextLeft)
       r.seek(linkedTime(nextLeft, keep, rv.duration))
     },
-    [l, r, pauseBoth]
+    [l.videoRef, r.videoRef, l.seek, r.seek, pauseBoth]
   )
 
   const stepBoth = useCallback(
@@ -176,20 +156,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
     return () => cancelAnimationFrame(handle)
   }, [playing, l.videoRef, r.videoRef])
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (disabled || isTypingTarget(event.target)) return
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-        event.preventDefault()
-        stepBoth(event.key === 'ArrowLeft' ? -1 : 1)
-      } else if (event.key === ' ' && !(event.target instanceof HTMLButtonElement)) {
-        event.preventDefault()
-        toggleBoth()
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [disabled, stepBoth, toggleBoth])
+  usePlayerShortcuts({ disabled, onStep: stepBoth, onToggle: toggleBoth })
 
   const pane = (
     side: 'left' | 'right',
@@ -208,7 +175,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
         onPointerDownCapture={(_event: ReactPointerEvent<HTMLDivElement>) => onActivatePane(side)}
       >
         <div className="relative flex justify-center bg-black">
-          <div className="relative" style={frameStyle(player.state.videoSize)}>
+          <div className="relative" style={frameStyle(player.state.videoSize, COMPARE_MAX_HEIGHT)}>
             <video
               ref={setElement}
               src={config.src}
@@ -325,21 +292,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
           >
             1コマ ▶︎
           </Button>
-          <fieldset className={`${segmentGroupClass} ml-2`}>
-            <legend className="sr-only">再生速度</legend>
-            {PLAYBACK_RATES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={rate === value}
-                disabled={disabled}
-                onClick={() => setRate(value)}
-                className={segmentClass(rate === value)}
-              >
-                {value}x
-              </button>
-            ))}
-          </fieldset>
+          <PlaybackRateGroup rate={rate} disabled={disabled} onChange={setRate} />
         </div>
       </div>
     </div>

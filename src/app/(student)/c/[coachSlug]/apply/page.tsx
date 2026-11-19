@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { CoachAvatar } from '@/app/components/CoachAvatar'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page } from '@/app/components/ui/Page'
 import { PlanCheckoutForm } from '@/app/features/apply/components/PlanCheckoutForm'
@@ -9,7 +10,6 @@ import {
   pausedMessage,
   signupAckLabel,
 } from '@/app/features/coach-availability/utils/availabilityText'
-import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { getApplyPage } from '@/server/features/purchase/presentation/queries'
 import { getTurnstileSiteKey } from '@/server/utils/turnstile'
 

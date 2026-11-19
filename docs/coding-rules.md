@@ -96,14 +96,14 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - domain・application からは `public.ts` も使わない（infrastructure と組み合わさっているため）。ほかの feature の処理が要るなら、ユースケースの `dependencies` で受け取り、presentation で `public.ts` の関数を渡す
 - 自分の feature の中は相対パスで import する（`@/server/features/...` の絶対パスは、ほかの feature を指すときだけ）
 - 読み取り専用の query-service は、画面のためにほかの feature の表を join してよい（書き込みはしない）
-- Biome の `noRestrictedImports` で検出する
+- Biome の `noRestrictedImports` と `scripts/check-boundaries.mjs`（`pnpm lint`）で検出する
 
 ## フロントエンド（`src/app/`）
 
 - `app/` 直下のルート（`page.tsx`・`layout.tsx`）はデータを取って部品に渡すだけにする
 - 機能ごとの部品は `app/features/<feature>/{components,hooks,utils}/`
 - 機能をまたぐものは `app/components/`・`app/hooks/`・`app/utils/`
-- `features/` 同士の import はしない。共有したくなったら上の共通ディレクトリへ移す
+- `features/` 同士の import はしない。共有したくなったら上の共通ディレクトリへ移す（`scripts/check-boundaries.mjs` が `pnpm lint` で検出する）
 - 複数の feature を組み合わせる、その画面だけの部品（例：動画プレイヤーに線引きを重ねる）は、ルートの `_components/` に置く。`_` で始まるフォルダは URL にならない
 - データは server の `presentation` から取る。型は `dto` と `domain/values` から `import type` する
 - ページ・レイアウトは Server Component のまま。動画・キャンバス・入力など、ブラウザが必要な部品だけ `'use client'` にする

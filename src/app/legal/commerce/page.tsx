@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import { COACH_LP_URL, CONTACT_EMAIL, OPERATOR_NAME } from '@/app/utils/externalLinks'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/utils/systemFeeText'
 
 export const metadata: Metadata = { title: '特定商取引法に基づく表記' }
 

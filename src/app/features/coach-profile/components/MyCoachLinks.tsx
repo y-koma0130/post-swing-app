@@ -1,5 +1,5 @@
+import { CoachAvatar } from '@/app/components/CoachAvatar'
 import { CardLink } from '@/app/components/ui/CardLink'
-import { CoachAvatar } from './CoachAvatar'
 
 type Props = {
   coaches: Array<{ name: string; slug: string; avatarUrl: string | null }>

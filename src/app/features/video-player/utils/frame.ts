@@ -115,3 +115,25 @@ export const formatTimecode: FormatTimecode = (timeSec) => {
 
 export type FormatFps = (frameDurationSec: number) => string
 export const formatFps: FormatFps = (frameDurationSec) => `${Math.round(1 / frameDurationSec)}fps`
+
+/** 動画の元の大きさ（px） */
+export type VideoSize = { width: number; height: number }
+
+/** 読み込むまでは、スマホの縦動画を仮定して場所を取っておく */
+const FALLBACK_SIZE: VideoSize = { width: 9, height: 16 }
+
+/**
+ * 動画の箱の大きさ。幅いっぱい、ただし高さが maxHeight（CSS の長さ）を超えない。縦横比は動画に合わせる
+ *
+ * video 要素の max-height だけに任せると、外側の箱が動画の元の幅のまま残り、重ねる層がずれる
+ */
+export const frameStyle = (
+  size: VideoSize | null,
+  maxHeight: string
+): Readonly<{ width: string; aspectRatio: string }> => {
+  const { width, height } = size ?? FALLBACK_SIZE
+  return {
+    width: `min(100%, calc(${maxHeight} * ${width / height}))`,
+    aspectRatio: `${width} / ${height}`,
+  }
+}

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { CoachAvatar } from '@/app/components/CoachAvatar'
+import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
+import { QuoteProvider } from '@/app/components/quote/QuoteContext'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
-import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
-import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import {
   absenceNoticeMessage,
   availabilityBanner,
@@ -14,7 +15,6 @@ import {
   replyTargetMessage,
   sendConfirmMessage,
 } from '@/app/features/coach-availability/utils/availabilityText'
-import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { CloseThreadButton } from '@/app/features/thread/components/CloseThreadButton'
@@ -22,19 +22,18 @@ import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
-import {
-  KEY_POSITION_LABEL,
-  ordinalLabel,
-  STUDENT_CHAT_BLOCKER_MESSAGE,
-  SUBMISSION_BLOCKER_SHORT,
-  submissionLabel,
-  submissionVideoLabel,
-  threadUsageText,
-} from '@/app/features/thread/utils/threadText'
 import { RetakeNotice } from '@/app/features/video-upload/components/RetakeNotice'
 import { ShootingGuide } from '@/app/features/video-upload/components/ShootingGuide'
 import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
 import { formatMonthDay } from '@/app/utils/format'
+import {
+  cardQuoteLabel,
+  cardVideoLabelOf,
+  STUDENT_CHAT_BLOCKER_MESSAGE,
+  SUBMISSION_BLOCKER_SHORT,
+  submissionLabel,
+  threadUsageText,
+} from '@/app/utils/threadText'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentThread } from '@/server/features/thread/presentation/queries'
 import { ApplicationStatus } from './_components/ApplicationStatus'
@@ -127,18 +126,13 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                 </h2>
                 <ReviewView
                   reply={submission.reply}
-                  videoLabel={(videoId) => {
-                    const video = submission.videos.find((v) => v.id === videoId)
-                    return video && submission.videos.length > 1
-                      ? submissionVideoLabel(video, submission.videos)
-                      : null
-                  }}
+                  videoLabel={cardVideoLabelOf(submission.videos)}
                   wrapCard={(card, content) => (
                     <LongPressQuote
                       target={{
                         kind: 'card',
                         targetId: card.id,
-                        label: `${ordinalLabel(index)}の添削・${KEY_POSITION_LABEL[card.position]}`,
+                        label: cardQuoteLabel(index, card.position),
                       }}
                     >
                       {content}

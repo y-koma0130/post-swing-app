@@ -21,11 +21,11 @@ const params = {
   now,
 }
 
-const setup = (requests = [openRetake()]) => {
+const setup = (requests = [openRetake()], thread = retakeThread()) => {
   const saveRetakeVideos = vi.fn<Deps['saveRetakeVideos']>(async () => undefined)
   const notifyRetakeSent = vi.fn<Deps['notifyRetakeSent']>(async () => undefined)
   const deps: Deps = {
-    findThread: async () => retakeThread(),
+    findThread: async () => thread,
     findRetakeRequests: async () => requests,
     findDraftVideos: async (ids) => ids.map((id) => draft(id)),
     saveRetakeVideos,
@@ -56,8 +56,21 @@ describe('submitRetake', () => {
   })
 
   it('お願いが終わっていれば送れない', async () => {
-    const { deps } = setup([openRetake({ closedAt: now, closeReason: 'replied' })])
+    const { deps, saveRetakeVideos } = setup([
+      openRetake({ closedAt: now, closeReason: 'replied' }),
+    ])
     expect(await submitRetake(params, deps)).toEqual({ ok: false, error: 'no_retake' })
+    expect(saveRetakeVideos).not.toHaveBeenCalled()
+  })
+
+  it('お願いが開いていても、レッスンが終わっていれば送れない', async () => {
+    const { deps, saveRetakeVideos, notifyRetakeSent } = setup(
+      [openRetake()],
+      retakeThread({ status: 'closed' })
+    )
+    expect(await submitRetake(params, deps)).toEqual({ ok: false, error: 'no_retake' })
+    expect(saveRetakeVideos).not.toHaveBeenCalled()
+    expect(notifyRetakeSent).not.toHaveBeenCalled()
   })
 
   it('動画のルールは提出と同じ（1〜2本、自分が上げた下書きだけ）', async () => {

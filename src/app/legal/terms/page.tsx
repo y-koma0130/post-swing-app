@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import {
   COACH_TERMS_URL,
   CONTACT_EMAIL,
   OPERATOR_NAME,
   PRIVACY_POLICY_URL,
 } from '@/app/utils/externalLinks'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/utils/systemFeeText'
 
 export const metadata: Metadata = { title: '利用規約' }
 

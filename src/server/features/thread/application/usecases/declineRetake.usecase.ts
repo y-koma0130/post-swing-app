@@ -1,6 +1,7 @@
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
-import { isOpenRetake, type RetakeRequest } from '../../domain/values/RetakeRequest'
+import { findRespondableRetake } from '../../domain/services/findRespondableRetake.service'
+import type { RetakeRequest } from '../../domain/values/RetakeRequest'
 import type { Thread } from '../../domain/values/Thread'
 
 type Dependencies = Readonly<{
@@ -26,8 +27,12 @@ export const declineRetake: DeclineRetake = async ({ actor, threadId, requestId,
   if (!thread || thread.studentUserId !== actor.userId) {
     return err('not_found')
   }
-  const request = (await deps.findRetakeRequests(thread.id)).find((r) => r.id === requestId)
-  if (!request || !isOpenRetake(request)) {
+  const request = findRespondableRetake({
+    threadStatus: thread.status,
+    requests: await deps.findRetakeRequests(thread.id),
+    requestId,
+  })
+  if (!request) {
     return err('no_retake')
   }
   await deps.closeRetakeRequest({ requestId: request.id, closedAt: now })

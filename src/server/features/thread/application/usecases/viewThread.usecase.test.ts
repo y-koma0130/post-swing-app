@@ -48,7 +48,7 @@ describe('viewThread', () => {
       { actor: { userId: 'student-1', name: '' }, threadId: 'thread-1', as: 'student' },
       deps
     )
-    expect(result.ok).toBe(true)
+    expect(result).toEqual({ ok: true, value: detail })
   })
 
   it('担当のコーチはコーチとして見られる', async () => {
@@ -56,7 +56,7 @@ describe('viewThread', () => {
       { actor: { userId: 'coach-1', name: '' }, threadId: 'thread-1', as: 'coach' },
       deps
     )
-    expect(result.ok).toBe(true)
+    expect(result).toEqual({ ok: true, value: detail })
   })
 
   it('申し込みの下書きは、担当のコーチにも存在しないと返す（本人の生徒は見られる）', async () => {
@@ -83,6 +83,22 @@ describe('viewThread', () => {
     const result = await viewThread(
       { actor: { userId: 'other', name: '' }, threadId: 'thread-1', as: 'student' },
       deps
+    )
+    expect(result).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('生徒がコーチの立場では見られない', async () => {
+    const result = await viewThread(
+      { actor: { userId: 'student-1', name: '' }, threadId: 'thread-1', as: 'coach' },
+      deps
+    )
+    expect(result).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('ないスレッドは not_found', async () => {
+    const result = await viewThread(
+      { actor: { userId: 'student-1', name: '' }, threadId: 'x', as: 'student' },
+      { findThreadDetail: async () => null }
     )
     expect(result).toEqual({ ok: false, error: 'not_found' })
   })

@@ -33,13 +33,14 @@ const setup = (
     grantId?: string | null
     chargedYen?: number | null
     recorded?: Payment | null
+    purchase?: Purchase | null
   } = {}
 ) => {
   const refundApplicationFee = vi.fn<Deps['refundApplicationFee']>(async () => undefined)
   const savePayment = vi.fn<Deps['savePayment']>(async () => undefined)
   const chargedYen = overrides.chargedYen === undefined ? 598 : overrides.chargedYen
   const deps: Deps = {
-    findPurchase: async () => monthly,
+    findPurchase: async () => (overrides.purchase === undefined ? monthly : overrides.purchase),
     findPayment: async () => overrides.recorded ?? null,
     resolveFeeAt: async () => ({ rate: overrides.rate ?? 0.1, grantId: overrides.grantId ?? null }),
     findInvoiceApplicationFee: async () =>
@@ -125,6 +126,16 @@ describe('settleInvoicePayment', () => {
     expect(await settleInvoicePayment(params, deps)).toEqual({
       ok: true,
       value: { feeAdjustedYen: 398 },
+    })
+    expect(refundApplicationFee).not.toHaveBeenCalled()
+    expect(savePayment).not.toHaveBeenCalled()
+  })
+
+  it('申し込みがなければ失敗し、返金も記録もしない（Stripe に再送してもらう）', async () => {
+    const { deps, refundApplicationFee, savePayment } = setup({ rate: 0, purchase: null })
+    expect(await settleInvoicePayment(params, deps)).toEqual({
+      ok: false,
+      error: 'purchase_not_found',
     })
     expect(refundApplicationFee).not.toHaveBeenCalled()
     expect(savePayment).not.toHaveBeenCalled()

@@ -17,6 +17,15 @@ const MORNING_CRON = '0 0 * * *'
 /**
  * Worker の入口。画面と API は vinext に任せ、キュー（通知）と定期処理（毎日）をここで足す
  */
+/** 毎日の処理を1つ動かす。失敗してもほかの処理を止めない */
+const runJob = async (label: string, run: () => Promise<void>) => {
+  try {
+    await run()
+  } catch (error) {
+    console.error(`[scheduled] ${label}の処理に失敗しました`, error)
+  }
+}
+
 export default {
   ...vinext,
   fetch: async (request, env, ctx) => {
@@ -35,10 +44,11 @@ export default {
       await runAbsenceEndedNotification(now)
       return
     }
-    // スレッドを終了してから、空いた枠をキャンセル待ちに知らせる
-    await runDailyThreadMaintenance(now)
-    await runDailyWaitlistNotification(now)
-    await runDailyFeeAdjustmentSummary(now)
-    await runDailyDrillVideoCleanup(now)
+    // レッスンを終了してから、空いた枠をキャンセル待ちに知らせる（順に動かす）。
+    // 1つが失敗しても、ほかは動かす（ログに残し、翌日にもう一度）
+    await runJob('レッスン', () => runDailyThreadMaintenance(now))
+    await runJob('キャンセル待ち', () => runDailyWaitlistNotification(now))
+    await runJob('手数料の差額', () => runDailyFeeAdjustmentSummary(now))
+    await runJob('ドリルの動画', () => runDailyDrillVideoCleanup(now))
   },
 } satisfies ExportedHandler<Env>

@@ -19,11 +19,9 @@ describe('authorizeVideo', () => {
   })
 
   it('担当のコーチは見られる', async () => {
-    const result = await authorizeVideo(
-      { actor: { userId: 'coach-1', name: '' }, videoId: 'v1' },
-      deps()
-    )
-    expect(result.ok).toBe(true)
+    expect(
+      await authorizeVideo({ actor: { userId: 'coach-1', name: '' }, videoId: 'v1' }, deps())
+    ).toEqual({ ok: true, value: { r2Key: 'videos/t1/v1', contentType: 'video/mp4' } })
   })
 
   it('ほかの人には、ないものとして返す', async () => {

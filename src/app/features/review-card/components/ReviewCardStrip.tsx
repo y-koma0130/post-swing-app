@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { KEY_POSITION_LABEL, quoteAnchorId } from '@/app/features/thread/utils/threadText'
+import { cardTitle, quoteAnchorId, type VideoLabelOf } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 
 type Reply = NonNullable<ThreadDetailDto['submissions'][number]['reply']>
@@ -8,7 +8,7 @@ type Card = Reply['cards'][number]
 type Props = {
   reply: Reply
   /** カードを作った動画の呼び方（「正面」など）。動画が1本なら null */
-  videoLabel?: ((videoId: string) => string | null) | undefined
+  videoLabel?: VideoLabelOf | undefined
   /** 画像を押したとき（大きく見る） */
   onOpen: () => void
   /** カードごとの操作（「引用する」など） */
@@ -20,8 +20,7 @@ type Props = {
  */
 export const ReviewCardStrip = ({ reply, videoLabel, onOpen, renderAction }: Props) => {
   const { cards } = reply
-  const title = (card: Card, index: number) =>
-    `${index + 1}. ${videoLabel?.(card.videoId) ? `${videoLabel(card.videoId)}・` : ''}${KEY_POSITION_LABEL[card.position]}`
+  const title = (card: Card, index: number) => cardTitle(card, index, videoLabel)
   return (
     <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
       <ol className="flex flex-wrap content-start gap-2 sm:max-w-80">

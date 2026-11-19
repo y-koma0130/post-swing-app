@@ -34,7 +34,7 @@ const thread: Thread = {
 }
 const coach = { userId: 'coach-1', name: '山田' }
 
-const setupApprove = (t: Thread = thread, captured = true) => {
+const setupApprove = (t: Thread = thread, captured = true, hasPayment = true) => {
   const capturePayment = vi.fn<ApproveDeps['capturePayment']>(async () =>
     captured ? ok(null) : err('capture_failed')
   )
@@ -42,7 +42,7 @@ const setupApprove = (t: Thread = thread, captured = true) => {
   const notifyApproved = vi.fn<ApproveDeps['notifyApproved']>(async () => undefined)
   const deps: ApproveDeps = {
     findThread: async () => t,
-    findThreadPayment: async () => ({ purchaseId: 'purchase-1' }),
+    findThreadPayment: async () => (hasPayment ? { purchaseId: 'purchase-1' } : null),
     capturePayment,
     saveApproval,
     notifyApproved,
@@ -50,7 +50,7 @@ const setupApprove = (t: Thread = thread, captured = true) => {
   return { deps, capturePayment, saveApproval, notifyApproved }
 }
 
-const setupDecline = (t: Thread = thread, voided = true) => {
+const setupDecline = (t: Thread = thread, voided = true, hasPayment = true) => {
   const voidPayment = vi.fn<DeclineDeps['voidPayment']>(async () =>
     voided ? ok(null) : err('void_failed')
   )
@@ -58,7 +58,7 @@ const setupDecline = (t: Thread = thread, voided = true) => {
   const notifyDeclined = vi.fn<DeclineDeps['notifyDeclined']>(async () => undefined)
   const deps: DeclineDeps = {
     findThread: async () => t,
-    findThreadPayment: async () => ({ purchaseId: 'purchase-1' }),
+    findThreadPayment: async () => (hasPayment ? { purchaseId: 'purchase-1' } : null),
     voidPayment,
     saveDecline,
     notifyDeclined,
@@ -105,6 +105,30 @@ describe('approveApplication', () => {
     expect(capturePayment).not.toHaveBeenCalled()
   })
 
+  it('承認待ちでない申し込みは受けられず、請求もしない', async () => {
+    const { deps, capturePayment, saveApproval } = setupApprove({
+      ...thread,
+      status: 'waiting_coach',
+    })
+    expect(await approveApplication({ actor: coach, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_requested',
+    })
+    expect(capturePayment).not.toHaveBeenCalled()
+    expect(saveApproval).not.toHaveBeenCalled()
+  })
+
+  it('支払いの記録がなければ受けられず、請求もしない', async () => {
+    const { deps, capturePayment, saveApproval, notifyApproved } = setupApprove(thread, true, false)
+    expect(await approveApplication({ actor: coach, threadId: 'thread-1', now }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(capturePayment).not.toHaveBeenCalled()
+    expect(saveApproval).not.toHaveBeenCalled()
+    expect(notifyApproved).not.toHaveBeenCalled()
+  })
+
   it('支払いを確定できなければ、承認待ちのまま', async () => {
     const { deps, saveApproval, notifyApproved } = setupApprove(thread, false)
     expect(await approveApplication({ actor: coach, threadId: 'thread-1', now }, deps)).toEqual({
@@ -140,15 +164,42 @@ describe('declineApplication', () => {
     })
   })
 
-  it('担当でないコーチ・承認待ちでない申し込みは断れない', async () => {
-    const { deps, voidPayment } = setupDecline()
+  it('担当でないコーチは断れず、仮押さえも外さない', async () => {
+    const { deps, voidPayment, saveDecline } = setupDecline()
     expect(
       await declineApplication({ ...params, actor: { userId: 'other', name: '' } }, deps)
     ).toEqual({ ok: false, error: 'not_found' })
-    expect(
-      await declineApplication(params, setupDecline({ ...thread, status: 'waiting_coach' }).deps)
-    ).toEqual({ ok: false, error: 'not_requested' })
     expect(voidPayment).not.toHaveBeenCalled()
+    expect(saveDecline).not.toHaveBeenCalled()
+  })
+
+  it('承認待ちでない申し込みは断れず、仮押さえも外さない', async () => {
+    const { deps, voidPayment, saveDecline } = setupDecline({ ...thread, status: 'waiting_coach' })
+    expect(await declineApplication(params, deps)).toEqual({ ok: false, error: 'not_requested' })
+    expect(voidPayment).not.toHaveBeenCalled()
+    expect(saveDecline).not.toHaveBeenCalled()
+  })
+
+  it('支払いの記録がなければ断れず、仮押さえにも触らない', async () => {
+    const { deps, voidPayment, saveDecline, notifyDeclined } = setupDecline(thread, true, false)
+    expect(await declineApplication(params, deps)).toEqual({ ok: false, error: 'not_found' })
+    expect(voidPayment).not.toHaveBeenCalled()
+    expect(saveDecline).not.toHaveBeenCalled()
+    expect(notifyDeclined).not.toHaveBeenCalled()
+  })
+
+  it('期限（48時間）を過ぎていても、断ることはでき、仮押さえを外す', async () => {
+    const { deps, voidPayment, saveDecline } = setupDecline()
+    const late = new Date('2026-11-23T00:00:00Z')
+    expect(await declineApplication({ ...params, now: late }, deps)).toEqual({
+      ok: true,
+      value: { threadId: 'thread-1' },
+    })
+    expect(voidPayment).toHaveBeenCalledWith('purchase-1')
+    expect(saveDecline).toHaveBeenCalledWith(
+      'thread-1',
+      expect.objectContaining({ decidedAt: late })
+    )
   })
 
   it('ひとことは200文字まで', async () => {

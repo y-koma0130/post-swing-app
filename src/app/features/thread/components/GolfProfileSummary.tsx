@@ -1,5 +1,5 @@
+import { ROUND_FREQUENCY_LABEL } from '@/app/utils/threadText'
 import type { GolfProfile } from '@/server/features/thread/domain/values/GolfProfile'
-import { ROUND_FREQUENCY_LABEL } from '../utils/threadText'
 
 type Props = {
   golfProfile: GolfProfile

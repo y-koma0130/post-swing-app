@@ -92,4 +92,16 @@ describe('inviteCoach', () => {
     expect(await inviteCoach(params, d)).toEqual({ ok: false, error: 'slug_taken' })
     expect(notifyCoachInvited).not.toHaveBeenCalled()
   })
+
+  it('ランダムなスラッグがどれも使われていたら slug_unavailable。保存も案内もしない', async () => {
+    const isSlugTaken = vi.fn<Deps['isSlugTaken']>(async () => true)
+    const { deps: d, saveInvitedCoach, notifyCoachInvited } = deps({ isSlugTaken })
+    expect(await inviteCoach({ ...params, slug: null }, d)).toEqual({
+      ok: false,
+      error: 'slug_unavailable',
+    })
+    expect(isSlugTaken).toHaveBeenCalledTimes(5)
+    expect(saveInvitedCoach).not.toHaveBeenCalled()
+    expect(notifyCoachInvited).not.toHaveBeenCalled()
+  })
 })

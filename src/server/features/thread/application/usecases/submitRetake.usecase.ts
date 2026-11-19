@@ -4,7 +4,8 @@ import {
   acceptDraftVideos,
   type DraftVideosBlocker,
 } from '../../domain/services/checkSubmissionContents.service'
-import { isOpenRetake, type RetakeRequest } from '../../domain/values/RetakeRequest'
+import { findRespondableRetake } from '../../domain/services/findRespondableRetake.service'
+import type { RetakeRequest } from '../../domain/values/RetakeRequest'
 import type { DraftVideo } from '../../domain/values/Submission'
 import type { Thread } from '../../domain/values/Thread'
 
@@ -49,8 +50,12 @@ export const submitRetake: SubmitRetake = async (params, deps) => {
   if (!thread || thread.studentUserId !== params.actor.userId) {
     return err('not_found')
   }
-  const request = (await deps.findRetakeRequests(thread.id)).find((r) => r.id === params.requestId)
-  if (!request || !isOpenRetake(request) || thread.status !== 'waiting_coach') {
+  const request = findRespondableRetake({
+    threadStatus: thread.status,
+    requests: await deps.findRetakeRequests(thread.id),
+    requestId: params.requestId,
+  })
+  if (!request) {
     return err('no_retake')
   }
   const videos = acceptDraftVideos({
