@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, startTransition, useActionState, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Badge, type BadgeTone } from '@/app/components/ui/Badge'
 import { Button, textButtonClass } from '@/app/components/ui/Button'
@@ -9,12 +9,12 @@ import { CopyButton } from '@/app/components/ui/CopyButton'
 import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { useActionForm } from '@/app/hooks/useActionForm'
 import { formatYen } from '@/app/utils/format'
 import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import type { MonitorCodeDto } from '@/server/features/monitor/application/dto/MonitorCode.dto'
 import { MONITOR_RULES } from '@/server/features/monitor/domain/rules'
 import { saveMonitorCodeAction } from '@/server/features/monitor/presentation/actions'
-import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import {
   MONITOR_CODE_STATE_LABEL,
   type MonitorCodeState,
@@ -158,7 +158,7 @@ const MonitorCodeForm = ({
   code: MonitorCodeDto | null
   singlePriceYen: number
 }) => {
-  const [state, action, pending] = useActionState(saveMonitorCodeAction, IDLE_ACTION_STATE)
+  const { state, pending, onSubmit } = useActionForm(saveMonitorCodeAction)
   const formRef = useRef<HTMLFormElement>(null)
   const regenerateRef = useRef<HTMLButtonElement>(null)
   const [confirmingRegenerate, setConfirmingRegenerate] = useState(false)
@@ -168,16 +168,7 @@ const MonitorCodeForm = ({
     if (code === null && state.status === 'success') formRef.current?.reset()
   }, [code, state])
 
-  // form の action に渡すと、エラーでも React が入力を最初の値に戻すので、自分で送る
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const submitter = event.nativeEvent instanceof SubmitEvent ? event.nativeEvent.submitter : null
-    const formData = new FormData(event.currentTarget, submitter)
-    startTransition(() => action(formData))
-  }
-
   return (
-    // ブラウザの吹き出しではなく、サーバーの確認の結果を FormMessage で出す（docs/ui-rules.md）
     <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3">
       {code && <input type="hidden" name="codeId" value={code.id} />}
       {code?.active && <input type="hidden" name="active" value="on" />}

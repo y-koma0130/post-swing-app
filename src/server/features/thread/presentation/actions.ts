@@ -24,10 +24,7 @@ import {
   type SendChatMessageError,
   sendChatMessage,
 } from '../application/usecases/sendChatMessage.usecase'
-import {
-  type SubmitSubmissionError,
-  submitSubmission,
-} from '../application/usecases/submitSubmission.usecase'
+import { submitSubmission } from '../application/usecases/submitSubmission.usecase'
 import type { ChatAttachmentRequest } from '../domain/services/checkChatAttachment.service'
 import type { QuoteRequest } from '../domain/services/checkQuoteTarget.service'
 import { quoteKindSchema } from '../domain/values/ChatMessage'
@@ -46,6 +43,7 @@ import {
   saveSubmission,
   saveThreadNotice,
 } from '../infrastructure/repositories/threadRepository'
+import { SUBMIT_ERROR_TEXT } from './submitErrorText'
 
 const CHAT_ERROR = {
   not_found: '送れませんでした',
@@ -120,24 +118,6 @@ export const sendChatMessageAction = async (
   return actionSuccess('送りました')
 }
 
-const SUBMIT_ERROR = {
-  not_found: '提出できませんでした',
-  closed: 'このレッスンは終了しています',
-  expired: 'このレッスンは期限が切れています',
-  awaiting_reply: 'コーチの添削が届いてから、次を提出できます',
-  submission_limit: 'このレッスンで提出できる回数に達しています',
-  no_videos: '動画を選んでください',
-  too_many_videos: '1回に送れる動画は2本までです',
-  invalid_video: '動画をもう一度選び直してください',
-  theme_required: '直したいところを書いてください',
-  note_too_long: 'メモは1000文字までです',
-  invalid_golf_profile: '平均スコアは50〜200の数字で入れてください',
-  age_required: '年代を選んでください',
-  not_adult: '18歳未満の方は、公開を許可できません（公開しない、を選んでください）',
-  monitor_locked:
-    'このコーチにはモニターで申し込んだため、公開をやめることはできません。やめたいときは、運営にメールでお問い合わせください',
-} as const satisfies Record<SubmitSubmissionError, string>
-
 /**
  * 提出を確定する（上げておいた動画1〜2本とテーマ・メモをまとめる）。
  * 動画は先に /api/threads/[threadId]/videos へ1本ずつ上げておく
@@ -186,7 +166,7 @@ export const submitSubmissionAction = async (
     }
   )
   if (!result.ok) {
-    return actionError(SUBMIT_ERROR[result.error])
+    return actionError(SUBMIT_ERROR_TEXT[result.error])
   }
   revalidatePath(`/t/${threadId}`)
   revalidatePath(`/coach/threads/${threadId}`)

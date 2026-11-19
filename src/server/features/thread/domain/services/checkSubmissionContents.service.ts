@@ -50,16 +50,45 @@ export type CheckSubmissionContents = (
 export const checkSubmissionContents: CheckSubmissionContents = (input) => {
   const accepted = acceptDraftVideos(input)
   if (!accepted.ok) return err(accepted.error)
-  const videos = accepted.value
+  const fields = checkSubmissionFields({
+    isFirst: input.thread.submissions.length === 0,
+    theme: input.theme,
+    note: input.note,
+    golfProfile: input.golfProfile,
+  })
+  if (!fields.ok) return err(fields.error)
+  return ok({ videos: accepted.value, ...fields.value })
+}
+
+export type SubmissionFieldsBlocker =
+  | 'theme_required'
+  | 'note_too_long'
+  | 'invalid_golf_profile'
+  | 'age_required'
+
+export type CheckSubmissionFields = (
+  input: Readonly<{
+    /** 最初の提出か（テーマ・年代などを聞くのは最初だけ） */
+    isFirst: boolean
+    theme: string
+    note: string
+    golfProfile: Readonly<{ ageRange: string; roundFrequency: string; averageScore: string }>
+  }>
+) => Result<Omit<AcceptedSubmission, 'videos'>, SubmissionFieldsBlocker>
+
+/**
+ * 提出の動画以外の入力（checkSubmissionContents のうち、テーマ・メモ・ゴルフの情報）。
+ * 生徒の画面でも、動画を上げる前に同じ確認をする
+ */
+export const checkSubmissionFields: CheckSubmissionFields = (input) => {
   const note = input.note.trim()
   if (note.length > THREAD_RULES.maxSubmissionNoteLength) return err('note_too_long')
-  const isFirst = input.thread.submissions.length === 0
-  const theme = isFirst ? threadThemeSchema.safeParse(input.theme) : null
+  const theme = input.isFirst ? threadThemeSchema.safeParse(input.theme) : null
   if (theme && !theme.success) return err('theme_required')
-  const golfProfile = isFirst ? parseGolfProfile(input.golfProfile) : null
-  if (isFirst && golfProfile === null) return err('invalid_golf_profile')
-  if (isFirst && golfProfile?.ageRange === null) return err('age_required')
-  return ok({ videos, note, theme: theme?.success ? theme.data : null, golfProfile })
+  const golfProfile = input.isFirst ? parseGolfProfile(input.golfProfile) : null
+  if (input.isFirst && golfProfile === null) return err('invalid_golf_profile')
+  if (input.isFirst && golfProfile?.ageRange === null) return err('age_required')
+  return ok({ note, theme: theme?.success ? theme.data : null, golfProfile })
 }
 
 export type DraftVideosBlocker = 'no_videos' | 'too_many_videos' | 'invalid_video'
