@@ -71,8 +71,10 @@ pnpm dev
 テストモードのキーを `.dev.vars` の `STRIPE_SECRET_KEY` に入れる。Webhook は Stripe CLI で手元に転送し、表示された `whsec_…` を `STRIPE_WEBHOOK_SECRET` に入れる。
 
 ```bash
-stripe listen --forward-to localhost:5173/api/webhooks/stripe --forward-connect-to localhost:5173/api/webhooks/stripe
+stripe listen --events checkout.session.completed,invoice.created,invoice.paid,customer.subscription.deleted,account.updated --forward-to localhost:5173/api/webhooks/stripe --forward-connect-to localhost:5173/api/webhooks/stripe
 ```
+
+`--events` は必須（受け取るイベントを渡さないと、Stripe CLI がエラーで止まる）。受け取るイベントは本番の Webhook と同じ。
 
 ### コマンド
 
