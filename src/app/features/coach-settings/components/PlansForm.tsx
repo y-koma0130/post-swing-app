@@ -73,7 +73,7 @@ export const PlansForm = ({ plans }: Props) => {
         価格を上げても、いま月額を続けている生徒は申し込んだ価格のままです（新しく申し込む人から新しい価格）。下げたときは、いまの生徒も次の請求から新しい価格になります。生徒には、このほかシステム利用料が別にかかります（コーチの売上には影響しません）。
       </p>
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" pending={pending}>
         プランを保存
       </Button>
     </form>

@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { useLeavingPage } from '@/app/hooks/useLeavingPage'
 import type { CoachSettingsDto } from '@/server/features/coach/application/dto/CoachSettings.dto'
 import {
   openPayoutDashboardAction,
@@ -24,14 +25,16 @@ export const PayoutSection = ({ settings }: Props) => {
 
 const PayoutDashboardForm = () => {
   const [state, action, pending] = useActionState(openPayoutDashboardAction, IDLE_ACTION_STATE)
+  const { leaving, markLeaving } = useLeavingPage(state)
+  const busy = pending || leaving
   return (
     <div className="space-y-3">
       <p className="text-body text-sm">
         口座の設定が済んでいます。受付ページから申し込みを受けられます。
       </p>
-      <form action={action} className="space-y-2">
-        <Button type="submit" variant="secondary" disabled={pending}>
-          売上・入金を確かめる（Stripe）
+      <form action={action} onSubmit={markLeaving} className="space-y-2">
+        <Button type="submit" variant="secondary" pending={busy}>
+          {busy ? 'Stripe に移動しています…' : '売上・入金を確かめる（Stripe）'}
         </Button>
         <FormMessage state={state} />
       </form>
@@ -41,6 +44,8 @@ const PayoutDashboardForm = () => {
 
 const PayoutOnboardingForm = ({ hasStripeAccount }: { hasStripeAccount: boolean }) => {
   const [state, action, pending] = useActionState(startPayoutOnboardingAction, IDLE_ACTION_STATE)
+  const { leaving, markLeaving } = useLeavingPage(state)
+  const busy = pending || leaving
   return (
     <div className="space-y-3">
       <p className="text-body text-sm">
@@ -48,9 +53,9 @@ const PayoutOnboardingForm = ({ hasStripeAccount }: { hasStripeAccount: boolean 
           ? '口座の設定が途中です。続きを入力すると、申し込みを受けられるようになります。'
           : '売上を受け取る口座を設定すると、受付ページから申し込みを受けられるようになります。決済と入金は Stripe が行います。'}
       </p>
-      <form action={action} className="space-y-2">
-        <Button type="submit" disabled={pending}>
-          {hasStripeAccount ? '設定の続きへ' : '口座を設定する'}
+      <form action={action} onSubmit={markLeaving} className="space-y-2">
+        <Button type="submit" pending={busy}>
+          {busy ? 'Stripe に移動しています…' : hasStripeAccount ? '設定の続きへ' : '口座を設定する'}
         </Button>
         <FormMessage state={state} />
       </form>

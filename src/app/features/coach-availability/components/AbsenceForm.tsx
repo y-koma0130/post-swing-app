@@ -84,7 +84,7 @@ export const AbsenceForm = ({ coachName, absence, today, noteMaxLength, onDone }
         </p>
       )}
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" pending={pending}>
         {absence ? '保存する' : '不在期間を追加'}
       </Button>
     </form>

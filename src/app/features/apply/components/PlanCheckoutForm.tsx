@@ -104,11 +104,12 @@ export const PlanCheckoutForm = ({
       <FormMessage state={state} />
       <Button
         type="submit"
-        disabled={pending || !firstAvailable || (needsAck && !acknowledged)}
+        pending={pending}
+        disabled={!firstAvailable || (needsAck && !acknowledged)}
         size="lg"
         className="w-full"
       >
-        {student ? '申し込みへ進む' : 'ログインして申し込む'}
+        {pending ? '準備しています…' : student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-caption text-muted">
         悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。

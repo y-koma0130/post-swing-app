@@ -86,8 +86,8 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
         onToken={setCaptchaToken}
       />
       {error && <p className="text-danger text-sm">{error}</p>}
-      <Button type="submit" disabled={pending || !captchaToken} size="lg" className="w-full">
-        ログインコードを送る
+      <Button type="submit" pending={pending} disabled={!captchaToken} size="lg" className="w-full">
+        {pending ? 'コードを送っています…' : 'ログインコードを送る'}
       </Button>
     </form>
   ) : (
@@ -106,8 +106,8 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
         />
       </label>
       {error && <p className="text-danger text-sm">{error}</p>}
-      <Button type="submit" disabled={pending} size="lg" className="w-full">
-        ログイン
+      <Button type="submit" pending={pending} size="lg" className="w-full">
+        {pending ? '確認しています…' : 'ログイン'}
       </Button>
       <button
         type="button"

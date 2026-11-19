@@ -82,7 +82,7 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
         />
       </label>
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" pending={pending}>
         プロフィールを保存
       </Button>
     </form>

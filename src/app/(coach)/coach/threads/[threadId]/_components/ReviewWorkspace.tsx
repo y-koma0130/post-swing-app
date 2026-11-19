@@ -328,13 +328,16 @@ export const ReviewWorkspace = ({
             )}
             <Button
               onClick={send}
-              disabled={sending || closed || cards.drafts.length === 0}
+              pending={sending}
+              disabled={closed || cards.drafts.length === 0}
               size="lg"
               className="w-full"
             >
-              {cards.drafts.length === 0
-                ? '画像を撮ってください'
-                : `${cards.drafts.length}枚の画像と説明を送る`}
+              {sending
+                ? '送っています…'
+                : cards.drafts.length === 0
+                  ? '画像を撮ってください'
+                  : `${cards.drafts.length}枚の画像と説明を送る`}
             </Button>
           </Card>
         )}

@@ -30,7 +30,7 @@ export const RefundThreadButton = ({ threadId, studentName, priceYen }: Props) =
       className="space-y-1"
     >
       <input type="hidden" name="threadId" value={threadId} />
-      <Button type="submit" variant="danger" size="sm" disabled={pending}>
+      <Button type="submit" variant="danger" size="sm" pending={pending}>
         返金する
       </Button>
       <FormMessage state={state} />

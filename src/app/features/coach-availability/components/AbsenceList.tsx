@@ -61,7 +61,7 @@ export const AbsenceList = ({ coachName, settings }: Props) => {
                   }}
                 >
                   <input type="hidden" name="absenceId" value={absence.id} />
-                  <Button type="submit" variant="danger" size="sm" disabled={deleting}>
+                  <Button type="submit" variant="danger" size="sm" pending={deleting}>
                     削除
                   </Button>
                 </form>

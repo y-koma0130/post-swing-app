@@ -25,7 +25,7 @@ export const CoachReviewReplyForm = ({ threadId }: Props) => {
         className={inputClass}
       />
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending} variant="secondary">
+      <Button type="submit" pending={pending} variant="secondary">
         返信する
       </Button>
     </form>
