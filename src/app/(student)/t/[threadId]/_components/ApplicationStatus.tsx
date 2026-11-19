@@ -44,7 +44,7 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
               className={`flex items-center gap-3 text-sm ${i === step ? 'text-ink font-bold' : 'text-muted'}`}
             >
               <span
-                className={`flex size-6 shrink-0 items-center justify-center rounded-full text-caption ${
+                className={`text-caption flex size-6 shrink-0 items-center justify-center rounded-full ${
                   i < step
                     ? 'bg-mint text-ink'
                     : i === step
