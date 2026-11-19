@@ -54,7 +54,7 @@ export const InviteCoachForm = ({ campaigns }: Props) => {
       )}
       <div className="space-y-2 sm:col-span-3">
         <FormMessage state={state} />
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" pending={pending}>
           招待する
         </Button>
       </div>

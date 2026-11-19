@@ -48,8 +48,8 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
       {!declineOpen && (
         <form action={approve} className="flex flex-wrap gap-2">
           <input type="hidden" name="threadId" value={threadId} />
-          <Button type="submit" disabled={pending}>
-            受ける
+          <Button type="submit" pending={approving} disabled={declining}>
+            {approving ? '受け付けています…' : '受ける'}
           </Button>
           <Button variant="secondary" onClick={() => setDeclineOpen(true)} disabled={pending}>
             お断りする
@@ -86,8 +86,8 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
           </label>
           <FormMessage state={declineState} />
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="danger" disabled={pending}>
-              お断りする（請求されません）
+            <Button type="submit" variant="danger" pending={declining} disabled={approving}>
+              {declining ? 'お断りしています…' : 'お断りする（請求されません）'}
             </Button>
             <Button variant="ghost" onClick={() => setDeclineOpen(false)} disabled={pending}>
               やめる

@@ -29,7 +29,7 @@ export const CoachSuspendButton = ({ coachUserId, coachName, suspended }: Props)
     >
       <input type="hidden" name="coachUserId" value={coachUserId} />
       <input type="hidden" name="suspended" value={suspended ? 'false' : 'true'} />
-      <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+      <Button type="submit" variant="secondary" size="sm" pending={pending}>
         {suspended ? '受付を再開' : '受付を止める'}
       </Button>
       <FormMessage state={state} />

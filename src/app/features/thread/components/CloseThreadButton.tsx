@@ -25,7 +25,7 @@ export const CloseThreadButton = ({ threadId, coachName }: Props) => {
         disabled={pending}
         className="text-caption text-muted hover:text-ink underline"
       >
-        このスレッドを終える
+        {pending ? '終えています…' : 'このスレッドを終える'}
       </button>
       <FormMessage state={state} />
       <ConfirmDialog

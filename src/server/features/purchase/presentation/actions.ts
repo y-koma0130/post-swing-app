@@ -169,14 +169,17 @@ export const joinWaitlistAction = async (
 }
 
 /** 月額の解約・カード変更をする Stripe の画面へ */
-export const openBillingPortalAction = async (formData: FormData): Promise<void> => {
+export const openBillingPortalAction = async (
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> => {
   const actor = await getActor()
   if (!actor) {
     redirect('/login?next=/me')
   }
   const customerId = await findPortalCustomer(formString(formData, 'purchaseId'), actor.userId)
   if (customerId === null) {
-    redirect('/me')
+    return actionError('このプランの解約・カードの変更はできません')
   }
   redirect(await createBillingPortalSession(customerId))
 }

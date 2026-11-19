@@ -39,7 +39,7 @@ export const CoachReviewForm = ({ threadId }: Props) => {
         className={inputClass}
       />
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending} size="lg" className="w-full">
+      <Button type="submit" pending={pending} size="lg" className="w-full">
         レビューを送る
       </Button>
     </form>

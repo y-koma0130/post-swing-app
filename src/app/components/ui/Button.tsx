@@ -29,24 +29,58 @@ export type ButtonSize = keyof typeof sizes
 export const buttonClass = ({
   variant = 'primary',
   size = 'md',
+  pending = false,
 }: {
   variant?: ButtonVariant | undefined
   size?: ButtonSize | undefined
+  /** 処理中。押せないが、「使えない」ように薄くはしない */
+  pending?: boolean | undefined
 } = {}): string =>
   [
     'inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-semibold transition',
     'focus-visible:ring-mint focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-    'disabled:cursor-not-allowed disabled:opacity-40',
+    // 押した瞬間に少し沈ませる（スマホでは hover が効かないので、押したことが分かるように）
+    'active:scale-[0.97]',
+    pending ? 'cursor-wait opacity-80' : 'disabled:cursor-not-allowed disabled:opacity-40',
     variants[variant],
     sizes[size],
   ].join(' ')
 
 type Style = { variant?: ButtonVariant | undefined; size?: ButtonSize | undefined }
 
-type ButtonProps = ComponentProps<'button'> & Style
+type ButtonProps = ComponentProps<'button'> &
+  Style & {
+    /** 処理中：くるくるを出して押せなくする。文言は呼び出し側で「〜しています…」に変える */
+    pending?: boolean | undefined
+  }
 
-export const Button = ({ variant, size, className = '', ...props }: ButtonProps) => (
-  <button type="button" className={`${buttonClass({ variant, size })} ${className}`} {...props} />
+export const Button = ({
+  variant,
+  size,
+  pending = false,
+  disabled,
+  className = '',
+  children,
+  ...props
+}: ButtonProps) => (
+  <button
+    type="button"
+    className={`${buttonClass({ variant, size, pending })} ${className}`}
+    disabled={pending || disabled}
+    aria-busy={pending || undefined}
+    {...props}
+  >
+    {pending && <Spinner />}
+    {children}
+  </button>
+)
+
+/** 処理中のくるくる（文字の色に合わせる） */
+export const Spinner = () => (
+  <span
+    aria-hidden
+    className="inline-block size-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+  />
 )
 
 type ButtonLinkProps = ComponentProps<typeof Link> & Style

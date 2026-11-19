@@ -159,7 +159,7 @@ export const SubmissionForm = ({
           {error}
         </p>
       )}
-      <Button type="submit" disabled={!canSubmit} size="lg" className="w-full">
+      <Button type="submit" pending={submitting} disabled={!canSubmit} size="lg" className="w-full">
         {submitting ? '提出しています…' : '提出する'}
       </Button>
       {replyHint && <p className="text-caption text-muted text-center">{replyHint}</p>}

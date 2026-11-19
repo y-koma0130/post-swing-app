@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { Badge, type BadgeTone } from '@/app/components/ui/Badge'
-import { Card } from '@/app/components/ui/Card'
+import { CardLink } from '@/app/components/ui/CardLink'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
@@ -70,29 +69,31 @@ export const ThreadList = ({ threads, viewer, showCounterpart = true }: Props) =
   <ul className="space-y-3">
     {threads.map((t) => (
       <li key={t.id}>
-        <Link href={viewer === 'coach' ? `/coach/threads/${t.id}` : `/t/${t.id}`}>
-          <Card className="hover:border-line flex items-center justify-between gap-4 transition-colors">
-            <div className="min-w-0">
-              {showCounterpart && (
-                <p className="font-bold">{t.counterpartName || '（名前なし）'}</p>
-              )}
-              <p className={showCounterpart ? 'text-muted truncate text-sm' : 'truncate font-bold'}>
-                {t.theme === ''
-                  ? t.status === 'draft'
-                    ? '（悩みと動画をまだ送っていません）'
-                    : '（まだ動画が届いていません）'
-                  : t.theme}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="flex gap-1">
-                {t.unread && <Badge tone="warning">未読</Badge>}
-                <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
-              </span>
-              <p className="text-caption text-muted">{statusNote(t)}</p>
-            </div>
-          </Card>
-        </Link>
+        <CardLink
+          href={viewer === 'coach' ? `/coach/threads/${t.id}` : `/t/${t.id}`}
+          className="flex items-center justify-between gap-4"
+        >
+          <div className="min-w-0 flex-1">
+            {showCounterpart && (
+              <p className="truncate font-bold">{t.counterpartName || '（名前なし）'}</p>
+            )}
+            <p className={showCounterpart ? 'text-muted truncate text-sm' : 'truncate font-bold'}>
+              {t.theme === ''
+                ? t.status === 'draft'
+                  ? '（悩みと動画をまだ送っていません）'
+                  : '（まだ動画が届いていません）'
+                : t.theme}
+            </p>
+          </div>
+          {/* 右側は幅を半分までにして、長い一行は折り返す（左の名前が縦に潰れないように） */}
+          <div className="flex max-w-[50%] shrink-0 flex-col items-end gap-1 text-right">
+            <span className="flex gap-1">
+              {t.unread && <Badge tone="warning">未読</Badge>}
+              <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
+            </span>
+            <p className="text-caption text-muted">{statusNote(t)}</p>
+          </div>
+        </CardLink>
       </li>
     ))}
   </ul>

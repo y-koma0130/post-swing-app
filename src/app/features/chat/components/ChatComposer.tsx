@@ -192,7 +192,7 @@ export const ChatComposer = ({
             placeholder={viewer === 'coach' ? '補足を送る' : 'コーチに質問する'}
             className={`${inputClass} field-sizing-content max-h-40 min-h-11 resize-none`}
           />
-          <Button type="submit" disabled={pending || videoBusy} className="shrink-0">
+          <Button type="submit" pending={pending} disabled={videoBusy} className="shrink-0">
             送る
           </Button>
         </div>

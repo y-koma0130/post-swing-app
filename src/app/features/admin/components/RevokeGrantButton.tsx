@@ -26,7 +26,7 @@ export const RevokeGrantButton = ({ grantId, coachName, campaignName }: Props) =
       className="space-y-1"
     >
       <input type="hidden" name="grantId" value={grantId} />
-      <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+      <Button type="submit" variant="secondary" size="sm" pending={pending}>
         取り消す
       </Button>
       <FormMessage state={state} />

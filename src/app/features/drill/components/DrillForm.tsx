@@ -32,7 +32,7 @@ export const DrillForm = () => {
         <textarea name="description" rows={4} maxLength={1000} className={inputClass} />
       </label>
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" pending={pending}>
         登録する
       </Button>
     </form>
