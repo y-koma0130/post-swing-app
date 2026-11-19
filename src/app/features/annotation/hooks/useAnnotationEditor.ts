@@ -10,9 +10,10 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 /**
  * 線引きの状態（描いた線・選んでいる道具と色・選んだ図形・元に戻す）
  *
- * キーボード：⌘Z / Ctrl+Z で元に戻す、Delete / Backspace で選んだ図形を消す
+ * キーボード：⌘Z / Ctrl+Z で元に戻す、Delete / Backspace で選んだ図形を消す。
+ * 2つの画面に線を引くとき（比較）は、選んでいる画面の分だけキーボードを受ける（keyboard: false で受けない）
  */
-export const useAnnotationEditor = () => {
+export const useAnnotationEditor = ({ keyboard = true }: { keyboard?: boolean } = {}) => {
   const [history, dispatch] = useReducer(reduceAnnotationHistory, EMPTY_ANNOTATION_HISTORY)
   const [tool, setToolState] = useState<EditorTool>('line')
   const [color, setColorState] = useState<AnnotationColor>(ANNOTATION_COLORS[0])
@@ -60,6 +61,7 @@ export const useAnnotationEditor = () => {
   )
 
   useEffect(() => {
+    if (!keyboard) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return
       if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
@@ -74,7 +76,7 @@ export const useAnnotationEditor = () => {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo, removeSelected, selected])
+  }, [keyboard, undo, removeSelected, selected])
 
   return {
     annotations: history.present,
