@@ -29,6 +29,7 @@ import {
   createConnectAccount,
   createDashboardLink,
   createOnboardingLink,
+  syncConnectProfile,
 } from '../infrastructure/external-services/stripeConnect'
 import {
   findAbsences,
@@ -158,7 +159,14 @@ export const updateCoachProfileAction = async (
 
   const result = await updateCoachProfile(
     { actor, profile: input.data },
-    { findCoachSlug, isSlugTaken, saveCoachProfile, generateSlug }
+    {
+      findCoachSlug,
+      isSlugTaken,
+      saveCoachProfile,
+      generateSlug,
+      findStripeAccountId,
+      syncConnectProfile,
+    }
   )
   if (!result.ok) {
     return actionError(

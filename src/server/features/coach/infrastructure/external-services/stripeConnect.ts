@@ -14,8 +14,12 @@ import type { ConnectAccountInput } from '../../application/usecases/startPayout
  * 新しい Connect の組み込みでは Accounts v1（POST /v1/accounts）は使えない
  */
 
-/** Stripe の審査に使う、コーチのサービスの説明（外には出ない）。どのコーチも同じ */
-const PRODUCT_DESCRIPTION = 'SwingPost を通じた、ゴルフのスイング動画のオンライン添削'
+/**
+ * Stripe の審査に使う、コーチのサービスの説明（外には出ない）。どのコーチも同じ。
+ * 何を・誰に・どう請求して売るかを書く（Stripe の推奨）
+ */
+const PRODUCT_DESCRIPTION =
+  'ゴルフのコーチとして、SwingPost（swingpost.app）を通じて、生徒から送られたスイング動画にオンラインで添削（コメントと画像）を返す。料金は1回ごと、または月額で、生徒がカードで支払う。'
 
 /**
  * 受付ページの URL。Stripe は localhost などの URL を受け付けないので、https のときだけ渡す
@@ -26,6 +30,19 @@ const businessUrlOf = (slug: string): string | undefined => {
   return url.startsWith('https://') ? url : undefined
 }
 
+/**
+ * 口座のビジネスの情報（Webサイト・屋号・サービスの説明）。本人確認の画面で入力済みになり、
+ * コーチがビジネスの説明を書かなくて済む
+ */
+const profileOf = (slug: string, displayName: string) => {
+  const businessUrl = businessUrlOf(slug)
+  return {
+    product_description: PRODUCT_DESCRIPTION,
+    doing_business_as: displayName,
+    ...(businessUrl ? { business_url: businessUrl } : {}),
+  }
+}
+
 export type CreateConnectAccount = (input: ConnectAccountInput) => Promise<string>
 export const createConnectAccount: CreateConnectAccount = async ({
   userId,
@@ -33,7 +50,6 @@ export const createConnectAccount: CreateConnectAccount = async ({
   slug,
   displayName,
 }) => {
-  const businessUrl = businessUrlOf(slug)
   const account = await getStripe().v2.core.accounts.create({
     contact_email: email,
     identity: { country: 'JP' },
@@ -41,12 +57,7 @@ export const createConnectAccount: CreateConnectAccount = async ({
     dashboard: 'express',
     defaults: {
       responsibilities: { fees_collector: 'application', losses_collector: 'application' },
-      // 本人確認の画面で、ビジネスの情報を入力済みにする（コーチがビジネスの説明を書かなくて済む）
-      profile: {
-        product_description: PRODUCT_DESCRIPTION,
-        doing_business_as: displayName,
-        ...(businessUrl ? { business_url: businessUrl } : {}),
-      },
+      profile: profileOf(slug, displayName),
     },
     configuration: {
       recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } },
@@ -54,6 +65,30 @@ export const createConnectAccount: CreateConnectAccount = async ({
     metadata: { userId },
   })
   return account.id
+}
+
+/**
+ * 口座のビジネスの情報を、いまの受付ページと活動名に合わせる（プロフィールを保存したとき）。
+ * スラッグを変えると古い URL は 404 になり、Stripe の定期的なWebサイトの確認でひっかかるため。
+ * 失敗してもプロフィールの保存は止めない（ログに残し、次に保存したときに合わせ直す）
+ */
+export type SyncConnectProfile = (input: {
+  stripeAccountId: string
+  slug: string
+  displayName: string
+}) => Promise<void>
+export const syncConnectProfile: SyncConnectProfile = async ({
+  stripeAccountId,
+  slug,
+  displayName,
+}) => {
+  try {
+    await getStripe().v2.core.accounts.update(stripeAccountId, {
+      defaults: { profile: profileOf(slug, displayName) },
+    })
+  } catch (error) {
+    console.error('[stripe] 口座のビジネスの情報の更新に失敗しました', error)
+  }
 }
 
 export type CreateOnboardingLink = (stripeAccountId: string) => Promise<string>
