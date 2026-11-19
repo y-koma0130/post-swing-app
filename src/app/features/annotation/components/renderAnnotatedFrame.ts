@@ -1,5 +1,7 @@
 import type { Annotation } from '@/server/features/thread/domain/values/Annotation'
 import {
+  angleDegrees,
+  angleMarker,
   arrowHeadPoints,
   OUTLINE_COLOR,
   OUTLINE_WIDTH_SCALE,
@@ -38,6 +40,31 @@ const drawAnnotation = (
       ctx.arc(center.x, center.y, annotation.radius * width, 0, Math.PI * 2)
       break
     }
+    case 'angle': {
+      const vertex = toPixel(annotation.vertex)
+      const a = toPixel(annotation.a)
+      const b = toPixel(annotation.b)
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(vertex.x, vertex.y)
+      ctx.lineTo(b.x, b.y)
+      strokeWithOutline(ctx, annotation.color, lineWidth)
+      // 弧は線より細く、内側の角に描く（画面の SVG と同じ計算）
+      const marker = angleMarker(vertex, a, b, lineWidth)
+      ctx.beginPath()
+      ctx.arc(vertex.x, vertex.y, marker.radius, marker.startAngle, marker.endAngle)
+      strokeWithOutline(ctx, annotation.color, lineWidth * 0.6)
+      // 数字：線の色の字に黒い縁
+      const degrees = angleDegrees(annotation.vertex, annotation.a, annotation.b, height / width)
+      ctx.font = `bold ${marker.fontSize}px sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = marker.fontSize * 0.22
+      ctx.strokeStyle = OUTLINE_COLOR
+      ctx.strokeText(`${degrees}°`, marker.label.x, marker.label.y)
+      ctx.fillStyle = annotation.color
+      ctx.fillText(`${degrees}°`, marker.label.x, marker.label.y)
+      return
+    }
     case 'free': {
       const [first, ...rest] = annotation.points.map(toPixel)
       if (!first) return
@@ -46,11 +73,15 @@ const drawAnnotation = (
       break
     }
   }
-  // 下に黒い縁を敷いてから、線の色で描く（画面の SVG と同じ見た目）
+  strokeWithOutline(ctx, annotation.color, lineWidth)
+}
+
+/** 下に黒い縁を敷いてから、線の色で描く（画面の SVG と同じ見た目） */
+const strokeWithOutline = (ctx: CanvasRenderingContext2D, color: string, lineWidth: number) => {
   ctx.strokeStyle = OUTLINE_COLOR
   ctx.lineWidth = lineWidth * OUTLINE_WIDTH_SCALE
   ctx.stroke()
-  ctx.strokeStyle = annotation.color
+  ctx.strokeStyle = color
   ctx.lineWidth = lineWidth
   ctx.stroke()
 }
