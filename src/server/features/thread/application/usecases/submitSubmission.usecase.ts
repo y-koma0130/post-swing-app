@@ -13,6 +13,7 @@ import {
   type SubmissionContentsBlocker,
 } from '../../domain/services/checkSubmissionContents.service'
 import { nextStatusAfter } from '../../domain/services/nextStatusAfter.service'
+import type { GolfProfile } from '../../domain/values/GolfProfile'
 import type { DraftVideo, Submission } from '../../domain/values/Submission'
 import type { Thread } from '../../domain/values/Thread'
 import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
@@ -29,6 +30,8 @@ export type NewSubmission = Readonly<{
   sentDuringAbsenceId: string | null
   /** 最初の提出のときだけ、スレッドのテーマも保存する */
   theme: string | null
+  /** 最初の提出のときだけ、ラウンドの回数と平均スコアも保存する */
+  golfProfile: GolfProfile | null
 }>
 
 export type SubmitSubmissionParams = Readonly<{
@@ -36,6 +39,8 @@ export type SubmitSubmissionParams = Readonly<{
   threadId: string
   theme: string
   note: string
+  /** ラウンドの回数と平均スコア（フォームのまま。最初の提出だけ使う） */
+  golfProfile: Readonly<{ roundFrequency: string; averageScore: string }>
   /** 上げておいた動画（1〜2本） */
   videoIds: ReadonlyArray<string>
   now: Date
@@ -87,6 +92,7 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
     drafts: await deps.findDraftVideos(params.videoIds),
     theme: params.theme,
     note: params.note,
+    golfProfile: params.golfProfile,
   })
   if (!contents.ok) {
     return err(contents.error)
@@ -101,6 +107,7 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
     threadId: thread.id,
     note: contents.value.note,
     theme: contents.value.theme,
+    golfProfile: contents.value.golfProfile,
     videoIds: contents.value.videos.map((v) => v.id),
     submittedAt: params.now,
     nextStatus: nextStatusAfter(thread, 'student_submitted'),

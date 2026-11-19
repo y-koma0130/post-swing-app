@@ -7,6 +7,7 @@ import { Page } from '@/app/components/ui/Page'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { pausedMessage } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
+import { CoachLicenses } from '@/app/features/coach-profile/components/CoachLicenses'
 import { HowItWorks } from '@/app/features/coach-profile/components/HowItWorks'
 import { PlanList } from '@/app/features/coach-profile/components/PlanList'
 import {
@@ -88,6 +89,7 @@ const CoachLandingPage = async ({ params }: Props) => {
           <p className="text-caption text-muted">{coach.title}</p>
           <h1 className="text-title">{coach.name}</h1>
           {coach.instagram && <p className="text-caption text-muted">{coach.instagram}</p>}
+          <CoachLicenses licenses={coach.licenses} licenseOther={coach.licenseOther} />
         </div>
       </header>
       <p className="text-body leading-relaxed whitespace-pre-wrap">{coach.bio}</p>

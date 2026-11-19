@@ -7,6 +7,7 @@ import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
 import type { ChatQuote, ChatSender } from '../../domain/values/ChatMessage'
 import type { DeclineReason } from '../../domain/values/DeclineReason'
+import type { GolfProfile } from '../../domain/values/GolfProfile'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import type { VideoAngle } from '../../domain/values/VideoAngle'
@@ -23,6 +24,8 @@ export type ThreadDetailDto = {
   studentName: string
   planKind: PlanKind
   theme: string
+  /** 生徒のラウンドの回数と平均スコア（申し込みのときに任意で書いたもの） */
+  golfProfile: GolfProfile
   status: ThreadStatus
   startedAt: Date
   /** 実際の期限（コーチの不在の分だけ延びる） */

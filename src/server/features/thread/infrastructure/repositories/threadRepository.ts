@@ -168,6 +168,7 @@ export const saveSubmission: SaveSubmission = async (s) => {
       .set({
         status: s.nextStatus,
         ...(s.theme === null ? {} : { theme: s.theme }),
+        ...(s.golfProfile === null ? {} : s.golfProfile),
         updatedAt: s.submittedAt,
       })
       .where(eq(thread.id, s.threadId)),

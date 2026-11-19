@@ -5,6 +5,10 @@ import type {
   CoachDeclineReason,
   DeclineReason,
 } from '@/server/features/thread/domain/values/DeclineReason'
+import type {
+  GolfProfile,
+  RoundFrequency,
+} from '@/server/features/thread/domain/values/GolfProfile'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
@@ -114,3 +118,30 @@ export const quoteLabel = (quote: ChatQuote): string => {
 /** 引用先の要素の id（引用を押すと、そこへスクロールする） */
 export const quoteAnchorId = (kind: QuoteKind, targetId: string): string =>
   `quote-${kind}-${targetId}`
+
+/** ふだんのラウンドの回数の呼び方（申し込みの選択肢と、コーチへの表示） */
+export const ROUND_FREQUENCY_LABEL = {
+  not_yet: 'まだコースに出ていない',
+  few_per_year: '年に数回',
+  monthly: '月1回くらい',
+  two_to_three_per_month: '月2〜3回',
+  weekly: '週1回以上',
+} as const satisfies Record<RoundFrequency, string>
+
+/** 選択肢の並び（少ない順） */
+export const ROUND_FREQUENCIES = [
+  'not_yet',
+  'few_per_year',
+  'monthly',
+  'two_to_three_per_month',
+  'weekly',
+] as const satisfies RoundFrequency[]
+
+/** コーチに見せる一行（「ラウンド 月1回くらい・平均スコア 98」）。どちらも書いていなければ null */
+export const golfProfileText = (profile: GolfProfile): string | null => {
+  const parts = [
+    profile.roundFrequency ? `ラウンド ${ROUND_FREQUENCY_LABEL[profile.roundFrequency]}` : null,
+    profile.averageScore !== null ? `平均スコア ${profile.averageScore}` : null,
+  ].filter((part): part is string => part !== null)
+  return parts.length > 0 ? parts.join('・') : null
+}

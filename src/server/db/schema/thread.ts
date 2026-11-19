@@ -33,6 +33,12 @@ export const thread = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 生徒が最初の動画を送るときに書く */
     theme: text().notNull().default(''),
+    /** ふだんのラウンドの回数（最初の提出のときに任意で書く。domain の roundFrequencySchema） */
+    roundFrequency: text({
+      enum: ['not_yet', 'few_per_year', 'monthly', 'two_to_three_per_month', 'weekly'],
+    }),
+    /** 平均スコア（最初の提出のときに任意で書く） */
+    averageScore: integer(),
     status: text({
       enum: ['draft', 'requested', 'waiting_student', 'waiting_coach', 'closed', 'declined'],
     }).notNull(),
