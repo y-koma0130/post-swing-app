@@ -30,6 +30,7 @@ import {
   submissionLabel,
   threadUsageText,
 } from '@/app/features/thread/utils/threadText'
+import { ShootingGuide } from '@/app/features/video-upload/components/ShootingGuide'
 import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
@@ -241,6 +242,10 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                   }
                   prominent
                 />
+                {/* 撮る前に見られるよう、最初の提出の前はここにも置く */}
+                <div className="text-center">
+                  <ShootingGuide label="撮る前に：撮り方のガイド" />
+                </div>
               </div>
             ) : (
               <p className="text-caption text-muted">

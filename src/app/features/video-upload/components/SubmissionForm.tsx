@@ -13,6 +13,7 @@ import {
   type SubmissionOutcome,
   startBackgroundSubmission,
 } from '../utils/backgroundSubmission'
+import { ShootingGuide } from './ShootingGuide'
 import { VideoSlot, type VideoSlotHandle, type VideoSlotStatus } from './VideoSlot'
 
 type Props = {
@@ -119,9 +120,12 @@ export const SubmissionForm = ({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <p className="text-caption text-muted">
-        1回に{maxVideos}本まで（正面と後方など）。1本{maxSeconds}秒までです。
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-caption text-muted">
+          1回に{maxVideos}本まで（正面と後方など）。1本{maxSeconds}秒までです。
+        </p>
+        <ShootingGuide />
+      </div>
       {statuses.map((_, index) => (
         <VideoSlot
           // 枠の数はルールで決まっていて、並びは変わらない
