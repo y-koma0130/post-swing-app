@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClass } from '@/app/components/ui/Button'
 import './globals.css'
 
 type Props = {
@@ -15,11 +16,7 @@ const GlobalError = ({ error, reset }: Props) => (
         <h1 className="text-title">うまく表示できませんでした</h1>
         <p className="text-muted text-sm">時間をおいて、もう一度お試しください。</p>
         {error.digest && <p className="text-caption text-subtle">エラー番号：{error.digest}</p>}
-        <button
-          type="button"
-          onClick={reset}
-          className="bg-mint text-ink rounded-full px-5 py-2.5 text-sm font-semibold"
-        >
+        <button type="button" onClick={reset} className={buttonClass()}>
           もう一度読み込む
         </button>
       </main>

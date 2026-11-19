@@ -99,15 +99,15 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
       return {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
-        subject: 'スレッドの期限が近づいています',
-        text: `${ctx.coachName}さんとのスレッドは${ctx.expiresAt ? formatDate(ctx.expiresAt) : 'もうすぐ'}までです。撮り直した動画やご質問はお早めにどうぞ。\n${studentThreadUrl(message.threadId)}`,
+        subject: 'レッスンの期限が近づいています',
+        text: `${ctx.coachName}さんとのレッスンは${ctx.expiresAt ? formatDate(ctx.expiresAt) : 'もうすぐ'}までです。撮り直した動画やご質問はお早めにどうぞ。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'thread_closed':
       return {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
-        subject: 'スレッドが終わりました',
-        text: `${ctx.coachName}さんとのスレッドが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
+        subject: 'レッスンが終わりました',
+        text: `${ctx.coachName}さんとのレッスンが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'waitlist_opened':
       return {
@@ -142,7 +142,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
         subject: '撮り直しのお願いが届きました',
-        text: `${ctx.coachName}さんから、動画の撮り直しのお願いが届きました。撮り直した動画は、提出の回数には数えません。今すぐ撮れないときは、スレッドの画面から伝えられます。\n${studentThreadUrl(message.threadId)}`,
+        text: `${ctx.coachName}さんから、動画の撮り直しのお願いが届きました。撮り直した動画は、提出の回数には数えません。今すぐ撮れないときは、レッスンの画面から伝えられます。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'retake_sent':
       return {

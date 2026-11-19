@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
@@ -67,11 +68,13 @@ const ReviewPage = async ({ params }: Props) => {
         />
       )}
       {thread.application.decline && (
-        <p className="bg-surface text-muted rounded-xl p-4 text-sm">
-          お断りしました：{DECLINE_REASON_LABEL[thread.application.decline.reason]}
-          {thread.application.decline.message && `（${thread.application.decline.message}）`}
-          。生徒には請求されていません。
-        </p>
+        <Notice>
+          <p>
+            お断りしました：{DECLINE_REASON_LABEL[thread.application.decline.reason]}
+            {thread.application.decline.message && `（${thread.application.decline.message}）`}
+            。生徒には請求されていません。
+          </p>
+        </Notice>
       )}
       {thread.review && (
         <Card className="space-y-2">

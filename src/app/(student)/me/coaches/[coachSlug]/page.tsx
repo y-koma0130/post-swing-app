@@ -62,7 +62,7 @@ const MyCoachPage = async ({ params }: Props) => {
       <section className="space-y-3">
         <h2 className="text-heading">添削のやりとり</h2>
         {myThreads.length === 0 ? (
-          <p className="text-muted text-sm">スレッドの準備ができると、ここに表示されます。</p>
+          <p className="text-muted text-sm">レッスンの準備ができると、ここに表示されます。</p>
         ) : (
           <ThreadList threads={myThreads} viewer="student" showCounterpart={false} />
         )}

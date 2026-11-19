@@ -79,7 +79,7 @@ export const AbsenceForm = ({ coachName, absence, today, noteMaxLength, onDone }
         不在中は、新しい申し込みを受け付けません（申し込みは48時間以内に受けるか決めるため）。
       </p>
       {startDate && endDate && startDate <= endDate && (
-        <p className="bg-surface text-muted rounded-xl p-3 text-sm">
+        <p className="bg-surface text-muted rounded-lg p-3 text-sm">
           {absencePreview(coachName, { startDate, endDate })}
         </p>
       )}

@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { Notice } from '@/app/components/ui/Notice'
 import { formatDateTime } from '@/app/utils/format'
 import {
   approveApplicationAction,
@@ -35,10 +36,14 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
   const pending = approving || declining
 
   return (
-    <section className="border-mint bg-mint-soft space-y-3 rounded-2xl border p-5">
-      <div className="space-y-1">
-        <h2 className="text-heading">{studentName || '生徒'}さんから申し込みがありました</h2>
-        <p className="text-body text-sm">
+    <Notice
+      tone="mint"
+      emphasis
+      title={`${studentName || '生徒'}さんから申し込みがありました`}
+      className="space-y-3"
+    >
+      <div>
+        <p>
           下の悩みと動画を見て、受けるか決めてください
           {deadline ? `（${formatDateTime(deadline)}まで）` : ''}
           。受けると生徒への請求が確定し、添削を始められます。期限までに決めないと、自動でお断りします。
@@ -95,6 +100,6 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
           </div>
         </form>
       )}
-    </section>
+    </Notice>
   )
 }

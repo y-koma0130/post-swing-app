@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useActionState, useRef, useState } from 'react'
-import { Button } from '@/app/components/ui/Button'
+import { Button, textButtonClass } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass } from '@/app/components/ui/fieldStyles'
+import { useConfirmedSubmit } from '@/app/hooks/useConfirmedSubmit'
 import { formatDateTime } from '@/app/utils/format'
 import type { StudentChartDto } from '@/server/features/student-chart/application/dto/StudentChart.dto'
 import {
@@ -88,19 +89,16 @@ export const ChartEntries = ({ studentUserId, entries, threadId = null, limit }:
 
 const DeleteEntryButton = ({ entryId }: { entryId: string }) => {
   const [, action, pending] = useActionState(deleteChartEntryAction, IDLE_ACTION_STATE)
+  const confirm = useConfirmedSubmit({
+    message: 'この記録を消しますか？',
+    confirmLabel: '消す',
+    danger: true,
+  })
   return (
-    <form
-      action={action}
-      onSubmit={(event) => {
-        if (!window.confirm('この記録を消しますか？')) event.preventDefault()
-      }}
-    >
+    <form action={action} onSubmit={confirm.onSubmit}>
+      {confirm.dialog}
       <input type="hidden" name="entryId" value={entryId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-caption text-muted hover:text-ink underline disabled:cursor-wait"
-      >
+      <button type="submit" disabled={pending} className={textButtonClass({ danger: true })}>
         {pending ? '消しています…' : '消す'}
       </button>
     </form>

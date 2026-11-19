@@ -3,25 +3,7 @@ import { CardLink } from '@/app/components/ui/CardLink'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
-
-const STATUS_LABEL = {
-  coach: {
-    draft: '申し込み途中',
-    requested: '承認待ち',
-    waiting_coach: '添削待ち',
-    waiting_student: 'レッスン中',
-    closed: '完了',
-    declined: 'お断り',
-  },
-  student: {
-    draft: '申し込み途中',
-    requested: 'コーチの確認待ち',
-    waiting_coach: '添削待ち',
-    waiting_student: 'レッスン中',
-    closed: '完了',
-    declined: 'お断り',
-  },
-} as const satisfies Record<'coach' | 'student', Record<ThreadStatus, string>>
+import { THREAD_STATUS_LABEL } from '../utils/threadText'
 
 /** 見ている人が動く番なら目立たせる（コーチは承認と返信、生徒は申し込みの続きと自分の番） */
 const STATUS_TONE = {
@@ -57,6 +39,14 @@ const statusNote = (t: ThreadSummaryDto): string => {
   }
 }
 
+/** テーマ（まだ書いていなければ、その状態の言い方） */
+const themeText = (t: ThreadSummaryDto): string =>
+  t.theme === ''
+    ? t.status === 'draft'
+      ? '（悩みと動画をまだ送っていません）'
+      : '（まだ動画が届いていません）'
+    : t.theme
+
 type Props = {
   threads: ThreadSummaryDto[]
   /** 見ている人。リンク先と状態の言い方が変わる */
@@ -69,30 +59,21 @@ export const ThreadList = ({ threads, viewer, showCounterpart = true }: Props) =
   <ul className="space-y-3">
     {threads.map((t) => (
       <li key={t.id}>
-        <CardLink
-          href={viewer === 'coach' ? `/coach/threads/${t.id}` : `/t/${t.id}`}
-          className="flex items-center justify-between gap-4"
-        >
-          <div className="min-w-0 flex-1">
-            {showCounterpart && (
-              <p className="truncate font-bold">{t.counterpartName || '（名前なし）'}</p>
-            )}
-            <p className={showCounterpart ? 'text-muted truncate text-sm' : 'truncate font-bold'}>
-              {t.theme === ''
-                ? t.status === 'draft'
-                  ? '（悩みと動画をまだ送っていません）'
-                  : '（まだ動画が届いていません）'
-                : t.theme}
+        <CardLink href={viewer === 'coach' ? `/coach/threads/${t.id}` : `/t/${t.id}`}>
+          {/* 1行目：相手（またはテーマ）と状態、2行目：テーマ、3行目：期限・回数などの一言 */}
+          <div className="flex items-start justify-between gap-3">
+            <p className="min-w-0 flex-1 truncate font-bold">
+              {showCounterpart ? t.counterpartName || '（名前なし）' : themeText(t)}
             </p>
-          </div>
-          {/* 右側は幅を半分までにして、長い一行は折り返す（左の名前が縦に潰れないように） */}
-          <div className="flex max-w-[50%] shrink-0 flex-col items-end gap-1 text-right">
-            <span className="flex gap-1">
+            <span className="flex shrink-0 gap-1">
               {t.unread && <Badge tone="warning">未読</Badge>}
-              <Badge tone={STATUS_TONE[viewer][t.status]}>{STATUS_LABEL[viewer][t.status]}</Badge>
+              <Badge tone={STATUS_TONE[viewer][t.status]}>
+                {THREAD_STATUS_LABEL[viewer][t.status]}
+              </Badge>
             </span>
-            <p className="text-caption text-muted">{statusNote(t)}</p>
           </div>
+          {showCounterpart && <p className="text-muted mt-0.5 truncate text-sm">{themeText(t)}</p>}
+          <p className="text-caption text-muted mt-1">{statusNote(t)}</p>
         </CardLink>
       </li>
     ))}

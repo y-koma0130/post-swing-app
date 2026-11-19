@@ -29,7 +29,7 @@ export const ReviewSummary = ({ summary }: Props) => {
                 <p className="text-body text-sm whitespace-pre-wrap">{review.comment}</p>
               )}
               {review.coachReply && (
-                <p className="bg-surface text-caption text-muted rounded-xl p-3 whitespace-pre-wrap">
+                <p className="bg-surface text-caption text-muted rounded-lg p-3 whitespace-pre-wrap">
                   コーチより：{review.coachReply}
                 </p>
               )}

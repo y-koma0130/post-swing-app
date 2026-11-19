@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { chipClass } from '@/app/components/ui/choiceStyles'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
 import {
@@ -81,11 +82,7 @@ export const StudentSubmission = ({ submission, index }: Props) => {
                   role="tab"
                   aria-selected={i === shown}
                   onClick={() => setShown(i)}
-                  className={`rounded-full border px-3 py-1 text-sm ${
-                    i === shown
-                      ? 'border-mint bg-mint-soft text-ink font-bold'
-                      : 'border-line text-muted bg-white'
-                  }`}
+                  className={chipClass(i === shown)}
                 >
                   {submissionVideoLabel(video, submission.videos)}
                 </button>

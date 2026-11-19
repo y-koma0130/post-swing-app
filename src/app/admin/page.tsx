@@ -5,8 +5,10 @@ import { CoachSuspendButton } from '@/app/features/admin/components/CoachSuspend
 import { InviteCoachForm } from '@/app/features/admin/components/InviteCoachForm'
 import { RefundThreadButton } from '@/app/features/admin/components/RefundThreadButton'
 import { RevokeGrantButton } from '@/app/features/admin/components/RevokeGrantButton'
+import { THREAD_STATUS_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatFeeRate, grantStateText } from '@/app/utils/feeText'
 import { formatMonthDay, formatYen } from '@/app/utils/format'
+import { PLAN_KIND_LABEL } from '@/app/utils/planText'
 import type { CoachFeeGrantSummaryDto } from '@/server/features/campaign/application/dto/CoachFeeGrantSummary.dto'
 import {
   getGrantableCampaigns,
@@ -19,16 +21,6 @@ import { getThreadsForAdmin } from '@/server/features/thread/presentation/querie
 export const metadata: Metadata = { title: '管理画面' }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月額' } as const
-const STATUS_LABEL = {
-  draft: '申し込み途中',
-  requested: '承認待ち',
-  declined: 'お断り',
-  waiting_coach: '添削待ち',
-  waiting_student: '生徒の番',
-  closed: '終了',
-} as const
 
 /** 返信を待たせている日数。待たせていなければ null */
 const waitingDays = (row: AdminThreadRowDto, now: Date): number | null =>
@@ -94,7 +86,7 @@ const AdminPage = async () => {
                     <div key={grant.grantId} className="space-y-1">
                       <p>
                         {grant.campaignName}（手数料{formatFeeRate(grant.feeRate)}）
-                        <span className="text-muted block text-xs">
+                        <span className="text-muted text-caption block">
                           {grantStateText(grant.state, grant.durationDays)}
                         </span>
                       </p>
@@ -143,9 +135,9 @@ const AdminPage = async () => {
                   <td className="py-2">{row.coachName}</td>
                   <td className="py-2">{row.studentName || '（名前なし）'}</td>
                   <td className="py-2">
-                    {PLAN_LABEL[row.planKind]}・{formatYen(row.priceYen)}
+                    {PLAN_KIND_LABEL[row.planKind]}・{formatYen(row.priceYen)}
                   </td>
-                  <td className="py-2">{STATUS_LABEL[row.status]}</td>
+                  <td className="py-2">{THREAD_STATUS_LABEL.coach[row.status]}</td>
                   <td
                     className={`py-2 ${days !== null && days >= 3 ? 'text-danger font-bold' : ''}`}
                   >

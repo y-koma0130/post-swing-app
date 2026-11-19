@@ -7,6 +7,7 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChartEntries } from '@/app/features/student-chart/components/ChartEntries'
 import { ChartMemo } from '@/app/features/student-chart/components/ChartMemo'
 import { ChartTags } from '@/app/features/student-chart/components/ChartTags'
+import { THREAD_STATUS_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentChart } from '@/server/features/student-chart/presentation/queries'
@@ -16,15 +17,6 @@ export const metadata: Metadata = { title: 'カルテ' }
 type Props = {
   params: Promise<{ studentId: string }>
 }
-
-const STATUS_LABEL = {
-  draft: '申し込み途中',
-  requested: '承認待ち',
-  waiting_coach: '添削待ち',
-  waiting_student: 'レッスン中',
-  closed: '完了',
-  declined: 'お断り',
-} as const
 
 /** 生徒のカルテ（コーチだけ）。タグ・メモ・レッスンの記録・これまでのスレッド・送ったドリル */
 const StudentChartPage = async ({ params }: Props) => {
@@ -36,7 +28,7 @@ const StudentChartPage = async ({ params }: Props) => {
   return (
     <Page layout="list">
       <PageHeader
-        back={{ href: '/coach/students', label: '生徒' }}
+        back={{ href: '/coach/students', label: '生徒一覧' }}
         title={`${chart.studentName || '（名前なし）'}さんのカルテ`}
         description="生徒には見えません。"
       />
@@ -69,7 +61,7 @@ const StudentChartPage = async ({ params }: Props) => {
                   {thread.theme || '（動画待ち）'}
                 </p>
                 <span className="flex shrink-0 flex-col items-end gap-1">
-                  <Badge tone="neutral">{STATUS_LABEL[thread.status]}</Badge>
+                  <Badge tone="neutral">{THREAD_STATUS_LABEL.coach[thread.status]}</Badge>
                   <span className="text-caption text-muted">
                     {formatMonthDay(thread.startedAt)}から
                   </span>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
 import type { StudentChartDto } from '@/server/features/student-chart/application/dto/StudentChart.dto'
 import { ChartEntries } from './ChartEntries'
 import { ChartMemo } from './ChartMemo'
@@ -15,7 +16,7 @@ type Props = {
  */
 export const ChartPanel = ({ chart, threadId }: Props) => (
   <details className="group rounded-card border-line-soft border bg-white shadow-sm">
-    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+    <summary className={`${summaryClass} px-4 py-3`}>
       <span className="min-w-0">
         <span className="text-heading">カルテ</span>
         <span className="text-caption text-muted ml-2">生徒には見えません</span>
@@ -23,10 +24,7 @@ export const ChartPanel = ({ chart, threadId }: Props) => (
           <span className="text-caption text-muted ml-2 truncate">{chart.tags.join('・')}</span>
         )}
       </span>
-      <span className="text-caption text-muted shrink-0">
-        <span className="group-open:hidden">開く ▾</span>
-        <span className="hidden group-open:inline">閉じる ▴</span>
-      </span>
+      <DisclosureToggle closedLabel="開く" />
     </summary>
     <div className="space-y-4 px-4 pb-4">
       <ChartTags studentUserId={chart.studentUserId} tags={chart.tags} />

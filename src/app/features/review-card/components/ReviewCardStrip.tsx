@@ -51,7 +51,7 @@ export const ReviewCardStrip = ({ reply, videoLabel, onOpen, renderAction }: Pro
           <p className="text-body text-sm leading-relaxed whitespace-pre-wrap">{reply.comment}</p>
         )}
         {reply.drills.length > 0 && (
-          <p className="text-caption text-ink bg-mint-soft rounded-md px-2 py-1">
+          <p className="text-caption text-ink bg-mint-soft rounded-lg px-2 py-1">
             ドリル：{reply.drills.map((d) => d.title).join('・')}
           </p>
         )}

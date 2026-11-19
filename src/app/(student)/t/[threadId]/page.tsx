@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
@@ -40,7 +41,7 @@ import { ApplicationStatus } from './_components/ApplicationStatus'
 import { MessageVideo } from './_components/MessageVideo'
 import { StudentSubmission } from './_components/StudentSubmission'
 
-export const metadata: Metadata = { title: 'スレッド' }
+export const metadata: Metadata = { title: 'レッスン' }
 
 type Props = {
   params: Promise<{ threadId: string }>
@@ -100,9 +101,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
         />
         <ApplicationStatus thread={thread} justApplied={applied === '1'} />
         {banner && !applying && thread.status !== 'closed' && (
-          <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
-            {banner}
-          </p>
+          <Notice tone="warning" status>
+            <p>{banner}</p>
+          </Notice>
         )}
 
         <ThreadTimeline

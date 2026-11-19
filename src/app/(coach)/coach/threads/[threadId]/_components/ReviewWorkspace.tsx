@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useRef, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
+import { chipClass, segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import { inputClass } from '@/app/components/ui/fieldStyles'
 import { AnnotationLayer } from '@/app/features/annotation/components/AnnotationLayer'
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
@@ -46,11 +47,6 @@ type Props = {
 }
 
 const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
-
-const tabClass = (active: boolean) =>
-  `rounded-full px-4 py-1.5 text-sm font-bold ${
-    active ? 'bg-ink text-white' : 'text-body bg-white shadow-sm'
-  }`
 
 /**
  * 添削の作業エリア（ドロワーの中に開く）
@@ -212,18 +208,21 @@ export const ReviewWorkspace = ({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {submissions.map((submission, i) => (
-            <button
-              key={submission.id}
-              type="button"
-              aria-pressed={i === index}
-              onClick={() => selectSubmission(i)}
-              className={tabClass(i === index)}
-            >
-              {ordinalLabel(i)}
-              {submission.reply ? '（添削済み）' : ''}
-            </button>
-          ))}
+          <fieldset className={segmentGroupClass}>
+            <legend className="sr-only">提出</legend>
+            {submissions.map((submission, i) => (
+              <button
+                key={submission.id}
+                type="button"
+                aria-pressed={i === index}
+                onClick={() => selectSubmission(i)}
+                className={segmentClass(i === index)}
+              >
+                {ordinalLabel(i)}
+                {submission.reply ? '（添削済み）' : ''}
+              </button>
+            ))}
+          </fieldset>
           {partners.length > 0 && (
             <Button
               variant={comparing ? 'primary' : 'secondary'}
@@ -249,11 +248,7 @@ export const ReviewWorkspace = ({
                 role="tab"
                 aria-selected={video.id === currentVideo.id}
                 onClick={() => selectVideo(i)}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  video.id === currentVideo.id
-                    ? 'border-mint bg-mint-soft text-ink font-bold'
-                    : 'border-line text-muted bg-white'
-                }`}
+                className={chipClass(video.id === currentVideo.id)}
               >
                 {submissionVideoLabel(video, current.videos)}
                 {cards.drafts.some((d) => d.videoId === video.id) &&

@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/app/components/ui/Button'
+import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import type { AnnotationEditor } from '../hooks/useAnnotationEditor'
 import {
   ANNOTATION_COLORS,
@@ -33,7 +34,7 @@ const COLOR_LABEL = {
 /** 線引きの道具・色・元に戻す。「選択」で置いた図形を選ぶと、色を変えたり消したりできる */
 export const AnnotationToolbar = ({ editor }: Props) => (
   <div className="rounded-card flex flex-wrap items-center gap-3 bg-white p-3 shadow-sm">
-    <fieldset className="border-line flex rounded-full border p-0.5">
+    <fieldset className={segmentGroupClass}>
       <legend className="sr-only">線の種類</legend>
       {TOOLS.map((tool) => (
         <button
@@ -41,9 +42,7 @@ export const AnnotationToolbar = ({ editor }: Props) => (
           type="button"
           aria-pressed={editor.tool === tool}
           onClick={() => editor.setTool(tool)}
-          className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-            editor.tool === tool ? 'bg-ink text-white' : 'text-muted'
-          }`}
+          className={segmentClass(editor.tool === tool)}
         >
           {TOOL_LABEL[tool]}
         </button>

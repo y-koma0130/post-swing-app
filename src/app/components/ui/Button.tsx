@@ -88,3 +88,25 @@ type ButtonLinkProps = ComponentProps<typeof Link> & Style
 export const ButtonLink = ({ variant, size, className = '', ...props }: ButtonLinkProps) => (
   <Link className={`${buttonClass({ variant, size })} ${className}`} {...props} />
 )
+
+/**
+ * 小さな文字だけのボタン（「消す」「閉じる」「外す」「このスレッドを終える」など、目立たせない操作）。
+ * 押したとき・キーボードで選んだときの見た目をそろえる。danger は取り消せない操作
+ */
+export const textButtonClass = ({
+  danger = false,
+}: {
+  danger?: boolean | undefined
+} = {}): string =>
+  [
+    'inline-flex items-center gap-1 rounded text-caption underline underline-offset-2 transition-colors',
+    danger ? 'text-danger hover:opacity-80' : 'text-muted hover:text-ink active:text-ink',
+    'focus-visible:ring-mint focus-visible:ring-2 focus-visible:outline-none',
+    'disabled:cursor-wait disabled:opacity-60',
+  ].join(' ')
+
+type TextButtonProps = ComponentProps<'button'> & { danger?: boolean | undefined }
+
+export const TextButton = ({ danger, className = '', ...props }: TextButtonProps) => (
+  <button type="button" className={`${textButtonClass({ danger })} ${className}`} {...props} />
+)

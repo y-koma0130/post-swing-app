@@ -159,7 +159,7 @@ const MessageBubble = ({
       )}
       {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-muted text-[10px]">{formatDateTime(message.sentAt)}</p>
+        <p className="text-caption text-muted">{formatDateTime(message.sentAt)}</p>
         {quoteMode === 'button' && <QuoteButton target={target} />}
       </div>
     </div>

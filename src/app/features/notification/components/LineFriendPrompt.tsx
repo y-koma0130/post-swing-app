@@ -1,12 +1,13 @@
+import { Notice } from '@/app/components/ui/Notice'
+
 type Props = {
   addFriendUrl: string
 }
 
 /** 公式アカウントの友だち追加の案内（友だちでないと通知が届かない） */
 export const LineFriendPrompt = ({ addFriendUrl }: Props) => (
-  <div className="space-y-2 rounded-xl border border-[#06C755]/40 bg-[#06C755]/5 p-4">
-    <p className="text-sm font-bold">添削が届いたら LINE でお知らせします</p>
-    <p className="text-caption text-muted">
+  <Notice tone="line" title="添削が届いたら LINE でお知らせします">
+    <p className="text-muted">
       お知らせを受け取るには、SwingPost の公式アカウントを友だちに追加してください。
     </p>
     <a
@@ -15,5 +16,5 @@ export const LineFriendPrompt = ({ addFriendUrl }: Props) => (
     >
       友だちに追加する
     </a>
-  </div>
+  </Notice>
 )

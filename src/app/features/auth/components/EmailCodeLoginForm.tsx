@@ -2,7 +2,8 @@
 
 import { type FormEvent, useRef, useState } from 'react'
 import { TurnstileWidget } from '@/app/components/TurnstileWidget'
-import { Button } from '@/app/components/ui/Button'
+import { Button, textButtonClass } from '@/app/components/ui/Button'
+import { inputClass } from '@/app/components/ui/fieldStyles'
 import { authClient } from '@/app/utils/authClient'
 import { CodeInput } from './CodeInput'
 
@@ -14,9 +15,6 @@ type Props = {
 }
 
 type Step = { kind: 'email' } | { kind: 'code'; email: string }
-
-const inputClass =
-  'w-full rounded-xl border border-line px-4 py-3 text-base outline-none focus:border-mint'
 
 /**
  * メールに届く6桁のコードでログインする
@@ -112,7 +110,7 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
       <button
         type="button"
         onClick={() => setStep({ kind: 'email' })}
-        className="text-muted w-full text-sm"
+        className={`${textButtonClass()} w-full justify-center text-sm`}
       >
         メールアドレスを入れ直す
       </button>

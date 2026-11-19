@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
 import { dismissBackgroundSubmission, type SubmissionStep } from '../utils/backgroundSubmission'
 import { Progress } from './Progress'
@@ -74,7 +75,7 @@ export const BackgroundSubmissionBar = () => {
           <>
             {' '}
             <Link href={threadPath} className="font-semibold underline">
-              スレッドを見る
+              レッスンを見る
             </Link>
           </>
         )}
@@ -82,7 +83,7 @@ export const BackgroundSubmissionBar = () => {
       <button
         type="button"
         onClick={dismissBackgroundSubmission}
-        className="text-muted hover:text-ink shrink-0"
+        className={`${iconButtonClass} shrink-0 text-xl`}
         aria-label="閉じる"
       >
         ×
