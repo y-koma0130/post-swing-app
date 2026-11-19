@@ -8,7 +8,7 @@ import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
-import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
+import { GolfProfileSummary } from '@/app/features/thread/components/GolfProfileSummary'
 import { RetakeRequestPanel } from '@/app/features/thread/components/RetakeRequestPanel'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
@@ -141,13 +141,15 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                   )
                 })}
               </ul>
-              {/* 最初の提出（申し込みの悩み）では、ゴルフの様子も一緒に見る */}
-              {index === 0 && <GolfProfileBox golfProfile={thread.golfProfile} />}
-              <div className="bg-surface rounded-lg p-3">
-                <p className="text-caption text-muted font-bold">生徒のメモ</p>
-                <p className="text-body mt-1 text-sm whitespace-pre-wrap">
-                  {submission.note || '（メモはありません）'}
-                </p>
+              <div className="space-y-2">
+                <div className="bg-surface rounded-lg p-3">
+                  <p className="text-caption text-muted font-bold">生徒のメモ</p>
+                  <p className="text-body mt-1 text-sm whitespace-pre-wrap">
+                    {submission.note || '（メモはありません）'}
+                  </p>
+                </div>
+                {/* 最初の提出（申し込みの悩み）では、ゴルフの様子を補足として小さく添える */}
+                {index === 0 && <GolfProfileSummary golfProfile={thread.golfProfile} />}
               </div>
             </div>
             <RetakeRequestPanel

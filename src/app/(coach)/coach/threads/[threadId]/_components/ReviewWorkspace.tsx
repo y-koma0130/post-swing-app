@@ -17,7 +17,7 @@ import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
-import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
+import { GolfProfileSummary } from '@/app/features/thread/components/GolfProfileSummary'
 import {
   KEY_POSITION_LABEL,
   ordinalLabel,
@@ -339,12 +339,12 @@ export const ReviewWorkspace = ({
             }}
           />
         </div>
-        {index === 0 && <GolfProfileBox golfProfile={golfProfile} />}
         {current.note && (
           <p className="rounded-card text-body bg-white p-4 text-sm whitespace-pre-wrap shadow-sm">
             {current.note}
           </p>
         )}
+        {index === 0 && <GolfProfileSummary golfProfile={golfProfile} />}
       </div>
 
       <aside className="space-y-4">
