@@ -29,11 +29,13 @@ const STATUS_TONE = {
 const statusNote = (t: ThreadSummaryDto): string => {
   switch (t.status) {
     case 'draft':
-      return '悩みと動画を送り、カードを登録すると申し込めます'
+      return t.free
+        ? '悩みと動画を送ると申し込めます'
+        : '悩みと動画を送り、カードを登録すると申し込めます'
     case 'requested':
       return t.approvalDeadline ? `返事の期限 ${formatDateTime(t.approvalDeadline)}` : '確認中'
     case 'declined':
-      return '請求はされていません'
+      return t.free ? 'お受けできませんでした' : '請求はされていません'
     default:
       return `提出 ${t.submissionCount}/${t.maxSubmissions}回・期限 ${formatMonthDay(t.expiresAt)}`
   }

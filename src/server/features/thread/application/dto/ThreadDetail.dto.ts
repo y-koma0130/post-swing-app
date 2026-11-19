@@ -58,6 +58,8 @@ export type ThreadDetailDto = {
     checkout: { priceYen: number; systemFeeYen: number } | null
     /** モニターのプロモーションコードでの申し込みか（公開の許可が条件。0円ならカードを登録しない） */
     monitor: boolean
+    /** 0円の申し込みか（無料のモニター）。カードも請求もない */
+    free: boolean
   }
   /**
    * 生徒が選んだ公開の許可（コーチがシェア画像を作るときに使う）。選んでいなければ null。

@@ -10,13 +10,14 @@ export const paymentKindSchema = z.enum(['capture', 'invoice'])
  * - そのときの手数料率と、使った特典を残す（売上の画面・問い合わせ・集計はこれを見る）
  * - 同じ支払いは1回だけ記録する（id は支払いから決まる。paymentIdFor）
  * - platformFeeYen は価格に対する手数料だけ（システム利用料は含めない）
+ * - 無料のモニター（0円）の承認も、0円の支払いとして記録する（Stripe は通らない）
  */
 export const paymentSchema = z.object({
   id: z.string().min(1),
   purchaseId: z.string().min(1),
   coachUserId: z.string().min(1),
   kind: paymentKindSchema,
-  priceYen: z.number().int().positive(),
+  priceYen: z.number().int().nonnegative(),
   systemFeeYen: z.number().int().nonnegative(),
   platformFeeRate: z.number().min(0).max(1),
   platformFeeYen: z.number().int().nonnegative(),

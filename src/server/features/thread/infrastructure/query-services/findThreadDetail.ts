@@ -197,6 +197,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
           ? { priceYen: people.priceYen, systemFeeYen: people.systemFeeYen }
           : null,
       monitor: people.monitorCodeId !== null,
+      free: people.priceYen === 0,
     },
     shareConsent:
       people.consentAllowPublish === null ||

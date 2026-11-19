@@ -17,6 +17,8 @@ export type ThreadSummaryDto = {
   expiresAt: Date
   /** 承認待ちの申し込みの、コーチが返事をする期限。承認待ちでなければ null */
   approvalDeadline: Date | null
+  /** 0円の申し込みか（無料のモニター）。カードも請求もない */
+  free: boolean
   /** 見ている人が、まだ見ていない相手の出来事（提出・添削・チャット）があるか */
   unread: boolean
   /** 提出した回数 */

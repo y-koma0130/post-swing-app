@@ -1,7 +1,7 @@
 import 'server-only'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { coachProfile, thread, user } from '@/server/db/schema'
+import { coachProfile, purchase, thread, user } from '@/server/db/schema'
 import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
 import type { ThreadSummaryDto } from '../../application/dto/ThreadSummary.dto'
 import { THREAD_RULES } from '../../domain/rules'
@@ -14,8 +14,9 @@ import { findLatestActivityByThread, findReadTimes } from './threadActivity'
 
 type SummaryRow = Omit<
   ThreadSummaryDto,
-  'submissionCount' | 'maxSubmissions' | 'unread' | 'approvalDeadline'
+  'submissionCount' | 'maxSubmissions' | 'unread' | 'approvalDeadline' | 'free'
 > & {
+  priceYen: number
   startedAt: Date
   coachUserId: string
   requestedAt: Date | null
@@ -30,7 +31,7 @@ const withEffectiveExpiries = async (rows: SummaryRow[]): Promise<Date[]> => {
 }
 
 const toSummary = (
-  { startedAt: _startedAt, coachUserId: _coachUserId, requestedAt, ...row }: SummaryRow,
+  { startedAt: _startedAt, coachUserId: _coachUserId, requestedAt, priceYen, ...row }: SummaryRow,
   expiresAt: Date,
   counts: Map<string, number>,
   unread: boolean
@@ -39,6 +40,7 @@ const toSummary = (
   expiresAt,
   approvalDeadline:
     row.status === 'requested' && requestedAt ? calcApprovalDeadline(requestedAt) : null,
+  free: priceYen === 0,
   unread,
   submissionCount: counts.get(row.id) ?? 0,
   maxSubmissions: THREAD_RULES.maxSubmissionsByPlan[row.planKind],
@@ -88,8 +90,10 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
       requestedAt: thread.requestedAt,
       coachUserId: thread.coachUserId,
       coachSlug: coachProfile.slug,
+      priceYen: purchase.priceYen,
     })
     .from(thread)
+    .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
     .innerJoin(user, eq(user.id, thread.studentUserId))
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
     // 申し込みの下書き（カードを登録する前）は、コーチにはまだ見せない
@@ -128,8 +132,10 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
       requestedAt: thread.requestedAt,
       coachUserId: thread.coachUserId,
       coachSlug: coachProfile.slug,
+      priceYen: purchase.priceYen,
     })
     .from(thread)
+    .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
     .where(eq(thread.studentUserId, studentUserId))
     .orderBy(desc(thread.startedAt))
