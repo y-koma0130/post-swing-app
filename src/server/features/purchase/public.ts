@@ -23,6 +23,9 @@ import {
   savePurchasePrice,
 } from './infrastructure/repositories/purchaseRepository'
 
+/** カードを登録しないままの申し込みを取り消す（thread が下書きを消すときに呼ぶ） */
+export { releasePendingPurchase } from './infrastructure/repositories/purchaseRepository'
+
 /**
  * purchase がほかの feature に公開する関数（ほかの feature は、purchase の domain と、このファイルだけを使う）
  */

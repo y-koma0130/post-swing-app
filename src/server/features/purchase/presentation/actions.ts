@@ -12,6 +12,7 @@ import { resolveMonitorCodeForStudent } from '@/server/features/monitor/public'
 import { findShareConsent } from '@/server/features/share/public'
 import {
   createThread,
+  discardDraftThread,
   findApplicationThread,
   findOpenApplication,
   findThreadPayment,
@@ -48,6 +49,7 @@ import {
   hasActiveSubscription,
   hasPaidTrial,
   markPurchaseAuthorized,
+  releasePendingPurchase,
   savePendingPurchase,
   saveWaitlistEntry,
 } from '../infrastructure/repositories/purchaseRepository'
@@ -117,6 +119,9 @@ export const startApplicationAction = async (
       hasActiveSubscription,
       findCoachAvailability,
       findOpenApplication,
+      findPurchase,
+      releasePendingPurchase,
+      discardDraftThread,
       resolveMonitorCode: resolveMonitorCodeForStudent,
       savePendingPurchase,
       createThread,

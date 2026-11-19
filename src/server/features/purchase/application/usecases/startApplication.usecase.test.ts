@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { localDateSchema } from '@/server/utils/localDate'
+import type { Purchase } from '../../domain/values/Purchase'
 import { type CheckoutCoach, startApplication } from './startApplication.usecase'
 
 type Deps = Parameters<typeof startApplication>[1]
@@ -26,9 +27,26 @@ const coach: CheckoutCoach = {
   ],
 }
 
+/** 前に作った下書きの申し込み（1レッスン・通常の価格） */
+const draftPurchase: Purchase = {
+  id: 'old-purchase',
+  studentUserId: 'student-1',
+  coachUserId: 'coach-1',
+  planKind: 'single',
+  priceYen: 4980,
+  systemFeeYen: 249,
+  status: 'pending',
+  stripeSubscriptionId: null,
+  stripePaymentIntentId: null,
+  monitorCodeId: null,
+}
+const openDraft = { id: 'open-1', purchaseId: 'old-purchase', status: 'draft' as const }
+
 const setup = (overrides: Partial<Deps> = {}) => {
   const savePendingPurchase = vi.fn<Deps['savePendingPurchase']>(async () => true)
   const createThread = vi.fn<Deps['createThread']>(async () => undefined)
+  const releasePendingPurchase = vi.fn<Deps['releasePendingPurchase']>(async () => true)
+  const discardDraftThread = vi.fn<Deps['discardDraftThread']>(async () => undefined)
   let n = 0
   const deps: Deps = {
     findCoachForCheckout: async () => coach,
@@ -37,6 +55,9 @@ const setup = (overrides: Partial<Deps> = {}) => {
     hasActiveSubscription: async () => false,
     findCoachAvailability: async () => ({ kind: 'available', replyTargetHours: 48 }),
     findOpenApplication: async () => null,
+    findPurchase: async () => draftPurchase,
+    releasePendingPurchase,
+    discardDraftThread,
     resolveMonitorCode: async ({ code }) =>
       code === 'ABCD2345'
         ? { ok: true, value: { codeId: 'code-1', priceYen: 0, maxUses: 3 } }
@@ -46,7 +67,7 @@ const setup = (overrides: Partial<Deps> = {}) => {
     generateId: () => `id-${++n}`,
     ...overrides,
   }
-  return { deps, savePendingPurchase, createThread }
+  return { deps, savePendingPurchase, createThread, releasePendingPurchase, discardDraftThread }
 }
 
 describe('startApplication', () => {
@@ -78,14 +99,99 @@ describe('startApplication', () => {
   })
 
   it('このコーチへの決まっていない申し込みがあれば、新しく作らずそれを返す（1人1件）', async () => {
-    const { deps, savePendingPurchase, createThread } = setup({
-      findOpenApplication: async () => ({ threadId: 'open-1' }),
+    const { deps, savePendingPurchase, createThread, discardDraftThread } = setup({
+      findOpenApplication: async () => openDraft,
     })
     expect(await startApplication(params, deps)).toEqual({
       ok: true,
       value: { threadId: 'open-1' },
     })
     expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
+    expect(discardDraftThread).not.toHaveBeenCalled()
+  })
+
+  it('承認待ちの申し込みがあれば、別のプランを選んでもそれを返す（選び直せない）', async () => {
+    const { deps, savePendingPurchase, discardDraftThread } = setup({
+      findOpenApplication: async () => ({ ...openDraft, status: 'requested' }),
+    })
+    expect(await startApplication({ ...params, planKind: 'trial' }, deps)).toEqual({
+      ok: true,
+      value: { threadId: 'open-1' },
+    })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(discardDraftThread).not.toHaveBeenCalled()
+  })
+
+  it('下書きと違うプランを選んだら、新しく作り、前の下書きと申し込みを消す', async () => {
+    const { deps, savePendingPurchase, createThread, releasePendingPurchase, discardDraftThread } =
+      setup({ findOpenApplication: async () => openDraft })
+    const result = await startApplication({ ...params, planKind: 'trial' }, deps)
+    expect(result.ok && result.value.threadId).not.toBe('open-1')
+    expect(savePendingPurchase.mock.calls[0]?.[0]).toMatchObject({
+      planKind: 'trial',
+      priceYen: 550,
+    })
+    expect(releasePendingPurchase).toHaveBeenCalledWith('old-purchase')
+    expect(discardDraftThread).toHaveBeenCalledWith('open-1')
+    expect(createThread).toHaveBeenCalledOnce()
+  })
+
+  it('通常の下書きがあっても、プロモーションコードで申し込めば、モニター価格で作り直す', async () => {
+    const { deps, savePendingPurchase, discardDraftThread } = setup({
+      findOpenApplication: async () => openDraft,
+    })
+    const result = await startApplication({ ...params, monitorCode: 'ABCD2345' }, deps)
+    expect(result.ok).toBe(true)
+    expect(savePendingPurchase.mock.calls[0]?.[0]).toMatchObject({
+      priceYen: 0,
+      monitorCodeId: 'code-1',
+    })
+    expect(discardDraftThread).toHaveBeenCalledWith('open-1')
+  })
+
+  it('モニターの下書きがあっても、コードなしで申し込めば、通常の価格で作り直す', async () => {
+    const { deps, savePendingPurchase, discardDraftThread } = setup({
+      findOpenApplication: async () => openDraft,
+      findPurchase: async () => ({ ...draftPurchase, priceYen: 0, monitorCodeId: 'code-1' }),
+    })
+    const result = await startApplication(params, deps)
+    expect(result.ok).toBe(true)
+    expect(savePendingPurchase.mock.calls[0]?.[0]).toMatchObject({
+      priceYen: 4980,
+      monitorCodeId: null,
+    })
+    expect(discardDraftThread).toHaveBeenCalledWith('open-1')
+  })
+
+  it('選び直しで申し込めないとき（コードが使えないなど）は、前の下書きを残す', async () => {
+    const { deps, savePendingPurchase, releasePendingPurchase, discardDraftThread } = setup({
+      findOpenApplication: async () => openDraft,
+    })
+    expect(await startApplication({ ...params, monitorCode: 'WRONG234' }, deps)).toEqual({
+      ok: false,
+      error: 'code_not_found',
+    })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(releasePendingPurchase).not.toHaveBeenCalled()
+    expect(discardDraftThread).not.toHaveBeenCalled()
+  })
+
+  it('選び直す間に前の下書きのカード登録が済んでいたら、新しい申し込みを取り消して前のほうを返す', async () => {
+    // 前の申し込みはもう取り消せない（カードの登録が済んだ）。新しいほうは取り消せる
+    const releasePendingPurchase = vi.fn<Deps['releasePendingPurchase']>(
+      async (purchaseId) => purchaseId !== 'old-purchase'
+    )
+    const { deps, createThread, discardDraftThread } = setup({
+      findOpenApplication: async () => openDraft,
+      releasePendingPurchase,
+    })
+    expect(await startApplication({ ...params, planKind: 'trial' }, deps)).toEqual({
+      ok: true,
+      value: { threadId: 'open-1' },
+    })
+    expect(releasePendingPurchase).toHaveBeenCalledWith('id-1')
+    expect(discardDraftThread).not.toHaveBeenCalled()
     expect(createThread).not.toHaveBeenCalled()
   })
 

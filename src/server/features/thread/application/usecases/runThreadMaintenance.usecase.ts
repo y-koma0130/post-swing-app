@@ -67,9 +67,11 @@ type Dependencies = Readonly<{
   /** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
   findDraftThreadsToDelete: (
     createdBefore: Date
-  ) => Promise<Array<{ threadId: string; videoR2Keys: string[] }>>
+  ) => Promise<Array<{ threadId: string; purchaseId: string; videoR2Keys: string[] }>>
   /** 下書きのスレッドを、提出・動画の記録ごと消す */
   deleteDraftThreads: (threadIds: string[]) => Promise<void>
+  /** カードを登録しないままの申し込みを取り消す（purchase が持つ。モニターのコードの人数に数えなくなる） */
+  releasePendingPurchase: (purchaseId: string) => Promise<boolean>
 }>
 
 /** 毎日の処理の区切り。1つが失敗しても、ほかは続ける */
@@ -240,6 +242,7 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     if (draftThreads.length > 0) {
       await deps.deleteDraftThreads(draftThreads.map((t) => t.threadId))
     }
+    for (const t of draftThreads) await deps.releasePendingPurchase(t.purchaseId)
     return draftThreads.length
   })
 
