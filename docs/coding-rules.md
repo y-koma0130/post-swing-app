@@ -110,6 +110,7 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - props の型は `type Props = { ... }` でコンポーネントの上に書く
 - 書き込みは Server Actions（server の `presentation/actions.ts`）を呼ぶ。tRPC は使わない
 - 例外：ファイルを送るもの（動画・カード画像）は Route Handler（`app/api/`）で受け、処理は server の presentation に置く。大きな本文をそのまま R2 へ流すため
+- 見た目（色・文字の大きさ・部品・押したときの反応・文言）は `docs/ui-rules.md` に従う。色や部品を画面の中で作らない
 
 ## ネイティブアプリへの備え
 
