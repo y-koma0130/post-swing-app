@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { type FormEvent, startTransition, useActionState, useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Badge, type BadgeTone } from '@/app/components/ui/Badge'
 import { Button, textButtonClass } from '@/app/components/ui/Button'
@@ -163,8 +163,22 @@ const MonitorCodeForm = ({
   const regenerateRef = useRef<HTMLButtonElement>(null)
   const [confirmingRegenerate, setConfirmingRegenerate] = useState(false)
 
+  // 新しいコードを作れたら、次のために入力を空にする
+  useEffect(() => {
+    if (code === null && state.status === 'success') formRef.current?.reset()
+  }, [code, state])
+
+  // form の action に渡すと、エラーでも React が入力を最初の値に戻すので、自分で送る
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const submitter = event.nativeEvent instanceof SubmitEvent ? event.nativeEvent.submitter : null
+    const formData = new FormData(event.currentTarget, submitter)
+    startTransition(() => action(formData))
+  }
+
   return (
-    <form ref={formRef} action={action} className="space-y-3">
+    // ブラウザの吹き出しではなく、サーバーの確認の結果を FormMessage で出す（docs/ui-rules.md）
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3">
       {code && <input type="hidden" name="codeId" value={code.id} />}
       {code?.active && <input type="hidden" name="active" value="on" />}
       <label className="block space-y-1">

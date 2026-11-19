@@ -4,7 +4,7 @@ import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
-import { formChecked, formString } from '@/server/utils/formData'
+import { formChecked, formNumber, formString } from '@/server/utils/formData'
 import type { ErrorOf } from '@/server/utils/result'
 import { saveMonitorCode } from '../application/usecases/saveMonitorCode.usecase'
 import { MONITOR_RULES } from '../domain/rules'
@@ -42,8 +42,8 @@ export const saveMonitorCodeAction = async (
   const expiresOn = formString(formData, 'expiresOn')
   const offer = monitorOfferSchema.safeParse({
     label: formString(formData, 'label'),
-    priceYen: Number(formString(formData, 'priceYen')),
-    maxUses: Number(formString(formData, 'maxUses')),
+    priceYen: formNumber(formData, 'priceYen'),
+    maxUses: formNumber(formData, 'maxUses'),
     expiresOn: expiresOn === '' ? null : expiresOn,
   })
   if (!offer.success) {
