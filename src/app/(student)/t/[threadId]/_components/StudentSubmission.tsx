@@ -7,7 +7,7 @@ import {
   ordinalLabel,
   quoteAnchorId,
   submissionLabel,
-  videoLabel,
+  submissionVideoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
@@ -45,7 +45,7 @@ export const StudentSubmission = ({ submission, index }: Props) => {
       </h2>
       <ul className="grid grid-cols-2 gap-3">
         {submission.videos.map((video, i) => {
-          const label = videoLabel(video.angle, count)
+          const label = submissionVideoLabel(video, submission.videos)
           return (
             <li
               key={video.id}
@@ -87,7 +87,7 @@ export const StudentSubmission = ({ submission, index }: Props) => {
                       : 'border-line text-muted bg-white'
                   }`}
                 >
-                  {videoLabel(video.angle, count)}
+                  {submissionVideoLabel(video, submission.videos)}
                 </button>
               ))}
             </div>

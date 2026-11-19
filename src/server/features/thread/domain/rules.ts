@@ -85,3 +85,9 @@ export const MAINTENANCE_RULES = {
   /** 上げたまま提出しなかった動画（下書き）を何時間で消すか */
   draftVideoRetentionHours: 24,
 } as const
+
+/** 撮り直しのお願いのルール（暫定） */
+export const RETAKE_RULES = {
+  /** 1つのスレッドでお願いできる回数 */
+  maxPerThread: 2,
+} as const

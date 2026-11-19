@@ -141,6 +141,13 @@
       "when": 1795050946782,
       "tag": "0019_golf_profile_and_licenses",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795054886757,
+      "tag": "0020_retake_request",
+      "breakpoints": true
     }
   ]
 }

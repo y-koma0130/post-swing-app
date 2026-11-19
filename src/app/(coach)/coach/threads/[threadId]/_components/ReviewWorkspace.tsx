@@ -15,9 +15,9 @@ import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
 import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
 import {
-  ANGLE_LABEL,
   KEY_POSITION_LABEL,
   ordinalLabel,
+  submissionVideoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
@@ -100,7 +100,7 @@ export const ReviewWorkspace = ({
 
   const angleOf = (videoId: string): string | null => {
     const video = current.videos.find((v) => v.id === videoId)
-    return video && current.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
+    return video && current.videos.length > 1 ? submissionVideoLabel(video, current.videos) : null
   }
 
   const selectSubmission = (next: number) => {
@@ -198,7 +198,7 @@ export const ReviewWorkspace = ({
                     : 'border-line text-muted bg-white'
                 }`}
               >
-                {ANGLE_LABEL[video.angle]}
+                {submissionVideoLabel(video, current.videos)}
                 {cards.drafts.some((d) => d.videoId === video.id) &&
                   `（${cards.drafts.filter((d) => d.videoId === video.id).length}枚）`}
               </button>
@@ -233,7 +233,7 @@ export const ReviewWorkspace = ({
             target={{
               kind: 'video',
               targetId: currentVideo.id,
-              label: `${ordinalLabel(index)}・${ANGLE_LABEL[currentVideo.angle]}の動画`,
+              label: `${ordinalLabel(index)}・${submissionVideoLabel(currentVideo, current.videos)}の動画`,
             }}
           />
         </div>
