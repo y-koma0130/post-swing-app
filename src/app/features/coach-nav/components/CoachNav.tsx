@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const ITEMS = [
   { href: '/coach', label: 'ホーム' },
+  { href: '/coach/students', label: '生徒' },
   { href: '/coach/drills', label: 'ドリル' },
   { href: '/coach/availability', label: '不在・返信' },
   { href: '/coach/settings', label: '設定' },
