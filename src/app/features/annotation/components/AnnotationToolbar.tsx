@@ -21,6 +21,7 @@ const TOOL_LABEL = {
   arrow: '矢印',
   circle: '円',
   free: 'フリー',
+  angle: '角度',
 } as const satisfies Record<EditorTool, string>
 
 const COLOR_LABEL = {

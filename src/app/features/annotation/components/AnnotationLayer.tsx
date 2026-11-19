@@ -1,10 +1,17 @@
 'use client'
 
-import { type PointerEvent, useState } from 'react'
+import { type PointerEvent, useEffect, useState } from 'react'
 import type { Annotation, NormalizedPoint } from '@/server/features/thread/domain/values/Annotation'
 import type { AnnotationEditor } from '../hooks/useAnnotationEditor'
 import { dragHandle, type HandleId, handleAt, handlesOf, hitTest } from '../utils/editing'
-import { appendStrokePoint, buildAnnotation, clampPoint, STROKE_WIDTH_RATIO } from '../utils/shapes'
+import {
+  appendStrokePoint,
+  buildAngle,
+  buildAnnotation,
+  clampPoint,
+  distanceInWidth,
+  STROKE_WIDTH_RATIO,
+} from '../utils/shapes'
 import { AnnotationShape } from './AnnotationShape'
 
 type Props = {
@@ -28,15 +35,45 @@ type Drag = {
  * 動画に重ねる線引きの層。動画と同じ大きさの箱に置く
  *
  * マウス・指・Apple Pencil を Pointer Events でまとめて扱う。
- * 「選択」の道具では、置いた図形を押して選び、つまみで角度・長さ・大きさを直したり、全体を動かしたりする
+ * 「選択」の道具では、置いた図形を押して選び、つまみで角度・長さ・大きさを直したり、全体を動かしたりする。
+ * 「角度」は2回に分けて描く：1本目をドラッグで引き（押し始めが頂点）、次に押した所が2本目の先になる
  */
 export const AnnotationLayer = ({ editor, width, height }: Props) => {
   const [stroke, setStroke] = useState<{ pointerId: number; points: NormalizedPoint[] } | null>(
     null
   )
   const [drag, setDrag] = useState<Drag | null>(null)
+  /** 角度の1本目を引き終え、2本目の先を待っているところ */
+  const [pendingAngle, setPendingAngle] = useState<{
+    vertex: NormalizedPoint
+    a: NormalizedPoint
+  } | null>(null)
+  /** 2本目の先の候補（マウスなら乗せている所、指なら押している所） */
+  const [angleCursor, setAngleCursor] = useState<NormalizedPoint | null>(null)
   const aspect = height / width
   const selecting = editor.tool === 'select'
+  const angleTool = editor.tool === 'angle'
+  const waitingSecondArm = angleTool ? pendingAngle : null
+
+  // 道具を変えたら、描きかけの角度はやめる
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 道具が変わったときだけ動かす
+  useEffect(() => {
+    setPendingAngle(null)
+    setAngleCursor(null)
+  }, [editor.tool])
+
+  // 2本目を待っているあいだは、Esc でやめられる
+  useEffect(() => {
+    if (!waitingSecondArm) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPendingAngle(null)
+        setAngleCursor(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [waitingSecondArm])
 
   const toPoint = (event: PointerEvent<SVGSVGElement>): NormalizedPoint => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -86,6 +123,7 @@ export const AnnotationLayer = ({ editor, width, height }: Props) => {
       startDrag(event, point)
       return
     }
+    if (waitingSecondArm) setAngleCursor(point)
     setStroke({ pointerId: event.pointerId, points: [point] })
   }
 
@@ -96,6 +134,11 @@ export const AnnotationLayer = ({ editor, width, height }: Props) => {
         ...drag,
         current: dragHandle(drag.original, drag.handle, drag.start, point, aspect),
       })
+      return
+    }
+    // 角度の2本目は、押していなくても（マウスを乗せているだけでも）先を追う
+    if (waitingSecondArm) {
+      setAngleCursor(point)
       return
     }
     if (!stroke || stroke.pointerId !== event.pointerId || editor.tool === 'select') return
@@ -118,6 +161,11 @@ export const AnnotationLayer = ({ editor, width, height }: Props) => {
       return
     }
     if (!stroke || stroke.pointerId !== event.pointerId || editor.tool === 'select') return
+    if (editor.tool === 'angle') {
+      finishAngleStep(toPoint(event))
+      setStroke(null)
+      return
+    }
     const annotation = buildAnnotation({
       tool: editor.tool,
       color: editor.color,
@@ -130,15 +178,55 @@ export const AnnotationLayer = ({ editor, width, height }: Props) => {
     setStroke(null)
   }
 
+  /** 角度：1本目を引き終えたら2本目を待ち、2本目の先を押したら図形にする */
+  const finishAngleStep = (point: NormalizedPoint) => {
+    if (waitingSecondArm) {
+      const angle = buildAngle({ ...waitingSecondArm, b: point, color: editor.color, aspect })
+      // 頂点のすぐ近くを押したときは、2本目を待ったままにする
+      if (angle) {
+        editor.add(angle)
+        setPendingAngle(null)
+        setAngleCursor(null)
+      }
+      return
+    }
+    const vertex = stroke?.points[0]
+    if (vertex && distanceInWidth(vertex, point, aspect) >= 0.01) {
+      setPendingAngle({ vertex, a: point })
+      setAngleCursor(null)
+    }
+  }
+
   const onPointerCancel = () => {
     setStroke(null)
     setDrag(null)
   }
 
-  const draft: Annotation | null =
-    stroke && editor.tool !== 'select'
+  const draft: Annotation | null = (() => {
+    if (editor.tool === 'select') return null
+    if (editor.tool === 'angle') {
+      if (waitingSecondArm) {
+        const cursor = angleCursor
+          ? buildAngle({ ...waitingSecondArm, b: angleCursor, color: editor.color, aspect })
+          : null
+        // 2本目の先が決まるまでは、1本目だけを見せる
+        return (
+          cursor ?? {
+            kind: 'line',
+            from: waitingSecondArm.vertex,
+            to: waitingSecondArm.a,
+            color: editor.color,
+          }
+        )
+      }
+      return stroke
+        ? buildAnnotation({ tool: 'line', color: editor.color, points: stroke.points, aspect })
+        : null
+    }
+    return stroke
       ? buildAnnotation({ tool: editor.tool, color: editor.color, points: stroke.points, aspect })
       : null
+  })()
 
   // 動かしている途中の図形は、元の図形の代わりに描く
   const shown = editor.annotations.map((annotation, index) =>
@@ -166,6 +254,22 @@ export const AnnotationLayer = ({ editor, width, height }: Props) => {
         <AnnotationShape key={index} annotation={annotation} width={width} height={height} />
       ))}
       {draft && <AnnotationShape annotation={draft} width={width} height={height} />}
+      {waitingSecondArm && (
+        <text
+          x={width / 2}
+          y={width * 0.06}
+          fontSize={width * 0.032}
+          fontWeight="bold"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          stroke="rgba(0, 0, 0, 0.6)"
+          strokeWidth={width * 0.008}
+          paintOrder="stroke"
+          pointerEvents="none"
+        >
+          2本目の先を押してください（Esc でやめる）
+        </text>
+      )}
       {selecting && selected && (
         <g pointerEvents="none">
           {/* フリーハンドはつまみがないので、選んだことが分かるよう描き始めに印を出す */}
