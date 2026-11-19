@@ -5,6 +5,7 @@ import {
   absenceAck,
   coachProfile,
   coachReview,
+  purchase,
   reply,
   replyDrill,
   reviewCard,
@@ -74,9 +75,12 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         declineMessage: thread.declineMessage,
         roundFrequency: thread.roundFrequency,
         averageScore: thread.averageScore,
+        priceYen: purchase.priceYen,
+        systemFeeYen: purchase.systemFeeYen,
       })
       .from(thread)
       .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
+      .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
       .innerJoin(user, eq(user.id, thread.studentUserId))
       .where(eq(thread.id, threadId))
       .get(),
@@ -168,6 +172,10 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       decline:
         t.status === 'declined' && people.declineReason
           ? { reason: people.declineReason, message: people.declineMessage ?? '' }
+          : null,
+      checkout:
+        t.status === 'draft'
+          ? { priceYen: people.priceYen, systemFeeYen: people.systemFeeYen }
           : null,
     },
     coachAvailability: toAvailabilityDto(availability),

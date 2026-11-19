@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ApplicationCheckoutForm } from '@/app/features/apply/components/ApplicationCheckoutForm'
+import { ApplicationConfirmation } from '@/app/features/apply/components/ApplicationConfirmation'
 import { DECLINE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatDateTime } from '@/app/utils/format'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
@@ -7,7 +8,14 @@ import type { ThreadDetailDto } from '@/server/features/thread/application/dto/T
 type Props = {
   thread: Pick<
     ThreadDetailDto,
-    'id' | 'status' | 'coachName' | 'coachSlug' | 'application' | 'submissions'
+    | 'id'
+    | 'status'
+    | 'coachName'
+    | 'coachSlug'
+    | 'planKind'
+    | 'application'
+    | 'submissions'
+    | 'limits'
   >
   /** カードの登録から戻ってきたところ */
   justApplied: boolean
@@ -50,6 +58,15 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
             </li>
           ))}
         </ol>
+        {step === 1 && thread.application.checkout && (
+          <ApplicationConfirmation
+            coachName={thread.coachName}
+            planKind={thread.planKind}
+            priceYen={thread.application.checkout.priceYen}
+            systemFeeYen={thread.application.checkout.systemFeeYen}
+            maxSubmissions={thread.limits.maxSubmissions}
+          />
+        )}
         {step === 1 && (
           <ApplicationCheckoutForm
             threadId={thread.id}

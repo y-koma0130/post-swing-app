@@ -53,6 +53,8 @@ export type ThreadDetailDto = {
     approvalDeadline: Date | null
     /** 断られたとき、その理由とひとこと。それ以外は null */
     decline: { reason: DeclineReason; message: string } | null
+    /** 下書きのとき、申し込みの最終確認に出す金額（申し込んだ時点の値）。それ以外は null */
+    checkout: { priceYen: number; systemFeeYen: number } | null
   }
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
