@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@/server/utils/result'
-import type { Purchase } from '../../domain/values/Purchase'
+import { needsPayment, type Purchase } from '../../domain/values/Purchase'
 
 type Dependencies = Readonly<{
   findPurchase: (purchaseId: string) => Promise<Purchase | null>
@@ -23,6 +23,7 @@ export type VoidPurchase = (
  * ドメインルール:
  * - 仮押さえした申し込みだけ。取り消し済みなら何もしない
  * - 生徒には請求しない
+ * - 無料のモニター（0円）は、Stripe を呼ばずに取り消す
  */
 export const voidPurchase: VoidPurchase = async ({ purchaseId }, deps) => {
   const purchase = await deps.findPurchase(purchaseId)
@@ -39,7 +40,7 @@ export const voidPurchase: VoidPurchase = async ({ purchaseId }, deps) => {
     if (!(await deps.cancelPaymentIntent(purchase.stripePaymentIntentId))) {
       return err('void_failed')
     }
-  } else if (!deps.allowWithoutStripe) {
+  } else if (needsPayment(purchase) && !deps.allowWithoutStripe) {
     return err('void_failed')
   }
   await deps.markPurchaseVoided(purchase.id)

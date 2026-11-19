@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Card } from '@/app/components/ui/Card'
-import { iconButtonClass } from '@/app/components/ui/choiceStyles'
+import { CopyButton, type CopyResult } from '@/app/components/ui/CopyButton'
 
 type Props = {
   /** 受付ページの URL（https://swingpost.app/c/yamada-golf） */
@@ -12,30 +12,19 @@ type Props = {
   path: string
 }
 
-type CopyState = 'idle' | 'copied' | 'failed'
-
 /**
  * 自分の受付ページの URL（設定の先頭に置く）。
  * インスタのプロフィールなどに貼るものなので、大きく出してワンタップでコピーできるようにする
  */
 export const PageLinkCard = ({ url, path }: Props) => {
-  const [copy, setCopy] = useState<CopyState>('idle')
+  const [copy, setCopy] = useState<CopyResult | null>(null)
 
   // 「コピーしました」は少しのあいだだけ出す
   useEffect(() => {
-    if (copy === 'idle') return
-    const timer = setTimeout(() => setCopy('idle'), 2500)
+    if (copy === null) return
+    const timer = setTimeout(() => setCopy(null), 2500)
     return () => clearTimeout(timer)
   }, [copy])
-
-  const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopy('copied')
-    } catch {
-      setCopy('failed')
-    }
-  }
 
   return (
     <Card className="space-y-3">
@@ -47,14 +36,7 @@ export const PageLinkCard = ({ url, path }: Props) => {
         >
           {url}
         </Link>
-        <button
-          type="button"
-          onClick={onCopy}
-          aria-label="URLをコピー"
-          className={`${iconButtonClass} flex size-10 shrink-0 items-center justify-center bg-white`}
-        >
-          {copy === 'copied' ? <CheckIcon /> : <CopyIcon />}
-        </button>
+        <CopyButton text={url} label="URLをコピー" onResult={setCopy} />
       </div>
       <p className="text-caption text-muted" role="status">
         {copy === 'copied'
@@ -66,38 +48,3 @@ export const PageLinkCard = ({ url, path }: Props) => {
     </Card>
   )
 }
-
-const CopyIcon = () => (
-  <svg viewBox="0 0 20 20" className="size-5" aria-hidden="true">
-    <rect
-      x="7"
-      y="7"
-      width="10"
-      height="10"
-      rx="2"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-    />
-    <path
-      d="M13 4.5V4a1.5 1.5 0 0 0-1.5-1.5h-7A1.5 1.5 0 0 0 3 4v7a1.5 1.5 0 0 0 1.5 1.5H5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-    />
-  </svg>
-)
-
-const CheckIcon = () => (
-  <svg viewBox="0 0 20 20" className="text-mint-text size-5" aria-hidden="true">
-    <path
-      d="M4.5 10.5l3.5 3.5 7.5-8"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-)

@@ -2,7 +2,7 @@ import { calcThreadPeriod } from '@/server/features/thread/domain/services/calcT
 import { err, ok, type Result } from '@/server/utils/result'
 import { calcCharge } from '../../domain/services/calcCharge.service'
 import { type Payment, paymentIdFor } from '../../domain/values/Payment'
-import type { Purchase } from '../../domain/values/Purchase'
+import { needsPayment, type Purchase } from '../../domain/values/Purchase'
 
 export type StartSubscriptionInput = Readonly<{
   purchaseId: string
@@ -58,6 +58,7 @@ export type CapturePurchase = (
  *   その承認も特典の対象になる。確定できなかったら特典は始めない
  * - 月額は、初月を確定したあと同じカードでサブスクリプションを始める。2回目の請求は初月のスレッドが
  *   終わる日（承認から30日後）。途中で失敗しても、もう一度承認すれば続きから進む（Stripe の冪等キー）
+ * - 無料のモニター（0円）は、Stripe を通さずに確定する（手数料も0円で記録する）
  */
 export const capturePurchase: CapturePurchase = async ({ purchaseId, now }, deps) => {
   const purchase = await deps.findPurchase(purchaseId)
@@ -71,7 +72,8 @@ export const capturePurchase: CapturePurchase = async ({ purchaseId, now }, deps
     return err('not_authorized')
   }
   const paymentIntentId = purchase.stripePaymentIntentId
-  if (paymentIntentId === null && !deps.allowWithoutStripe) {
+  // 無料のモニターは、Stripe を通さずに確定する
+  if (paymentIntentId === null && needsPayment(purchase) && !deps.allowWithoutStripe) {
     return err('capture_failed')
   }
 

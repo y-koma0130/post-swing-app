@@ -7,12 +7,14 @@ import { CoachProfileForm } from '@/app/features/coach-settings/components/Coach
 import { PageLinkCard } from '@/app/features/coach-settings/components/PageLinkCard'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
+import { MonitorCodesCard } from '@/app/features/monitor/components/MonitorCodesCard'
 import { coachFeeText } from '@/app/utils/feeText'
 import { getCurrentCoachFee } from '@/server/features/campaign/presentation/queries'
 import {
   getCurrentCoach,
   refreshCurrentCoachPayout,
 } from '@/server/features/coach/presentation/queries'
+import { getMyMonitorCodes } from '@/server/features/monitor/presentation/queries'
 import { getSiteUrl } from '@/server/utils/siteUrl'
 
 export const metadata: Metadata = { title: '設定' }
@@ -30,7 +32,7 @@ const CoachSettingsPage = async () => {
     payout?.ok === true
       ? { ...current.settings, chargesEnabled: payout.value.chargesEnabled }
       : current.settings
-  const fee = await getCurrentCoachFee()
+  const [fee, monitor] = await Promise.all([getCurrentCoachFee(), getMyMonitorCodes()])
 
   return (
     <Page layout="form">
@@ -53,6 +55,14 @@ const CoachSettingsPage = async () => {
         <h2 className="text-heading">プラン</h2>
         <PlansForm plans={settings.plans} />
       </Card>
+      {monitor && (
+        <MonitorCodesCard
+          codes={monitor.codes}
+          singlePriceYen={monitor.singlePriceYen}
+          siteUrl={getSiteUrl().origin}
+          coachSlug={settings.slug}
+        />
+      )}
     </Page>
   )
 }

@@ -15,6 +15,7 @@ const monthly: Purchase = {
   status: 'paid',
   stripeSubscriptionId: 'sub_1',
   stripePaymentIntentId: 'pi_1',
+  monitorCodeId: null,
 }
 
 const createdAt = new Date('2026-12-20T00:00:00Z')

@@ -9,6 +9,7 @@ import {
   reply,
   replyDrill,
   reviewCard,
+  shareConsent,
   thread,
   threadNotice,
   threadRead,
@@ -73,15 +74,29 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         studentName: user.name,
         declineReason: thread.declineReason,
         declineMessage: thread.declineMessage,
+        ageRange: thread.ageRange,
         roundFrequency: thread.roundFrequency,
         averageScore: thread.averageScore,
         priceYen: purchase.priceYen,
         systemFeeYen: purchase.systemFeeYen,
+        monitorCodeId: purchase.monitorCodeId,
+        consentAllowPublish: shareConsent.allowPublish,
+        consentShowFace: shareConsent.showFace,
+        consentShowAgeRange: shareConsent.showAgeRange,
+        consentShowScore: shareConsent.showScore,
+        consentUpdatedAt: shareConsent.updatedAt,
       })
       .from(thread)
       .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
       .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
       .innerJoin(user, eq(user.id, thread.studentUserId))
+      .leftJoin(
+        shareConsent,
+        and(
+          eq(shareConsent.coachUserId, thread.coachUserId),
+          eq(shareConsent.studentUserId, thread.studentUserId)
+        )
+      )
       .where(eq(thread.id, threadId))
       .get(),
     submissionIds.length === 0
@@ -160,7 +175,11 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     studentName: people.studentName,
     planKind: t.planKind,
     theme: t.theme,
-    golfProfile: { roundFrequency: people.roundFrequency, averageScore: people.averageScore },
+    golfProfile: {
+      ageRange: people.ageRange,
+      roundFrequency: people.roundFrequency,
+      averageScore: people.averageScore,
+    },
     retake: { requests: retakeRequests, remaining: remainingRetakes(retakeRequests) },
     status: t.status,
     startedAt: t.startedAt,
@@ -177,7 +196,22 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         t.status === 'draft'
           ? { priceYen: people.priceYen, systemFeeYen: people.systemFeeYen }
           : null,
+      monitor: people.monitorCodeId !== null,
     },
+    shareConsent:
+      people.consentAllowPublish === null ||
+      people.consentShowFace === null ||
+      people.consentShowAgeRange === null ||
+      people.consentShowScore === null ||
+      people.consentUpdatedAt === null
+        ? null
+        : {
+            allowPublish: people.consentAllowPublish,
+            showFace: people.consentShowFace,
+            showAgeRange: people.consentShowAgeRange,
+            showScore: people.consentShowScore,
+            updatedAt: people.consentUpdatedAt,
+          },
     coachAvailability: toAvailabilityDto(availability),
     sendGuard: {
       video: decideSendGuard({ availability, target: 'video', acknowledged: false }),

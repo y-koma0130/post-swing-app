@@ -14,6 +14,7 @@ const monthly: Purchase = {
   status: 'paid',
   stripeSubscriptionId: 'sub_1',
   stripePaymentIntentId: 'pi_1',
+  monitorCodeId: null,
 }
 
 const setup = (rate: number) => {

@@ -9,7 +9,7 @@ import {
   checkPurchaseEligibility,
   type PurchaseBlocker,
 } from '../../domain/services/checkPurchaseEligibility.service'
-import type { Purchase } from '../../domain/values/Purchase'
+import { needsPayment, type Purchase } from '../../domain/values/Purchase'
 import type { CheckoutCoach } from './startApplication.usecase'
 
 /**
@@ -58,18 +58,34 @@ type Dependencies = Readonly<{
     input: CreateCheckoutSessionInput
   ) => Promise<{ sessionId: string; url: string }>
   attachCheckoutSession: (purchaseId: string, sessionId: string) => Promise<void>
+  /** 公開の許可（モニターは「公開してよい」が条件。share が持つ） */
+  findShareConsent: (
+    coachUserId: string,
+    studentUserId: string
+  ) => Promise<{ allowPublish: boolean } | null>
+  /** 無料のモニター：カードを使わずに、申し込みを仮押さえ済みと同じ扱いにする */
+  markPurchaseAuthorizedWithoutPayment: (purchaseId: string) => Promise<void>
+  /** 申し込みのスレッドを承認待ちにして、コーチに知らせる（thread が持つ） */
+  requestApproval: (input: { purchaseId: string; now: Date }) => Promise<Result<unknown, string>>
 }>
 
 export type StartApplicationCheckoutError =
   | 'not_found'
   | 'not_draft'
   | 'no_submission'
+  | 'consent_required'
   | PurchaseBlocker
 
 export type StartApplicationCheckout = (
   params: StartApplicationCheckoutParams,
   dependencies: Dependencies
-) => Promise<Result<{ url: string }, StartApplicationCheckoutError>>
+) => Promise<
+  Result<
+    /** card：カードを登録する画面へ。free：無料のモニターなので、そのまま承認待ちになった */
+    { kind: 'card'; url: string } | { kind: 'free' },
+    StartApplicationCheckoutError
+  >
+>
 
 /**
  * 悩みと動画を送った申し込みの、カードの登録（仮押さえ）へ進む
@@ -79,6 +95,8 @@ export type StartApplicationCheckout = (
  *   （返信遅れの了承は、プランを選んだときに済んでいる）
  * - 価格とシステム利用料は、下書きを作ったときの値（申し込みに保存した値）
  * - 月額も初月は同じく仮押さえ。カードを保存し、承認したときにそのカードでサブスクリプションを始める
+ * - モニターは、公開の許可（公開してよい）が条件
+ * - 無料のモニターは、カードを登録せずにそのまま承認待ちにする（承認・お断りでも Stripe を使わない）
  */
 export const startApplicationCheckout: StartApplicationCheckout = async (
   { actor, threadId, now },
@@ -114,9 +132,21 @@ export const startApplicationCheckout: StartApplicationCheckout = async (
     facts: { activeThreadCount, hasPaidTrial, hasActiveSubscription },
     signupGuard: decideSignupGuard(availability),
     acknowledgedDelay: true,
+    monitor: purchase.monitorCodeId !== null,
   })
   if (!eligibility.ok) {
     return err(eligibility.error)
+  }
+  if (purchase.monitorCodeId !== null) {
+    const consent = await deps.findShareConsent(coach.userId, actor.userId)
+    if (!consent?.allowPublish) {
+      return err('consent_required')
+    }
+  }
+  if (!needsPayment(purchase)) {
+    await deps.markPurchaseAuthorizedWithoutPayment(purchase.id)
+    const requested = await deps.requestApproval({ purchaseId: purchase.id, now })
+    return requested.ok ? ok({ kind: 'free' }) : err('not_found')
   }
 
   const session = await deps.createCheckoutSession({
@@ -132,5 +162,5 @@ export const startApplicationCheckout: StartApplicationCheckout = async (
     saveCardForRenewal: purchase.planKind === 'monthly',
   })
   await deps.attachCheckoutSession(purchase.id, session.sessionId)
-  return ok({ url: session.url })
+  return ok({ kind: 'card', url: session.url })
 }

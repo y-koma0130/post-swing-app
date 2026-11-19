@@ -16,6 +16,7 @@ const purchase: Purchase = {
   status: 'pending',
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,
+  monitorCodeId: null,
 }
 const params = { purchaseId: 'purchase-1', paymentIntentId: 'pi_1', stripeCustomerId: 'cus_1', now }
 

@@ -1,6 +1,7 @@
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { user } from './auth'
 import { coachProfile } from './coach'
+import { monitorCode } from './monitor'
 
 const timestamps = {
   createdAt: integer({ mode: 'timestamp_ms' }).notNull(),
@@ -28,6 +29,8 @@ export const purchase = sqliteTable(
     /** 生徒が別に払うシステム利用料（申し込んだ時点の値。月額は毎月）。以前の申し込みは0 */
     systemFeeYen: integer().notNull().default(0),
     status: text({ enum: ['pending', 'authorized', 'paid', 'voided', 'canceled'] }).notNull(),
+    /** モニターのプロモーションコードで申し込んだとき、そのコード（価格はモニター価格。0円ならカードを使わない） */
+    monitorCodeId: text().references(() => monitorCode.id),
     stripeCheckoutSessionId: text().unique(),
     /** カードを仮押さえした支払い（承認で確定、断ったら取り消す） */
     stripePaymentIntentId: text().unique(),
@@ -38,6 +41,7 @@ export const purchase = sqliteTable(
   (t) => [
     index('purchase_student_coach_idx').on(t.studentUserId, t.coachUserId),
     index('purchase_coach_idx').on(t.coachUserId),
+    index('purchase_monitor_code_idx').on(t.monitorCodeId),
   ]
 )
 

@@ -1,6 +1,10 @@
 import { decideSignupGuard } from '@/server/features/coach/domain/services/decideSignupGuard.service'
 import type { CoachAvailability } from '@/server/features/coach/domain/values/CoachAvailability'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
+import type {
+  MonitorCodeUse,
+  ResolveMonitorCodeError,
+} from '@/server/features/monitor/application/dto/MonitorCodeUse.dto'
 import { startDraftThread } from '@/server/features/thread/domain/services/startDraftThread.service'
 import type { NewThread } from '@/server/features/thread/domain/values/Thread'
 import type { Actor } from '@/server/utils/actor'
@@ -29,6 +33,8 @@ export type StartApplicationParams = Readonly<{
   planKind: PlanKind
   /** 返信が遅れがちなとき、遅れることを了承したか */
   acknowledgedDelay: boolean
+  /** モニターのプロモーションコード（入れていなければ null）。1レッスンだけに使える */
+  monitorCode: string | null
   now: Date
 }>
 
@@ -43,13 +49,31 @@ type Dependencies = Readonly<{
     studentUserId: string,
     coachUserId: string
   ) => Promise<{ threadId: string } | null>
-  savePendingPurchase: (purchase: Purchase) => Promise<void>
+  /** 生徒が入れたプロモーションコードを、使えるモニター価格に変える（monitor が持つ） */
+  resolveMonitorCode: (input: {
+    coachUserId: string
+    studentUserId: string
+    code: string
+    now: Date
+  }) => Promise<Result<MonitorCodeUse, ResolveMonitorCodeError>>
+  /**
+   * 申し込み途中の申し込みを作る。モニターなら、先着の人数を超えないときだけ作る
+   * （同時に申し込まれても超えないように、書くときに数える）。作れなければ false
+   */
+  savePendingPurchase: (
+    purchase: Purchase,
+    monitorLimit: Readonly<{ codeId: string; maxUses: number }> | null
+  ) => Promise<boolean>
   /** 下書きのスレッドを作る（thread が持つ） */
   createThread: (thread: NewThread) => Promise<void>
   generateId: () => string
 }>
 
-export type StartApplicationError = 'not_found' | PurchaseBlocker
+export type StartApplicationError =
+  | 'not_found'
+  | 'monitor_single_only'
+  | PurchaseBlocker
+  | ResolveMonitorCodeError
 
 export type StartApplication = (
   params: StartApplicationParams,
@@ -61,9 +85,11 @@ export type StartApplication = (
  *
  * - 申し込めるかは checkPurchaseEligibility で決める
  * - このコーチへのまだ決まっていない申し込みがあれば、新しく作らずにそれを返す（1人1件）
+ * - プロモーションコードがあれば、1レッスンをモニター価格で申し込む（使えるかは monitor の resolveMonitorCode）。
+ *   先着の人数は、申し込みを作るときにもう一度数える
  */
 export const startApplication: StartApplication = async (
-  { actor, coachSlug, planKind, acknowledgedDelay, now },
+  { actor, coachSlug, planKind, acknowledgedDelay, monitorCode, now },
   deps
 ) => {
   const coach = await deps.findCoachForCheckout(coachSlug)
@@ -80,6 +106,9 @@ export const startApplication: StartApplication = async (
     deps.hasActiveSubscription(actor.userId, coach.userId),
     deps.findCoachAvailability(coach.userId, now),
   ])
+  if (monitorCode !== null && planKind !== 'single') {
+    return err('monitor_single_only')
+  }
   const eligibility = checkPurchaseEligibility({
     coach,
     planKind,
@@ -87,23 +116,44 @@ export const startApplication: StartApplication = async (
     facts: { activeThreadCount, hasPaidTrial, hasActiveSubscription },
     signupGuard: decideSignupGuard(availability),
     acknowledgedDelay,
+    monitor: monitorCode !== null,
   })
   if (!eligibility.ok) {
     return err(eligibility.error)
   }
+  const monitor =
+    monitorCode === null
+      ? null
+      : await deps.resolveMonitorCode({
+          coachUserId: coach.userId,
+          studentUserId: actor.userId,
+          code: monitorCode,
+          now,
+        })
+  if (monitor && !monitor.ok) {
+    return err(monitor.error)
+  }
+  const priceYen = monitor?.ok ? monitor.value.priceYen : eligibility.value.plan.priceYen
 
   const purchaseId = deps.generateId()
-  await deps.savePendingPurchase({
-    id: purchaseId,
-    studentUserId: actor.userId,
-    coachUserId: coach.userId,
-    planKind,
-    priceYen: eligibility.value.plan.priceYen,
-    systemFeeYen: calcSystemFee(eligibility.value.plan.priceYen),
-    status: 'pending',
-    stripeSubscriptionId: null,
-    stripePaymentIntentId: null,
-  })
+  const saved = await deps.savePendingPurchase(
+    {
+      id: purchaseId,
+      studentUserId: actor.userId,
+      coachUserId: coach.userId,
+      planKind,
+      priceYen,
+      systemFeeYen: calcSystemFee(priceYen),
+      status: 'pending',
+      stripeSubscriptionId: null,
+      stripePaymentIntentId: null,
+      monitorCodeId: monitor?.ok ? monitor.value.codeId : null,
+    },
+    monitor?.ok ? { codeId: monitor.value.codeId, maxUses: monitor.value.maxUses } : null
+  )
+  if (!saved) {
+    return err('code_full')
+  }
   const thread = startDraftThread({
     id: deps.generateId(),
     purchaseId,

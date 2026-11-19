@@ -6,10 +6,12 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { CoachLicenses } from '@/app/features/coach-profile/components/CoachLicenses'
+import { ShareConsentForm } from '@/app/features/share/components/ShareConsentForm'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { getActor } from '@/server/auth/getActor'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
+import { getMyShareConsent } from '@/server/features/share/presentation/queries'
 import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 export const metadata: Metadata = { title: 'コーチ' }
@@ -27,10 +29,11 @@ const MyCoachPage = async ({ params }: Props) => {
   if (!(await getActor())) {
     redirect(`/login?next=${encodeURIComponent(`/me/coaches/${coachSlug}`)}`)
   }
-  const [coach, purchases, threads] = await Promise.all([
+  const [coach, purchases, threads, share] = await Promise.all([
     getCoachProfile(coachSlug),
     getMyPurchases(),
     getMyThreadSummaries(),
+    getMyShareConsent(coachSlug),
   ])
   if (!coach || !purchases || !threads) notFound()
   const myPurchases = purchases.filter((p) => p.coachSlug === coach.slug)
@@ -72,6 +75,18 @@ const MyCoachPage = async ({ params }: Props) => {
         <section className="space-y-3">
           <h2 className="text-heading">購入したプラン</h2>
           <MyPurchaseList purchases={myPurchases} showCoach={false} />
+        </section>
+      )}
+
+      {share && (
+        <section className="space-y-3">
+          <h2 className="text-heading">添削の公開</h2>
+          <ShareConsentForm
+            coachSlug={coach.slug}
+            coachName={coach.name}
+            consent={share.consent}
+            canPublish={share.canPublish}
+          />
         </section>
       )}
 

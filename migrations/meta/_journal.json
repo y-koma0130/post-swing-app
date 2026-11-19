@@ -162,6 +162,13 @@
       "when": 1795069493622,
       "tag": "0022_lesson_wording",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1795073972093,
+      "tag": "0023_monitor_and_share_consent",
+      "breakpoints": true
     }
   ]
 }
