@@ -238,8 +238,10 @@ export const ShareImageBuilder = ({
                     maxLength={COMMENT_MAX}
                     rows={2}
                     onChange={(event) => {
+                      // 値は先に取り出す（state を更新する関数は後で呼ばれ、そのときには event.currentTarget が null）
+                      const value = event.currentTarget.value
                       setOutput(null)
-                      setComments((prev) => ({ ...prev, [card.id]: event.currentTarget.value }))
+                      setComments((prev) => ({ ...prev, [card.id]: value }))
                     }}
                     aria-label={`${card.title}の一言`}
                     className={inputClass}
