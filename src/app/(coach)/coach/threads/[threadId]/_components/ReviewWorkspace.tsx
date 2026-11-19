@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { chipClass, segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
-import { inputClass } from '@/app/components/ui/fieldStyles'
+import { inputClass, smallSelectClass } from '@/app/components/ui/fieldStyles'
 import { AnnotationLayer } from '@/app/features/annotation/components/AnnotationLayer'
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
 import {
@@ -266,7 +266,7 @@ export const ReviewWorkspace = ({
                 setChosenPartnerId(event.currentTarget.value)
                 rightEditor.reset()
               }}
-              className="border-line rounded-full border bg-white px-3 py-1.5 text-sm"
+              className={smallSelectClass}
             >
               {partners.map((video) => (
                 <option key={video.id} value={video.id}>

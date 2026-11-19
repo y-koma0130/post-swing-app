@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
-import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { inputClass, labelTextClass, selectClass } from '@/app/components/ui/fieldStyles'
 import type { GrantableCampaignDto } from '@/server/features/campaign/application/dto/CoachFeeGrantSummary.dto'
 import { inviteCoachAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -41,7 +41,7 @@ export const InviteCoachForm = ({ campaigns }: Props) => {
       {campaigns.length > 0 && (
         <label className="block space-y-1 sm:col-span-3">
           <span className={labelTextClass}>キャンペーン（任意）</span>
-          <select name="campaignCode" defaultValue="" className={inputClass}>
+          <select name="campaignCode" defaultValue="" className={selectClass}>
             <option value="">付けない</option>
             {campaigns.map((campaign) => (
               <option key={campaign.code} value={campaign.code} disabled={campaign.remaining === 0}>
