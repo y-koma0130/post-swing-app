@@ -17,21 +17,38 @@ const authorized: Purchase = {
 
 const now = new Date('2026-11-20T00:00:00Z')
 
-const captureDeps = (p: Purchase | null, captured = true, allowWithoutStripe = false) => {
-  const capturePaymentIntent = vi.fn(async () => captured)
-  const startSubscription = vi.fn(async () => ({ subscriptionId: 'sub_1' }))
-  const markPurchaseCaptured = vi.fn(async () => undefined)
+type CaptureDeps = Parameters<typeof capturePurchase>[1]
+
+const captureDeps = (
+  p: Purchase | null,
+  captured = true,
+  allowWithoutStripe = false,
+  fee: { rate: number; grantId: string | null } = { rate: 0.1, grantId: null }
+) => {
+  const capturePaymentIntent = vi.fn<CaptureDeps['capturePaymentIntent']>(async () => captured)
+  const startSubscription = vi.fn<CaptureDeps['startSubscription']>(async () => ({
+    subscriptionId: 'sub_1',
+  }))
+  const markPurchaseCaptured = vi.fn<CaptureDeps['markPurchaseCaptured']>(async () => undefined)
+  const startGrantsOnApproval = vi.fn<CaptureDeps['startGrantsOnApproval']>(async () => undefined)
+  const savePayment = vi.fn<CaptureDeps['savePayment']>(async () => undefined)
+  const deps: CaptureDeps = {
+    findPurchase: async () => p,
+    resolveFeeOnApproval: async () => fee,
+    capturePaymentIntent,
+    startGrantsOnApproval,
+    startSubscription,
+    savePayment,
+    markPurchaseCaptured,
+    allowWithoutStripe,
+  }
   return {
-    deps: {
-      findPurchase: async () => p,
-      capturePaymentIntent,
-      startSubscription,
-      markPurchaseCaptured,
-      allowWithoutStripe,
-    },
+    deps,
     capturePaymentIntent,
     startSubscription,
     markPurchaseCaptured,
+    startGrantsOnApproval,
+    savePayment,
   }
 }
 
@@ -51,13 +68,50 @@ const voidDeps = (p: Purchase | null, canceled = true, allowWithoutStripe = fals
 }
 
 describe('capturePurchase', () => {
-  it('仮押さえした支払いを確定して、支払い済みにする（冪等キーつき）', async () => {
-    const { deps, capturePaymentIntent, startSubscription, markPurchaseCaptured } =
+  it('仮押さえした支払いを、承認した時点の手数料で確定して記録する（冪等キーつき）', async () => {
+    const { deps, capturePaymentIntent, startSubscription, markPurchaseCaptured, savePayment } =
       captureDeps(authorized)
     expect((await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).ok).toBe(true)
-    expect(capturePaymentIntent).toHaveBeenCalledWith('pi_1', 'capture-purchase-1')
+    // 価格の10%（498円）＋システム利用料200円
+    expect(capturePaymentIntent).toHaveBeenCalledWith({
+      paymentIntentId: 'pi_1',
+      applicationFeeYen: 698,
+      idempotencyKey: 'capture-purchase-1-698',
+    })
     expect(startSubscription).not.toHaveBeenCalled()
+    expect(savePayment).toHaveBeenCalledWith({
+      id: 'capture-purchase-1',
+      purchaseId: 'purchase-1',
+      coachUserId: 'coach-1',
+      kind: 'capture',
+      priceYen: 4980,
+      systemFeeYen: 200,
+      platformFeeRate: 0.1,
+      platformFeeYen: 498,
+      feeGrantId: null,
+      feeAdjustedYen: 0,
+      stripePaymentIntentId: 'pi_1',
+      stripeInvoiceId: null,
+      paidAt: now,
+    })
     expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', { stripeSubscriptionId: null })
+  })
+
+  it('特典で0%なら、取り分はシステム利用料だけ。確定したら特典を始め、使った特典を残す', async () => {
+    const { deps, capturePaymentIntent, startGrantsOnApproval, savePayment } = captureDeps(
+      authorized,
+      true,
+      false,
+      { rate: 0, grantId: 'grant-1' }
+    )
+    expect((await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).ok).toBe(true)
+    expect(capturePaymentIntent.mock.calls[0]?.[0].applicationFeeYen).toBe(200)
+    expect(startGrantsOnApproval).toHaveBeenCalledWith('coach-1', now)
+    expect(savePayment.mock.calls[0]?.[0]).toMatchObject({
+      platformFeeRate: 0,
+      platformFeeYen: 0,
+      feeGrantId: 'grant-1',
+    })
   })
 
   it('月額は、初月を確定したあと同じカードでサブスクリプションを始める（2回目は30日後）', async () => {
@@ -73,6 +127,7 @@ describe('capturePurchase', () => {
       paymentIntentId: 'pi_1',
       priceYen: 3980,
       systemFeeYen: 200,
+      platformFeeRate: 0.1,
       firstRenewalAt: new Date('2026-12-20T00:00:00Z'),
     })
     expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', {
@@ -98,13 +153,18 @@ describe('capturePurchase', () => {
     ).toEqual({ ok: false, error: 'not_authorized' })
   })
 
-  it('確定できなければ失敗し、支払い済みにしない', async () => {
-    const { deps, markPurchaseCaptured } = captureDeps(authorized, false)
+  it('確定できなければ失敗し、支払い済みにしない。特典も始めない', async () => {
+    const { deps, markPurchaseCaptured, startGrantsOnApproval, savePayment } = captureDeps(
+      authorized,
+      false
+    )
     expect(await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).toEqual({
       ok: false,
       error: 'capture_failed',
     })
     expect(markPurchaseCaptured).not.toHaveBeenCalled()
+    expect(startGrantsOnApproval).not.toHaveBeenCalled()
+    expect(savePayment).not.toHaveBeenCalled()
   })
 
   it('Stripe を通っていない申し込みは、開発中だけ確定できる', async () => {

@@ -33,6 +33,12 @@ export const thread = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 生徒が最初の動画を送るときに書く */
     theme: text().notNull().default(''),
+    /** ふだんのラウンドの回数（最初の提出のときに任意で書く。domain の roundFrequencySchema） */
+    roundFrequency: text({
+      enum: ['not_yet', 'few_per_year', 'monthly', 'two_to_three_per_month', 'weekly'],
+    }),
+    /** 平均スコア（最初の提出のときに任意で書く） */
+    averageScore: integer(),
     status: text({
       enum: ['draft', 'requested', 'waiting_student', 'waiting_coach', 'closed', 'declined'],
     }).notNull(),
@@ -78,6 +84,31 @@ export const submission = sqliteTable(
 )
 
 /**
+ * コーチから生徒への撮り直しのお願い（提出回数には数えない）。
+ * 元の動画はそのまま使えて、コーチは撮り直しを待たずに添削してもよい
+ */
+export const retakeRequest = sqliteTable(
+  'retake_request',
+  {
+    id: text().primaryKey(),
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    submissionId: text()
+      .notNull()
+      .references(() => submission.id),
+    reason: text({ enum: ['framing', 'angle', 'quality', 'other'] }).notNull(),
+    /** コーチのひとこと（任意） */
+    message: text().notNull().default(''),
+    requestedAt: integer({ mode: 'timestamp_ms' }).notNull(),
+    /** お願いが終わった日時（撮り直しが届いた・生徒が今は撮れないと返した・コーチが添削を返した） */
+    closedAt: integer({ mode: 'timestamp_ms' }),
+    closeReason: text({ enum: ['resent', 'declined', 'replied'] }),
+  },
+  (t) => [index('retake_request_thread_idx').on(t.threadId)]
+)
+
+/**
  * 生徒が上げた動画。本体は R2 に置き、ここには場所だけを持つ。
  * 上げた時点では下書き（submission_id も chat_message_id も null）で、提出やチャットを送ったときにひも付ける。
  * 下書きは本人にしか見せず、24時間で消す
@@ -93,6 +124,8 @@ export const video = sqliteTable(
     submissionId: text().references(() => submission.id),
     /** コーチがチャットで送った動画なら、そのメッセージ（提出にもチャットにも付いていなければ下書き） */
     chatMessageId: text(),
+    /** 撮り直しのお願いに応えて送った動画なら、そのお願い（提出は元の提出のまま） */
+    retakeRequestId: text(),
     uploaderUserId: text()
       .notNull()
       .references(() => user.id),
@@ -140,6 +173,8 @@ export const replyDrill = sqliteTable(
     drillId: text(),
     title: text().notNull(),
     description: text().notNull(),
+    /** 送った時点のドリルの動画（drill_video）。動画のないドリルなら null */
+    videoId: text().references(() => drillVideo.id),
   },
   (t) => [primaryKey({ columns: [t.replyId, t.sortOrder] })]
 )
@@ -189,6 +224,8 @@ export const chatMessage = sqliteTable(
       .default('none'),
     drillTitle: text(),
     drillDescription: text(),
+    /** 送った時点のドリルの動画（drill_video）。動画のないドリルなら null */
+    drillVideoId: text().references(() => drillVideo.id),
     videoId: text().references(() => video.id),
     /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
     quote: text({ mode: 'json' }),
@@ -239,7 +276,31 @@ export const threadNotice = sqliteTable(
   (t) => [uniqueIndex('thread_notice_absence_idx').on(t.threadId, t.absenceId)]
 )
 
-/** コーチが登録するドリル。添削カードに添えて使い回す */
+/**
+ * ドリルのお手本の動画。スレッドには属さず、コーチのものとして持つ。
+ * 送った添削・チャットの写し（reply_drill・chat_message）からも指すので、ドリルを消しても残す。
+ * どこからも指されなくなった動画（登録しなかった下書き・消したドリルの動画）は、毎日の処理で消す
+ */
+export const drillVideo = sqliteTable(
+  'drill_video',
+  {
+    id: text().primaryKey(),
+    coachUserId: text()
+      .notNull()
+      .references(() => coachProfile.userId, { onDelete: 'cascade' }),
+    r2Key: text().notNull(),
+    contentType: text().notNull(),
+    sizeBytes: integer().notNull(),
+    /** 送る前にブラウザで測った長さ（秒）。測れなかったときは null */
+    durationSec: real(),
+    /** 送る前にブラウザで測ったフレームレート。分からないときは null */
+    frameRate: real(),
+    uploadedAt: integer({ mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('drill_video_coach_idx').on(t.coachUserId)]
+)
+
+/** コーチが登録するドリル。レッスン（添削・チャット）で使い回す */
 export const drill = sqliteTable(
   'drill',
   {
@@ -249,6 +310,8 @@ export const drill = sqliteTable(
       .references(() => coachProfile.userId, { onDelete: 'cascade' }),
     title: text().notNull(),
     description: text().notNull(),
+    /** お手本の動画。動画が必須になる前に登録したドリルは null */
+    videoId: text().references(() => drillVideo.id),
     ...timestamps,
   },
   (t) => [index('drill_coach_idx').on(t.coachUserId)]

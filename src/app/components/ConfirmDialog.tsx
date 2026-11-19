@@ -10,6 +10,8 @@ type Props = {
   checkboxLabel?: string | undefined
   confirmLabel?: string
   cancelLabel?: string
+  /** 取り消せない操作（削除・返金など）。確定のボタンを危険の見た目にする */
+  danger?: boolean | undefined
   /** 「送る」。チェックボックスを出したときは、その値を受け取る */
   onConfirm: (checked: boolean) => void
   /** 「やめる」・Esc・背景を押したとき */
@@ -29,6 +31,7 @@ export const ConfirmDialog = ({
   checkboxLabel,
   confirmLabel = '送る',
   cancelLabel = 'やめる',
+  danger = false,
   onConfirm,
   onCancel,
 }: Props) => {
@@ -86,9 +89,9 @@ export const ConfirmDialog = ({
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={onKeyDown}
-        className="relative w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-lg"
+        className="rounded-card relative w-full max-w-sm space-y-4 bg-white p-6 shadow-lg"
       >
-        <p id={titleId} className="text-sm leading-relaxed">
+        <p id={titleId} className="text-sm leading-relaxed whitespace-pre-wrap">
           {message}
         </p>
         {checkboxLabel && (
@@ -106,7 +109,12 @@ export const ConfirmDialog = ({
           <Button variant="secondary" onClick={onCancel} className="flex-1">
             {cancelLabel}
           </Button>
-          <Button ref={confirmRef} onClick={() => onConfirm(checked)} className="flex-1">
+          <Button
+            ref={confirmRef}
+            variant={danger ? 'danger' : 'primary'}
+            onClick={() => onConfirm(checked)}
+            className="flex-1"
+          >
             {confirmLabel}
           </Button>
         </div>

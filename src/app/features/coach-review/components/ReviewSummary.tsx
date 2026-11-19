@@ -12,7 +12,7 @@ export const ReviewSummary = ({ summary }: Props) => {
   return (
     <section className="space-y-3">
       <h2 className="text-heading">
-        レビュー <span className="text-mint">★{summary.average.toFixed(1)}</span>
+        レビュー <span className="text-mint-text">★{summary.average.toFixed(1)}</span>
         <span className="text-muted ml-1 text-sm font-normal">（{summary.count}件）</span>
       </h2>
       <ul className="space-y-3">
@@ -20,7 +20,7 @@ export const ReviewSummary = ({ summary }: Props) => {
           <li key={review.id}>
             <Card className="space-y-2">
               <p className="text-sm">
-                <span className="text-mint font-bold">{'★'.repeat(review.rating)}</span>
+                <span className="text-mint-text font-bold">{'★'.repeat(review.rating)}</span>
                 <span className="text-caption text-muted ml-2">
                   {formatMonthDay(review.createdAt)}
                 </span>
@@ -29,7 +29,7 @@ export const ReviewSummary = ({ summary }: Props) => {
                 <p className="text-body text-sm whitespace-pre-wrap">{review.comment}</p>
               )}
               {review.coachReply && (
-                <p className="bg-surface text-caption text-muted rounded-xl p-3 whitespace-pre-wrap">
+                <p className="bg-surface text-caption text-muted rounded-lg p-3 whitespace-pre-wrap">
                   コーチより：{review.coachReply}
                 </p>
               )}

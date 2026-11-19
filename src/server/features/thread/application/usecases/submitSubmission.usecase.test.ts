@@ -36,6 +36,7 @@ const params = {
   threadId: 'thread-1',
   theme: 'トップで右ひざが流れる',
   note: 'ドライバーです',
+  golfProfile: { roundFrequency: 'monthly', averageScore: '98' },
   videoIds: ['front-1', 'back-1'],
   now,
 }
@@ -90,6 +91,7 @@ describe('submitSubmission', () => {
       videoIds: ['front-1', 'back-1'],
       note: 'ドライバーです',
       theme: 'トップで右ひざが流れる',
+      golfProfile: { roundFrequency: 'monthly', averageScore: 98 },
       nextStatus: 'waiting_coach',
       sentDuringAbsenceId: null,
     })

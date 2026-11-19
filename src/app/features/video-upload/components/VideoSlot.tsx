@@ -1,11 +1,12 @@
 'use client'
 
 import { type Ref, useEffect, useImperativeHandle, useState } from 'react'
+import { buttonClass } from '@/app/components/ui/Button'
 import { labelTextClass } from '@/app/components/ui/fieldStyles'
 import { ANGLE_LABEL, ANGLES } from '@/app/features/thread/utils/threadText'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 import { useVideoConversion } from '../hooks/useVideoConversion'
-import { useVideoUpload } from '../hooks/useVideoUpload'
+import { type UploadOutcome, useVideoUpload } from '../hooks/useVideoUpload'
 import { Progress } from './Progress'
 import { VideoClipPicker } from './VideoClipPicker'
 
@@ -13,9 +14,15 @@ const MB = 1024 * 1024
 
 /** 親（提出フォーム）から呼ぶ操作 */
 export type VideoSlotHandle = {
-  /** 選んだ動画を変換して上げる。上げた動画の ID を返す。動画を選んでいない・失敗したら null */
-  upload: () => Promise<string | null>
+  /**
+   * 選んだ動画を変換して上げる。上げた動画の ID か、失敗の文言を返す。
+   * onProgress を渡すと、この枠が画面から消えても変換・送信の進み具合を受け取れる
+   */
+  upload: (onProgress?: SlotProgress) => Promise<UploadOutcome>
 }
+
+/** 枠の進み具合（変換と送信のどちらか、0〜1） */
+export type SlotProgress = (step: 'converting' | 'uploading', progress: number) => void
 
 /** 親に知らせる、この枠の状態 */
 export type VideoSlotStatus = {
@@ -29,7 +36,8 @@ export type VideoSlotStatus = {
 
 type Props = {
   ref: Ref<VideoSlotHandle>
-  threadId: string
+  /** 送り先（スレッドの動画・ドリルの動画で違う） */
+  uploadUrl: string
   /** 「1本目」「2本目（任意）」 */
   label: string
   /** 最初の角度（1本目は正面、2本目は後方） */
@@ -37,8 +45,8 @@ type Props = {
   maxBytes: number
   maxSeconds: number
   disabled: boolean
-  /** submission：生徒の提出（角度を選ぶ）、chat：コーチがチャットに添える（角度は選ばない） */
-  purpose?: 'submission' | 'chat' | undefined
+  /** 撮った角度を選ばせるか（生徒の提出だけ。チャットやドリルの動画では選ばない） */
+  chooseAngle?: boolean | undefined
   onStatusChange: (status: VideoSlotStatus) => void
 }
 
@@ -48,14 +56,14 @@ type Props = {
  */
 export const VideoSlot = ({
   ref,
-  threadId,
+  uploadUrl,
   label,
   defaultAngle,
   maxBytes,
   maxSeconds,
   disabled,
   onStatusChange,
-  purpose = 'submission',
+  chooseAngle = true,
 }: Props) => {
   const [angle, setAngle] = useState<VideoAngle>(defaultAngle)
   const conversion = useVideoConversion(maxBytes)
@@ -75,24 +83,25 @@ export const VideoSlot = ({
   }, [onStatusChange, selected, ready, busy])
 
   useImperativeHandle(ref, () => ({
-    upload: async () => {
-      if (!file || tooLarge || tooLong) return null
-      const toSend = await conversion.prepare()
-      if (!toSend) return null
+    upload: async (onProgress) => {
+      if (!file) return { ok: false, message: '動画を選んでください' }
+      if (tooLarge || tooLong) return { ok: false, message: '動画が長すぎるか、大きすぎます' }
+      const prepared = await conversion.prepare((value) => onProgress?.('converting', value))
+      if (!prepared.ok) return prepared
+      const toSend = prepared.file
       // 変換に失敗して元のファイルを送るときは、元の長さ
       const durationSec =
         toSend === file && analysis.kind === 'ready'
           ? analysis.info.duration
           : conversion.durationSec
-      const videoId = await upload({
-        threadId,
-        purpose,
+      return upload({
+        url: uploadUrl,
         file: toSend,
         angle,
         durationSec,
         frameRate: conversion.frameRate,
+        onProgress: (value) => onProgress?.('uploading', value),
       })
-      return videoId
     },
   }))
 
@@ -104,7 +113,7 @@ export const VideoSlot = ({
   return (
     <fieldset className="border-line rounded-card space-y-3 border p-4" disabled={disabled}>
       <legend className={`${labelTextClass} px-1`}>{label}</legend>
-      {purpose === 'submission' && (
+      {chooseAngle && (
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="撮った角度">
           {ANGLES.map((value) => (
             <label
@@ -122,14 +131,24 @@ export const VideoSlot = ({
           ))}
         </div>
       )}
-      <input
-        type="file"
-        accept="video/mp4,video/quicktime,video/webm,video/*"
-        disabled={busy}
-        onChange={(event) => void conversion.select(event.currentTarget.files?.[0] ?? null)}
-        className="block w-full text-sm"
-        aria-label={`${label}の動画`}
-      />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label
+          className={`${buttonClass({ variant: 'secondary' })} has-focus-visible:ring-mint has-focus-visible:ring-2 has-focus-visible:ring-offset-2 has-disabled:cursor-not-allowed has-disabled:opacity-40`}
+        >
+          {file ? '動画を選び直す' : '動画を選ぶ'}
+          <input
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm,video/*"
+            disabled={busy}
+            onChange={(event) => void conversion.select(event.currentTarget.files?.[0] ?? null)}
+            className="sr-only"
+            aria-label={`${label}の動画`}
+          />
+        </label>
+        <span className="text-caption text-muted min-w-0 truncate">
+          {file ? file.name : '選んでいません'}
+        </span>
+      </div>
       {analysis.kind === 'reading' && (
         <p className="text-caption text-muted">動画を読み込んでいます…</p>
       )}

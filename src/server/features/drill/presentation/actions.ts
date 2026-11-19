@@ -11,6 +11,7 @@ import { deleteDrill } from '../application/usecases/deleteDrill.usecase'
 import { drillInputSchema } from '../domain/values/Drill'
 import {
   findDrillOwner,
+  isUnusedOwnDrillVideo,
   deleteDrill as removeDrill,
   saveDrill,
 } from '../infrastructure/repositories/drillRepository'
@@ -24,15 +25,22 @@ export const createDrillAction = async (
   const input = drillInputSchema.safeParse({
     title: formString(formData, 'title'),
     description: formString(formData, 'description'),
+    videoId: formString(formData, 'videoId'),
   })
   if (!input.success) {
     return actionError(input.error.issues[0]?.message ?? '入力を確かめてください')
   }
   const result = await createDrill(
     { actor, drill: input.data },
-    { isCoach, saveDrill, generateId: () => crypto.randomUUID() }
+    { isCoach, isUnusedOwnDrillVideo, saveDrill, generateId: () => crypto.randomUUID() }
   )
-  if (!result.ok) return actionError('コーチとして登録されていません')
+  if (!result.ok) {
+    return actionError(
+      result.error === 'invalid_video'
+        ? 'お手本の動画が見つかりません。動画を選び直してください'
+        : 'コーチとして登録されていません'
+    )
+  }
   revalidatePath('/coach/drills')
   return actionSuccess('ドリルを登録しました')
 }

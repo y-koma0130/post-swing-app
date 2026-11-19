@@ -33,11 +33,19 @@ type Dependencies = Readonly<{
     }>
   >
   notifyThreadExpiring: (input: { threadId: string; studentUserId: string }) => Promise<void>
-  /** since より後に届き、まだ添削していない提出（レッスン中のスレッド）。threadStartedAt はスレッドの開始 */
-  findUnrepliedSubmissionsSince: (
-    since: Date
-  ) => Promise<
-    Array<{ threadId: string; coachUserId: string; submittedAt: Date; threadStartedAt: Date }>
+  /**
+   * since より後に届き、まだ添削していない提出（レッスン中のスレッド）。threadStartedAt はスレッドの開始。
+   * 撮り直しのお願いの様子（開いているか・最後に終わった日時）も返す
+   */
+  findUnrepliedSubmissionsSince: (since: Date) => Promise<
+    Array<{
+      threadId: string
+      coachUserId: string
+      submittedAt: Date
+      threadStartedAt: Date
+      retakeOpen: boolean
+      lastRetakeClosedAt: Date | null
+    }>
   >
   notifyReplyOverdue: (input: { threadId: string; coachUserId: string }) => Promise<void>
   /** closedBefore より前に終了したスレッドの、まだ消していない動画 */
@@ -131,7 +139,9 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
   // 1スレッドに遅れた提出がいくつあっても、知らせるのは1回
   const overdue = new Map<string, string>()
   for (const s of unreplied) {
-    const from = replyClockStart(s.submittedAt, s.threadStartedAt)
+    // 撮り直しを待っているあいだは、返信の期限を止める
+    if (s.retakeOpen) continue
+    const from = replyClockStart(s.submittedAt, s.threadStartedAt, s.lastRetakeClosedAt)
     if (isReplyDuePassedToday(calcReplyDueAt(from, absencesOf(s.coachUserId)), now)) {
       overdue.set(s.threadId, s.coachUserId)
     }

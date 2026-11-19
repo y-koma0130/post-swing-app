@@ -160,6 +160,10 @@ const readDurationByPlayer = (file: File): Promise<number | null> =>
 
 const MB = 1024 * 1024
 
+export type PrepareOutcome =
+  | Readonly<{ ok: true; file: File }>
+  | Readonly<{ ok: false; message: string }>
+
 /**
  * 送る動画を選んだときの読み取り、範囲の選択、送る直前の変換
  */
@@ -199,29 +203,39 @@ export const useVideoConversion = (maxBytes: number) => {
     [analysis]
   )
 
-  /** 送るファイルを用意する。変換に失敗したら、上限以内なら元のファイルにする。送れなければ null */
-  const prepare = useCallback(async (): Promise<File | null> => {
-    if (!file) return null
-    if (analysis.kind !== 'ready') return file
-    setProgress(0)
-    try {
-      return await convertVideo({
-        file,
-        info: analysis.info,
-        range,
-        maxBytes,
-        onProgress: setProgress,
-      })
-    } catch {
-      if (file.size <= maxBytes) return file
-      setError(
-        `動画を変換できませんでした。${Math.floor(maxBytes / MB)}MB以内になるよう、撮影し直すか短く編集してから送ってください`
-      )
-      return null
-    } finally {
-      setProgress(null)
-    }
-  }, [file, analysis, range, maxBytes])
+  /**
+   * 送るファイルを用意する。変換に失敗したら、上限以内なら元のファイルにする。
+   * onProgress は、この画面を離れても進み具合を受け取りたいとき（画面の外で提出を進めるとき）に渡す
+   */
+  const prepare = useCallback(
+    async (onProgress?: (progress: number) => void): Promise<PrepareOutcome> => {
+      if (!file) return { ok: false, message: '動画を選んでください' }
+      if (analysis.kind !== 'ready') return { ok: true, file }
+      setProgress(0)
+      onProgress?.(0)
+      try {
+        const converted = await convertVideo({
+          file,
+          info: analysis.info,
+          range,
+          maxBytes,
+          onProgress: (value) => {
+            setProgress(value)
+            onProgress?.(value)
+          },
+        })
+        return { ok: true, file: converted }
+      } catch {
+        if (file.size <= maxBytes) return { ok: true, file }
+        const message = `動画を変換できませんでした。${Math.floor(maxBytes / MB)}MB以内になるよう、撮影し直すか短く編集してから送ってください`
+        setError(message)
+        return { ok: false, message }
+      } finally {
+        setProgress(null)
+      }
+    },
+    [file, analysis, range, maxBytes]
+  )
 
   return {
     file,

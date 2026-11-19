@@ -1,4 +1,5 @@
 import { Badge } from '@/app/components/ui/Badge'
+import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import { ThreadList } from './ThreadList'
@@ -76,9 +77,9 @@ const Section = ({ section, threads }: SectionProps) => {
   if (section.folded) {
     return (
       <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-2">
+        <summary className={summaryClass}>
           {heading}
-          <span className="text-caption text-muted group-open:hidden">表示する</span>
+          <DisclosureToggle />
         </summary>
         <div className="pt-3">{body}</div>
       </details>

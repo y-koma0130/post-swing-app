@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
+import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass } from '@/app/components/ui/fieldStyles'
 import { VideoSlot, type VideoSlotHandle } from '@/app/features/video-upload/components/VideoSlot'
@@ -118,9 +119,9 @@ export const ChatComposer = ({
   // 動画を添えるときは、先に上げてから送る
   const uploadThenSubmit = async () => {
     if (panel === 'video' && videoSelected) {
-      const videoId = await slotRef.current?.upload()
-      if (!videoId || !videoIdRef.current) return
-      videoIdRef.current.value = videoId
+      const uploaded = await slotRef.current?.upload()
+      if (!uploaded?.ok || !videoIdRef.current) return
+      videoIdRef.current.value = uploaded.videoId
     }
     submitNow()
   }
@@ -143,7 +144,7 @@ export const ChatComposer = ({
               <button
                 type="button"
                 onClick={() => setQuote(null)}
-                className="text-muted hover:text-ink text-sm"
+                className={`${iconButtonClass} text-lg`}
                 aria-label="引用を外す"
               >
                 ×
@@ -172,8 +173,8 @@ export const ChatComposer = ({
             ref={(handle) => {
               slotRef.current = handle
             }}
-            threadId={threadId}
-            purpose="chat"
+            uploadUrl={`/api/threads/${threadId}/videos?purpose=chat`}
+            chooseAngle={false}
             label="送る動画"
             defaultAngle="other"
             maxBytes={coach.maxVideoBytes}
@@ -192,7 +193,7 @@ export const ChatComposer = ({
             placeholder={viewer === 'coach' ? '補足を送る' : 'コーチに質問する'}
             className={`${inputClass} field-sizing-content max-h-40 min-h-11 resize-none`}
           />
-          <Button type="submit" disabled={pending || videoBusy} className="shrink-0">
+          <Button type="submit" pending={pending} disabled={videoBusy} className="shrink-0">
             送る
           </Button>
         </div>

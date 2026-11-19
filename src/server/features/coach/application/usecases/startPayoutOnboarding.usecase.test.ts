@@ -8,7 +8,12 @@ const setup = (stripeAccountId: string | null) => {
   const createConnectAccount = vi.fn<Deps['createConnectAccount']>(async () => 'acct_new')
   const saveStripeAccountId = vi.fn<Deps['saveStripeAccountId']>(async () => undefined)
   const deps: Deps = {
-    findPayoutAccount: async () => ({ stripeAccountId, email: 'coach@example.com' }),
+    findPayoutAccount: async () => ({
+      stripeAccountId,
+      email: 'coach@example.com',
+      slug: 'yamada',
+      displayName: '山田コーチ',
+    }),
     createConnectAccount,
     saveStripeAccountId,
     createOnboardingLink: async (id) => `https://connect.stripe.com/setup/${id}`,
@@ -17,14 +22,19 @@ const setup = (stripeAccountId: string | null) => {
 }
 
 describe('startPayoutOnboarding', () => {
-  it('口座がなければ作って保存し、設定画面のURLを返す', async () => {
+  it('口座がなければ、受付ページと活動名を渡して作って保存し、設定画面のURLを返す', async () => {
     const { deps, createConnectAccount, saveStripeAccountId } = setup(null)
     const result = await startPayoutOnboarding({ actor }, deps)
     expect(result).toEqual({
       ok: true,
       value: { url: 'https://connect.stripe.com/setup/acct_new' },
     })
-    expect(createConnectAccount).toHaveBeenCalledOnce()
+    expect(createConnectAccount).toHaveBeenCalledExactlyOnceWith({
+      userId: 'coach-1',
+      email: 'coach@example.com',
+      slug: 'yamada',
+      displayName: '山田コーチ',
+    })
     expect(saveStripeAccountId).toHaveBeenCalledWith('coach-1', 'acct_new')
   })
 

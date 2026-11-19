@@ -79,12 +79,12 @@ export const AbsenceForm = ({ coachName, absence, today, noteMaxLength, onDone }
         不在中は、新しい申し込みを受け付けません（申し込みは48時間以内に受けるか決めるため）。
       </p>
       {startDate && endDate && startDate <= endDate && (
-        <p className="bg-surface text-muted rounded-xl p-3 text-sm">
+        <p className="bg-surface text-muted rounded-lg p-3 text-sm">
           {absencePreview(coachName, { startDate, endDate })}
         </p>
       )}
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" pending={pending}>
         {absence ? '保存する' : '不在期間を追加'}
       </Button>
     </form>

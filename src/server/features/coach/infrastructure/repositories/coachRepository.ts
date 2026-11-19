@@ -1,8 +1,10 @@
 import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
+import { isUniqueViolation } from '@/server/db/isUniqueViolation'
 import { coachProfile, plan, user } from '@/server/db/schema'
 import { type Coach, type CoachProfile, coachSchema } from '../../domain/values/Coach'
+import { knownLicenses } from '../../domain/values/CoachLicense'
 import { type CoachSlug, coachSlugSchema } from '../../domain/values/CoachSlug'
 import type { Plan } from '../../domain/values/Plan'
 
@@ -55,6 +57,8 @@ export const findCoachByUserId: FindCoachByUserId = async (userId) => {
     title: profile.title,
     bio: profile.bio,
     instagram: profile.instagram,
+    licenses: knownLicenses(profile.licenses),
+    licenseOther: profile.licenseOther,
     monthlyCapacity: profile.monthlyCapacity,
     stripeAccountId: profile.stripeAccountId,
     chargesEnabled: profile.chargesEnabled,
@@ -82,10 +86,26 @@ const planRows = (userId: string, plans: readonly Plan[], now: Date) =>
     updatedAt: now,
   }))
 
+/** 保存の結果。確かめてから保存するまでに同じスラッグを取られたら slug_taken */
+export type SaveSlugResult = 'saved' | 'slug_taken'
+
+const SLUG_COLUMN = 'coach_profile.slug'
+
+/** 書き込みを試し、スラッグの一意制約で止められたら slug_taken にする（ほかのエラーはそのまま投げる） */
+const withSlugGuard = async (write: () => Promise<unknown>): Promise<SaveSlugResult> => {
+  try {
+    await write()
+    return 'saved'
+  } catch (error) {
+    if (isUniqueViolation(error, SLUG_COLUMN)) return 'slug_taken'
+    throw error
+  }
+}
+
 export type SaveInvitedCoach = (
   coach: Coach,
   invitedUser: { email: string; isNew: boolean }
-) => Promise<void>
+) => Promise<SaveSlugResult>
 export const saveInvitedCoach: SaveInvitedCoach = async (coach, invitedUser) => {
   const db = getDb()
   const now = new Date()
@@ -96,6 +116,8 @@ export const saveInvitedCoach: SaveInvitedCoach = async (coach, invitedUser) => 
     title: coach.title,
     bio: coach.bio,
     instagram: coach.instagram,
+    licenses: [...coach.licenses],
+    licenseOther: coach.licenseOther,
     monthlyCapacity: coach.monthlyCapacity,
     stripeAccountId: coach.stripeAccountId,
     chargesEnabled: coach.chargesEnabled,
@@ -105,39 +127,42 @@ export const saveInvitedCoach: SaveInvitedCoach = async (coach, invitedUser) => 
   const plansInsert = db.insert(plan).values(planRows(coach.userId, coach.plans, now))
 
   // user・プロフィール・プランをまとめて書く（途中で失敗して半端なコーチが残らないように）
-  if (invitedUser.isNew) {
-    await db.batch([
-      db.insert(user).values({
-        id: coach.userId,
-        name: coach.name,
-        email: invitedUser.email.toLowerCase(),
-        emailVerified: false,
-        createdAt: now,
-        updatedAt: now,
-      }),
-      profileInsert,
-      plansInsert,
-    ])
-  } else {
-    await db.batch([profileInsert, plansInsert])
-  }
+  return withSlugGuard(() =>
+    invitedUser.isNew
+      ? db.batch([
+          db.insert(user).values({
+            id: coach.userId,
+            name: coach.name,
+            email: invitedUser.email.toLowerCase(),
+            emailVerified: false,
+            createdAt: now,
+            updatedAt: now,
+          }),
+          profileInsert,
+          plansInsert,
+        ])
+      : db.batch([profileInsert, plansInsert])
+  )
 }
 
-export type SaveCoachProfile = (userId: string, profile: CoachProfile) => Promise<void>
-export const saveCoachProfile: SaveCoachProfile = async (userId, profile) => {
-  await getDb()
-    .update(coachProfile)
-    .set({
-      slug: profile.slug,
-      displayName: profile.name,
-      title: profile.title,
-      bio: profile.bio,
-      instagram: profile.instagram,
-      monthlyCapacity: profile.monthlyCapacity,
-      updatedAt: new Date(),
-    })
-    .where(eq(coachProfile.userId, userId))
-}
+export type SaveCoachProfile = (userId: string, profile: CoachProfile) => Promise<SaveSlugResult>
+export const saveCoachProfile: SaveCoachProfile = async (userId, profile) =>
+  withSlugGuard(() =>
+    getDb()
+      .update(coachProfile)
+      .set({
+        slug: profile.slug,
+        displayName: profile.name,
+        title: profile.title,
+        bio: profile.bio,
+        instagram: profile.instagram,
+        licenses: [...profile.licenses],
+        licenseOther: profile.licenseOther,
+        monthlyCapacity: profile.monthlyCapacity,
+        updatedAt: new Date(),
+      })
+      .where(eq(coachProfile.userId, userId))
+  )
 
 export type SavePlans = (userId: string, plans: readonly Plan[]) => Promise<void>
 export const savePlans: SavePlans = async (userId, plans) => {
@@ -159,12 +184,20 @@ export const savePlans: SavePlans = async (userId, plans) => {
   await db.batch([first, ...rest])
 }
 
-export type FindPayoutAccount = (
-  userId: string
-) => Promise<{ stripeAccountId: string | null; email: string } | null>
+export type FindPayoutAccount = (userId: string) => Promise<{
+  stripeAccountId: string | null
+  email: string
+  slug: string
+  displayName: string
+} | null>
 export const findPayoutAccount: FindPayoutAccount = async (userId) => {
   const row = await getDb()
-    .select({ stripeAccountId: coachProfile.stripeAccountId, email: user.email })
+    .select({
+      stripeAccountId: coachProfile.stripeAccountId,
+      email: user.email,
+      slug: coachProfile.slug,
+      displayName: coachProfile.displayName,
+    })
     .from(coachProfile)
     .innerJoin(user, eq(user.id, coachProfile.userId))
     .where(eq(coachProfile.userId, userId))

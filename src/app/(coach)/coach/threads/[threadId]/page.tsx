@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { QuoteProvider } from '@/app/features/chat/components/QuoteContext'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
+import { ChartPanel } from '@/app/features/student-chart/components/ChartPanel'
 import { ApplicationDecision } from '@/app/features/thread/components/ApplicationDecision'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
@@ -12,6 +14,7 @@ import { DECLINE_REASON_LABEL, threadUsageText } from '@/app/features/thread/uti
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
+import { getChartForThread } from '@/server/features/student-chart/presentation/queries'
 import { getCoachThread } from '@/server/features/thread/presentation/queries'
 import { CoachThreadView } from './_components/CoachThreadView'
 
@@ -25,7 +28,11 @@ type Props = {
 const ReviewPage = async ({ params }: Props) => {
   const { threadId } = await params
   if (!(await getActor())) redirect('/coach/login')
-  const [thread, drills] = await Promise.all([getCoachThread(threadId), getMyDrills()])
+  const [thread, drills, chart] = await Promise.all([
+    getCoachThread(threadId),
+    getMyDrills(),
+    getChartForThread(threadId),
+  ])
   if (!thread) notFound()
 
   return (
@@ -61,16 +68,18 @@ const ReviewPage = async ({ params }: Props) => {
         />
       )}
       {thread.application.decline && (
-        <p className="bg-surface text-muted rounded-xl p-4 text-sm">
-          お断りしました：{DECLINE_REASON_LABEL[thread.application.decline.reason]}
-          {thread.application.decline.message && `（${thread.application.decline.message}）`}
-          。生徒には請求されていません。
-        </p>
+        <Notice>
+          <p>
+            お断りしました：{DECLINE_REASON_LABEL[thread.application.decline.reason]}
+            {thread.application.decline.message && `（${thread.application.decline.message}）`}
+            。生徒には請求されていません。
+          </p>
+        </Notice>
       )}
       {thread.review && (
         <Card className="space-y-2">
           <p className="font-bold">
-            レビュー <span className="text-mint">{'★'.repeat(thread.review.rating)}</span>
+            レビュー <span className="text-mint-text">{'★'.repeat(thread.review.rating)}</span>
           </p>
           {thread.review.comment && (
             <p className="text-body text-sm whitespace-pre-wrap">{thread.review.comment}</p>
@@ -84,6 +93,8 @@ const ReviewPage = async ({ params }: Props) => {
       )}
       <MarkThreadRead threadId={thread.id} latestAt={latestTimelineAt(thread)} />
       <QuoteProvider>
+        {/* カルテ（生徒には見えない）。申し込みの下書きのあいだはない */}
+        {chart && <ChartPanel chart={chart} threadId={thread.id} />}
         <CoachThreadView thread={thread} drills={drills} />
       </QuoteProvider>
     </Page>

@@ -3,6 +3,7 @@ import type { CoachAvailability } from '@/server/features/coach/domain/values/Co
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
+import { PURCHASE_RULES } from '../../domain/rules'
 import { calcCharge } from '../../domain/services/calcCharge.service'
 import {
   checkPurchaseEligibility,
@@ -123,7 +124,9 @@ export const startApplicationCheckout: StartApplicationCheckout = async (
     productName: `${coach.name}：${eligibility.value.plan.name}${purchase.planKind === 'monthly' ? '（初月）' : ''}`,
     priceYen: purchase.priceYen,
     systemFeeYen: purchase.systemFeeYen,
-    applicationFeeYen: calcCharge(purchase).applicationFeeYen,
+    // 仮押さえのときは基本の率で入れておく。実際の手数料は、承認して確定するときの率で決まる（capturePurchase）
+    applicationFeeYen: calcCharge({ ...purchase, platformFeeRate: PURCHASE_RULES.platformFeeRate })
+      .applicationFeeYen,
     destinationAccountId: eligibility.value.destinationAccountId,
     threadId: thread.id,
     saveCardForRenewal: purchase.planKind === 'monthly',

@@ -4,6 +4,7 @@ import { getDb } from '@/server/db/client'
 import {
   chatMessage,
   reply,
+  retakeRequest,
   submission,
   thread,
   threadNotice,
@@ -60,15 +61,23 @@ export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =
     .where(and(inArray(thread.status, [...IN_LESSON_STATUSES]), lte(thread.expiresAt, to)))
     .all()
 
-export type FindUnrepliedSubmissionsSince = (
-  since: Date
-) => Promise<
-  Array<{ threadId: string; coachUserId: string; submittedAt: Date; threadStartedAt: Date }>
->
-/** since より後に届き、まだ添削していない提出（レッスン中のスレッド） */
-export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = async (since) =>
-  getDb()
+export type UnrepliedSubmission = {
+  threadId: string
+  coachUserId: string
+  submittedAt: Date
+  threadStartedAt: Date
+  /** 撮り直しをお願いしていて、まだ返事がない */
+  retakeOpen: boolean
+  /** いちばん最後に撮り直しのお願いが終わった日時（なければ null） */
+  lastRetakeClosedAt: Date | null
+}
+export type FindUnrepliedSubmissionsSince = (since: Date) => Promise<UnrepliedSubmission[]>
+/** since より後に届き、まだ添削していない提出（レッスン中のスレッド）と、その撮り直しのお願いの様子 */
+export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = async (since) => {
+  const db = getDb()
+  const rows = await db
     .select({
+      id: submission.id,
       threadId: submission.threadId,
       coachUserId: thread.coachUserId,
       submittedAt: submission.submittedAt,
@@ -85,6 +94,29 @@ export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = asyn
       )
     )
     .all()
+  const requests =
+    rows.length === 0
+      ? []
+      : await db
+          .select({ submissionId: retakeRequest.submissionId, closedAt: retakeRequest.closedAt })
+          .from(retakeRequest)
+          .where(
+            inArray(
+              retakeRequest.submissionId,
+              rows.map((r) => r.id)
+            )
+          )
+          .all()
+  return rows.map(({ id, ...row }) => {
+    const mine = requests.filter((r) => r.submissionId === id)
+    const closedTimes = mine.flatMap((r) => (r.closedAt ? [r.closedAt.getTime()] : []))
+    return {
+      ...row,
+      retakeOpen: mine.some((r) => r.closedAt === null),
+      lastRetakeClosedAt: closedTimes.length > 0 ? new Date(Math.max(...closedTimes)) : null,
+    }
+  })
+}
 
 export type FindVideosToDelete = (
   closedBefore: Date

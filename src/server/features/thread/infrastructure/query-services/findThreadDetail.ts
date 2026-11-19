@@ -5,6 +5,7 @@ import {
   absenceAck,
   coachProfile,
   coachReview,
+  purchase,
   reply,
   replyDrill,
   reviewCard,
@@ -25,12 +26,18 @@ import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
 import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
 import { studentChatBlocker } from '../../domain/services/checkChatMessage.service'
+import { remainingRetakes } from '../../domain/services/checkRetakeRequest.service'
 import { checkStudentClose } from '../../domain/services/checkStudentClose.service'
 import { checkSubmission } from '../../domain/services/checkSubmission.service'
 import { countRemainingStudentMessages } from '../../domain/services/countRemainingStudentMessages.service'
 import { decideSendGuard } from '../../domain/services/decideSendGuard.service'
 import { annotationSchema } from '../../domain/values/Annotation'
+import { findRetakeRequests } from '../repositories/retakeRepository'
 import { findThread } from '../repositories/threadRepository'
+
+/** ドリルのお手本の動画の URL（見てよいかは drill の Route Handler が確かめる） */
+const drillVideoUrl = (videoId: string | null): string | null =>
+  videoId === null ? null : `/api/drill-videos/${videoId}`
 
 export type FindThreadDetail = (
   threadId: string
@@ -66,9 +73,14 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         studentName: user.name,
         declineReason: thread.declineReason,
         declineMessage: thread.declineMessage,
+        roundFrequency: thread.roundFrequency,
+        averageScore: thread.averageScore,
+        priceYen: purchase.priceYen,
+        systemFeeYen: purchase.systemFeeYen,
       })
       .from(thread)
       .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
+      .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
       .innerJoin(user, eq(user.id, thread.studentUserId))
       .where(eq(thread.id, threadId))
       .get(),
@@ -87,7 +99,11 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     videoIds.length === 0
       ? []
       : db
-          .select({ id: video.id, frameRate: video.frameRate })
+          .select({
+            id: video.id,
+            frameRate: video.frameRate,
+            retakeRequestId: video.retakeRequestId,
+          })
           .from(video)
           .where(inArray(video.id, videoIds))
           .all(),
@@ -98,6 +114,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             replyId: replyDrill.replyId,
             title: replyDrill.title,
             description: replyDrill.description,
+            videoId: replyDrill.videoId,
           })
           .from(replyDrill)
           .innerJoin(reply, eq(reply.id, replyDrill.replyId))
@@ -108,7 +125,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   if (!people) {
     return null
   }
-  const [facts, notices, acks, reads] = await Promise.all([
+  const [facts, notices, acks, reads, retakeRequests] = await Promise.all([
     findCoachAvailabilityFacts(t.coachUserId),
     db
       .select()
@@ -126,6 +143,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       .from(threadRead)
       .where(eq(threadRead.threadId, threadId))
       .all(),
+    findRetakeRequests(threadId),
   ])
   const readAtOf = (userId: string) => reads.find((r) => r.userId === userId)?.lastReadAt ?? null
   const now = new Date()
@@ -142,6 +160,8 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     studentName: people.studentName,
     planKind: t.planKind,
     theme: t.theme,
+    golfProfile: { roundFrequency: people.roundFrequency, averageScore: people.averageScore },
+    retake: { requests: retakeRequests, remaining: remainingRetakes(retakeRequests) },
     status: t.status,
     startedAt: t.startedAt,
     expiresAt: expiry.expiresAt,
@@ -152,6 +172,10 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       decline:
         t.status === 'declined' && people.declineReason
           ? { reason: people.declineReason, message: people.declineMessage ?? '' }
+          : null,
+      checkout:
+        t.status === 'draft'
+          ? { priceYen: people.priceYen, systemFeeYen: people.systemFeeYen }
           : null,
     },
     coachAvailability: toAvailabilityDto(availability),
@@ -183,6 +207,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
           angle: v.angle,
           url: `/api/videos/${v.id}`,
           frameRate: frameRates.find((x) => x.id === v.id)?.frameRate ?? null,
+          retake: (frameRates.find((x) => x.id === v.id)?.retakeRequestId ?? null) !== null,
         })),
         reply: r
           ? {
@@ -190,7 +215,11 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               comment: r.comment,
               drills: replyDrills
                 .filter((d) => d.replyId === r.id)
-                .map(({ title, description }) => ({ title, description })),
+                .map(({ title, description, videoId }) => ({
+                  title,
+                  description,
+                  videoUrl: drillVideoUrl(videoId),
+                })),
               cards: cards
                 .filter((c) => c.submissionId === s.id)
                 .map(({ card }) => ({
@@ -215,7 +244,14 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               url: `/api/videos/${attachment.videoId}`,
               frameRate: frameRates.find((x) => x.id === attachment.videoId)?.frameRate ?? null,
             }
-          : attachment,
+          : attachment.kind === 'drill'
+            ? {
+                kind: 'drill',
+                title: attachment.title,
+                description: attachment.description,
+                videoUrl: drillVideoUrl(attachment.videoId),
+              }
+            : attachment,
     })),
     notices: notices.map((n) => ({
       id: n.id,

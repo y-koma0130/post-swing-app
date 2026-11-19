@@ -1,25 +1,28 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_YEN } from '@/app/features/apply/utils/systemFeeText'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import { COACH_LP_URL, CONTACT_EMAIL, OPERATOR_NAME } from '@/app/utils/externalLinks'
 
 export const metadata: Metadata = { title: '特定商取引法に基づく表記' }
 
-const fee = `${SYSTEM_FEE_YEN.toLocaleString('ja-JP')}円`
-
 const ROWS = [
-  ['販売事業者', OPERATOR_NAME],
-  ['運営統括責任者', OPERATOR_NAME],
-  ['所在地', 'ご請求があった場合、遅滞なく開示します。'],
   [
-    '電話番号',
-    'ご請求があった場合、遅滞なく開示します。お問い合わせは、下記のメールアドレスにお願いします。',
+    '販売事業者',
+    `添削：各コーチ（受付ページに名前を表示しているコーチ）／システム利用料：${OPERATOR_NAME}`,
   ],
-  ['メールアドレス', CONTACT_EMAIL],
+  ['運営統括責任者', OPERATOR_NAME],
+  [
+    '事業者の氏名・所在地・電話番号',
+    '運営者・各コーチとも、ご請求があった場合、遅滞なく開示します（コーチの情報は運営者からお知らせします）。お問い合わせは、下記のメールアドレスにお願いします。',
+  ],
+  [
+    'メールアドレス',
+    `${CONTACT_EMAIL}（コーチの添削に関するお問い合わせも、こちらで受け付けます）`,
+  ],
   ['サービスの名称', 'SwingPost（ゴルフのスイング動画のオンライン添削）'],
   ['販売価格', '各コーチの受付ページに表示（税込）'],
   [
     '商品代金以外の必要料金',
-    `システム利用料 ${fee}（税込）／申し込みごと（月額プランは毎月）。インターネット接続の通信料`,
+    `システム利用料 ${SYSTEM_FEE_RULE_TEXT}／申し込みごと（月額プランは毎月）。インターネット接続の通信料`,
   ],
   ['支払い方法', 'クレジットカード（Stripe）'],
   [
@@ -45,7 +48,7 @@ const CommercePage = () => (
   <>
     <h1>特定商取引法に基づく表記</h1>
     <p>
-      生徒向けにご提供する「SwingPost」の申し込み（添削とシステム利用料）に関する表記です。コーチ向けの表記は
+      生徒向けにご提供する「SwingPost」の申し込み（添削とシステム利用料）に関する表記です。添削は各コーチが提供し（添削の契約はコーチと生徒の間で成立します）、システム利用料と代金の受け取りは運営者が行います。コーチ向けの表記は
       <a href={`${COACH_LP_URL}/tokushoho/`} className="underline">
         こちら
       </a>

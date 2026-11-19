@@ -6,6 +6,7 @@ import {
   chatMessage,
   reply,
   replyDrill,
+  retakeRequest,
   reviewCard,
   submission,
   thread,
@@ -85,7 +86,12 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
     sentAt: m.sentAt,
     attachment:
       m.attachmentKind === 'drill'
-        ? { kind: 'drill', title: m.drillTitle ?? '', description: m.drillDescription ?? '' }
+        ? {
+            kind: 'drill',
+            title: m.drillTitle ?? '',
+            description: m.drillDescription ?? '',
+            videoId: m.drillVideoId,
+          }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
           : { kind: 'none' },
@@ -163,6 +169,7 @@ export const saveSubmission: SaveSubmission = async (s) => {
       .set({
         status: s.nextStatus,
         ...(s.theme === null ? {} : { theme: s.theme }),
+        ...(s.golfProfile === null ? {} : s.golfProfile),
         updatedAt: s.submittedAt,
       })
       .where(eq(thread.id, s.threadId)),
@@ -248,10 +255,16 @@ export const saveReply: SaveReply = async (r) => {
         drillId: d.drillId,
         title: d.title,
         description: d.description,
+        videoId: d.videoId,
       })
     ),
     firstCard,
     ...restCards,
+    // 撮り直しを待っていても、添削を返したらお願いは終わり
+    db
+      .update(retakeRequest)
+      .set({ closedAt: r.sentAt, closeReason: 'replied' })
+      .where(and(eq(retakeRequest.submissionId, r.submissionId), isNull(retakeRequest.closedAt))),
     db
       .update(thread)
       .set({ status: r.nextStatus, updatedAt: r.sentAt })
@@ -272,6 +285,7 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       attachmentKind: m.attachment.kind,
       drillTitle: m.attachment.kind === 'drill' ? m.attachment.title : null,
       drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
+      drillVideoId: m.attachment.kind === 'drill' ? m.attachment.videoId : null,
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
       quote: m.quote,
       sentAt: m.sentAt,

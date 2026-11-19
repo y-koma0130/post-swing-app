@@ -61,6 +61,8 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
     title: coach.title,
     bio: coach.bio,
     instagram: coach.instagram,
+    licenses: coach.licenses,
+    licenseOther: coach.licenseOther,
     avatarUrl: toAvatarUrl(coach.slug, avatarKey),
     remainingCapacity: calcRemainingCapacity(coach, activeThreadCount),
     acceptingApplications: canAcceptApplications(coach),

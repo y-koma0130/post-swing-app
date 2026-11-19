@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { grantCampaignToCoach } from '@/server/features/campaign/public'
 import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
@@ -28,6 +29,7 @@ import {
   createConnectAccount,
   createDashboardLink,
   createOnboardingLink,
+  syncConnectProfile,
 } from '../infrastructure/external-services/stripeConnect'
 import {
   findAbsences,
@@ -65,10 +67,23 @@ const generateSlug = () =>
   generateCoachSlug(crypto.getRandomValues(new Uint8Array(RANDOM_SLUG_LENGTH)))
 
 const inviteInputSchema = z.object({
-  email: z.email('メールアドレスの形が正しくありません'),
+  // コピーで前後に空白が入っても通す（大文字・小文字は保存と検索のときにそろえる）
+  email: z.string().trim().pipe(z.email('メールアドレスの形が正しくありません')),
   name: z.string().trim().min(1, '名前を入れてください').max(50),
   slug: optionalSlugSchema,
+  /** 付けるキャンペーン（任意。空なら付けない） */
+  campaignCode: z
+    .string()
+    .trim()
+    .transform((value) => (value === '' ? null : value)),
 })
+
+const GRANT_ERROR_MESSAGE = {
+  campaign_not_found: 'キャンペーンが見つかりません',
+  campaign_inactive: 'キャンペーンは終了しています',
+  already_granted: 'このコーチにはすでに付いています',
+  limit_reached: 'キャンペーンの枠がいっぱいです',
+} as const
 
 /** 管理者がコーチを招待する */
 export const inviteCoachAction = async (
@@ -82,6 +97,7 @@ export const inviteCoachAction = async (
     email: formString(formData, 'email'),
     name: formString(formData, 'name'),
     slug: formString(formData, 'slug'),
+    campaignCode: formString(formData, 'campaignCode'),
   })
   if (!input.success) {
     return actionError(firstIssue(input.error))
@@ -105,7 +121,17 @@ export const inviteCoachAction = async (
     )
   }
   revalidatePath('/admin')
-  return actionSuccess(`${input.data.name} さんを招待し、ログインの案内をメールで送りました`)
+  const invited = `${input.data.name} さんを招待し、ログインの案内をメールで送りました`
+  if (input.data.campaignCode === null) {
+    return actionSuccess(invited)
+  }
+  const granted = await grantCampaignToCoach(result.value.userId, input.data.campaignCode)
+  if (!granted.ok) {
+    return actionError(
+      `${invited}。ただし特典は付けられませんでした（${GRANT_ERROR_MESSAGE[granted.error]}）`
+    )
+  }
+  return actionSuccess(`${invited}（特典も付けました）`)
 }
 
 /** コーチが自分のプロフィールを保存する */
@@ -123,6 +149,8 @@ export const updateCoachProfileAction = async (
     title: formString(formData, 'title'),
     bio: formString(formData, 'bio'),
     instagram: formString(formData, 'instagram'),
+    licenses: formData.getAll('licenses').filter((v): v is string => typeof v === 'string'),
+    licenseOther: formString(formData, 'licenseOther'),
     monthlyCapacity: Number(formString(formData, 'monthlyCapacity')),
   })
   if (!input.success) {
@@ -131,7 +159,14 @@ export const updateCoachProfileAction = async (
 
   const result = await updateCoachProfile(
     { actor, profile: input.data },
-    { findCoachSlug, isSlugTaken, saveCoachProfile, generateSlug }
+    {
+      findCoachSlug,
+      isSlugTaken,
+      saveCoachProfile,
+      generateSlug,
+      findStripeAccountId,
+      syncConnectProfile,
+    }
   )
   if (!result.ok) {
     return actionError(
@@ -195,16 +230,30 @@ export const updatePlansAction = async (
   )
 }
 
+/** Stripe との通信が失敗したとき、コーチに出す文言 */
+const PAYOUT_STRIPE_ERROR_MESSAGE =
+  'Stripe とつながりませんでした。少し時間をおいて、もう一度お試しください。続くときは運営にお問い合わせください'
+
 /** 売上を受け取る口座の設定（Stripe）へ進む */
-export const startPayoutOnboardingAction = async (): Promise<void> => {
+export const startPayoutOnboardingAction = async (
+  _prev: ActionState,
+  _formData: FormData
+): Promise<ActionState> => {
   const actor = await getActor()
   if (!actor) {
     redirect('/coach/login')
   }
-  const result = await startPayoutOnboarding(
-    { actor },
-    { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
-  )
+  let result: Awaited<ReturnType<typeof startPayoutOnboarding>>
+  try {
+    result = await startPayoutOnboarding(
+      { actor },
+      { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
+    )
+  } catch (error) {
+    // Stripe の設定不足（本番の有効化前など）もここに来る。中身はログで確かめる
+    console.error('[stripe] 口座の設定を始められませんでした', actor.userId, error)
+    return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
+  }
   if (!result.ok) {
     redirect('/coach')
   }
@@ -212,7 +261,10 @@ export const startPayoutOnboardingAction = async (): Promise<void> => {
 }
 
 /** 売上・入金を確かめる Stripe の画面へ */
-export const openPayoutDashboardAction = async (): Promise<void> => {
+export const openPayoutDashboardAction = async (
+  _prev: ActionState,
+  _formData: FormData
+): Promise<ActionState> => {
   const actor = await getActor()
   if (!actor) {
     redirect('/coach/login')
@@ -221,7 +273,14 @@ export const openPayoutDashboardAction = async (): Promise<void> => {
   if (accountId === null) {
     redirect('/coach/settings')
   }
-  redirect(await createDashboardLink(accountId))
+  let url: string
+  try {
+    url = await createDashboardLink(accountId)
+  } catch (error) {
+    console.error('[stripe] 売上の画面を開けませんでした', actor.userId, error)
+    return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
+  }
+  redirect(url)
 }
 
 /** 管理者がコーチの受付を止める・再開する */

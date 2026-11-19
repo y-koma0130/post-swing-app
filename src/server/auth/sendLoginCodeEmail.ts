@@ -8,6 +8,7 @@ export const sendLoginCodeEmail = async ({ to, code }: { to: string; code: strin
   await sendEmail({
     to,
     subject: `SwingPost のログインコード：${code}`,
+    code,
     text: [
       `ログインコードは ${code} です。`,
       '10分以内に、ログイン画面に入力してください。',

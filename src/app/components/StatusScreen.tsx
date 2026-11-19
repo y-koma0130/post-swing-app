@@ -35,7 +35,7 @@ export const StatusScreen = ({
       </Link>
     )}
     <div className="max-w-sm space-y-3">
-      {code && <p className="text-mint text-5xl font-bold tracking-tight">{code}</p>}
+      {code && <p className="text-mint-text text-5xl font-bold tracking-tight">{code}</p>}
       <h1 className="text-title">{title}</h1>
       <p className="text-muted text-sm leading-relaxed">{description}</p>
     </div>

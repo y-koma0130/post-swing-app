@@ -8,7 +8,7 @@ import { formatYen } from '@/app/utils/format'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { SYSTEM_FEE_NOTE, SYSTEM_FEE_YEN } from '../utils/systemFeeText'
+import { SYSTEM_FEE_NOTE, systemFeeFor } from '../utils/systemFeeText'
 
 type Props = {
   coachSlug: string
@@ -71,9 +71,9 @@ export const PlanCheckoutForm = ({
                 </span>
                 <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
                 <span className="text-caption text-muted mt-1 block">
-                  ＋システム利用料{formatYen(SYSTEM_FEE_YEN)}
+                  ＋システム利用料{formatYen(systemFeeFor(plan.priceYen))}
                   {plan.kind === 'monthly' ? '／月' : ''}（お支払い{' '}
-                  {formatYen(plan.priceYen + SYSTEM_FEE_YEN)}
+                  {formatYen(plan.priceYen + systemFeeFor(plan.priceYen))}
                   {plan.kind === 'monthly' ? '／月' : ''}）
                 </span>
               </span>
@@ -90,7 +90,7 @@ export const PlanCheckoutForm = ({
         />
       )}
       {needsAck && (
-        <label className="bg-warning-soft flex items-start gap-2 rounded-xl p-3 text-sm">
+        <label className="bg-warning-soft flex items-start gap-2 rounded-xl p-4 text-sm">
           <input
             type="checkbox"
             name="acknowledgeDelay"
@@ -104,11 +104,12 @@ export const PlanCheckoutForm = ({
       <FormMessage state={state} />
       <Button
         type="submit"
-        disabled={pending || !firstAvailable || (needsAck && !acknowledged)}
+        pending={pending}
+        disabled={!firstAvailable || (needsAck && !acknowledged)}
         size="lg"
         className="w-full"
       >
-        {student ? '申し込みへ進む' : 'ログインして申し込む'}
+        {pending ? '準備しています…' : student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
       <p className="text-caption text-muted">
         悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。

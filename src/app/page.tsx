@@ -33,7 +33,7 @@ const HomePage = () => (
     </header>
     <main className="mx-auto max-w-4xl px-6">
       <section className="space-y-6 py-16 sm:py-24">
-        <p className="text-caption text-mint font-bold tracking-wide">
+        <p className="text-caption text-mint-text font-bold tracking-wide">
           ゴルフコーチのための、オンライン添削サービス
         </p>
         <h1 className="text-3xl leading-snug font-bold sm:text-4xl">
@@ -57,7 +57,7 @@ const HomePage = () => (
       <section className="grid gap-4 pb-16 sm:grid-cols-3">
         {FEATURES.map((feature) => (
           <div key={feature.title} className="bg-surface rounded-card space-y-2 p-5">
-            <p className="text-caption text-mint font-bold tracking-wide">{feature.label}</p>
+            <p className="text-caption text-mint-text font-bold tracking-wide">{feature.label}</p>
             <h2 className="text-heading">{feature.title}</h2>
             <p className="text-muted text-sm leading-relaxed">{feature.body}</p>
           </div>

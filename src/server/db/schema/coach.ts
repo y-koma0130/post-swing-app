@@ -16,6 +16,10 @@ export const coachProfile = sqliteTable('coach_profile', {
   title: text().notNull().default(''),
   bio: text().notNull().default(''),
   instagram: text().notNull().default(''),
+  /** 資格（選択肢のコード。domain の coachLicenseSchema）の JSON の配列 */
+  licenses: text({ mode: 'json' }).$type<string[]>().notNull().default([]),
+  /** 選択肢にない資格（自由に書く） */
+  licenseOther: text().notNull().default(''),
   monthlyCapacity: integer().notNull(),
   /** Stripe Connect の口座。口座開設前は null */
   stripeAccountId: text().unique(),

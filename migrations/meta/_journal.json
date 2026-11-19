@@ -120,6 +120,41 @@
       "when": 1794915011956,
       "tag": "0016_plan_descriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1794986913825,
+      "tag": "0017_campaign_fee_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1795049266805,
+      "tag": "0018_drill_video",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795050946782,
+      "tag": "0019_golf_profile_and_licenses",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795054886757,
+      "tag": "0020_retake_request",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1795057191746,
+      "tag": "0021_student_chart",
+      "breakpoints": true
     }
   ]
 }

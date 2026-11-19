@@ -2,6 +2,7 @@
 
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { iconButtonClass } from './choiceStyles'
 
 type Props = {
   open: boolean
@@ -85,7 +86,7 @@ export const Drawer = ({ open, title, onClose, children, size = 'sheet' }: Props
           <button
             type="button"
             onClick={onClose}
-            className="text-muted hover:text-ink rounded-full px-2 text-xl leading-none"
+            className={`${iconButtonClass} text-xl`}
             aria-label="閉じる"
           >
             ×

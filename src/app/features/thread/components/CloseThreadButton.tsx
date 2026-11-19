@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
+import { textButtonClass } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { closeThreadAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -23,14 +24,14 @@ export const CloseThreadButton = ({ threadId, coachName }: Props) => {
         type="button"
         onClick={() => setConfirming(true)}
         disabled={pending}
-        className="text-caption text-muted hover:text-ink underline"
+        className={textButtonClass()}
       >
-        このスレッドを終える
+        {pending ? '終えています…' : 'このレッスンを終える'}
       </button>
       <FormMessage state={state} />
       <ConfirmDialog
         open={confirming}
-        message={`${coachName}さんとのスレッドを終えますか？終えると、動画の提出とチャットはできなくなります（期限前でも返金はありません）。終えたあとにレビューを書けます。`}
+        message={`${coachName}さんとのレッスンを終えますか？終えると、動画の提出とチャットはできなくなります（期限前でも返金はありません）。終えたあとにレビューを書けます。`}
         confirmLabel="終える"
         onCancel={() => setConfirming(false)}
         onConfirm={() => {

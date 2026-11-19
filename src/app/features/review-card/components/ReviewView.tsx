@@ -47,7 +47,7 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
               />
               <div className="space-y-1 p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-mint text-caption font-bold">
+                  <p className="text-mint-text text-caption font-bold">
                     {cardTitle(card, index, videoLabel)}
                   </p>
                   {renderAction?.(card)}
@@ -70,7 +70,12 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
       <div className="space-y-2">
         <p className="text-caption text-muted font-bold">おすすめのドリル</p>
         {reply.drills.map((drill) => (
-          <DrillDetails key={drill.title} title={drill.title} description={drill.description} />
+          <DrillDetails
+            key={drill.title}
+            title={drill.title}
+            description={drill.description}
+            videoUrl={drill.videoUrl}
+          />
         ))}
       </div>
     )}

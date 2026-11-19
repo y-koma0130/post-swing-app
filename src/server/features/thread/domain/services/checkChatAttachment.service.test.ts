@@ -25,9 +25,12 @@ describe('checkChatAttachment', () => {
       checkChatAttachment({
         ...base,
         request,
-        ownDrill: { title: '壁ドリル', description: '説明' },
+        ownDrill: { title: '壁ドリル', description: '説明', videoId: 'dv1' },
       })
-    ).toEqual({ ok: true, value: { kind: 'drill', title: '壁ドリル', description: '説明' } })
+    ).toEqual({
+      ok: true,
+      value: { kind: 'drill', title: '壁ドリル', description: '説明', videoId: 'dv1' },
+    })
     expect(checkChatAttachment({ ...base, request })).toEqual({ ok: false, error: 'invalid_drill' })
   })
 

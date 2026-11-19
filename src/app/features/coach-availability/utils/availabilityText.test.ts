@@ -10,6 +10,8 @@ import {
   formatShortDate,
   nextDate,
   pausedMessage,
+  replyTargetAfterApprovalMessage,
+  replyTargetMessage,
   sendConfirmMessage,
   signupAckLabel,
   upcomingMessage,
@@ -89,5 +91,14 @@ describe('スレッドの表示', () => {
   it('確認の文言は、通常のときは出さない', () => {
     expect(sendConfirmMessage('video', '山田', available)).toBeNull()
     expect(sendConfirmMessage('chat', '山田', absent)).toMatch(/送りますか？$/)
+  })
+})
+
+describe('返信の目安', () => {
+  it('申し込み（承認待ち）では、承認後からの目安と書く', () => {
+    expect(replyTargetMessage(48)).toBe('通常48時間以内に添削が届きます')
+    expect(replyTargetAfterApprovalMessage(48)).toBe(
+      'コーチの承認後、通常48時間以内に添削が届きます'
+    )
   })
 })

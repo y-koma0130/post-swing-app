@@ -4,10 +4,16 @@ import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import type { GrantableCampaignDto } from '@/server/features/campaign/application/dto/CoachFeeGrantSummary.dto'
 import { inviteCoachAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
-export const InviteCoachForm = () => {
+type Props = {
+  /** 付けられるキャンペーンと残りの枠 */
+  campaigns: GrantableCampaignDto[]
+}
+
+export const InviteCoachForm = ({ campaigns }: Props) => {
   const [state, action, pending] = useActionState(inviteCoachAction, IDLE_ACTION_STATE)
 
   return (
@@ -32,9 +38,23 @@ export const InviteCoachForm = () => {
           /c/ のあとに付く文字。空欄なら自動で決まり、コーチがあとで変えられます
         </span>
       </label>
+      {campaigns.length > 0 && (
+        <label className="block space-y-1 sm:col-span-3">
+          <span className={labelTextClass}>キャンペーン（任意）</span>
+          <select name="campaignCode" defaultValue="" className={inputClass}>
+            <option value="">付けない</option>
+            {campaigns.map((campaign) => (
+              <option key={campaign.code} value={campaign.code} disabled={campaign.remaining === 0}>
+                {campaign.name}
+                {campaign.remaining === null ? '' : `（残り${campaign.remaining}名）`}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="space-y-2 sm:col-span-3">
         <FormMessage state={state} />
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" pending={pending}>
           招待する
         </Button>
       </div>

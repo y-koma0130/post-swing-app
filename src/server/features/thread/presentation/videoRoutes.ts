@@ -6,11 +6,16 @@ import {
   type UploadChatVideoError,
   uploadChatVideo,
 } from '../application/usecases/uploadChatVideo.usecase'
+import {
+  type UploadRetakeVideoError,
+  uploadRetakeVideo,
+} from '../application/usecases/uploadRetakeVideo.usecase'
 import { type UploadVideoError, uploadVideo } from '../application/usecases/uploadVideo.usecase'
 import {
   putMediaObject,
   respondWithMediaObject,
 } from '../infrastructure/external-services/videoStorage'
+import { findRetakeRequests } from '../infrastructure/repositories/retakeRepository'
 import {
   findStoredVideo,
   findThread,
@@ -28,8 +33,9 @@ const UPLOAD_ERROR = {
   too_large: { status: 413, message: '動画は100MBまでです。短く切ってから送ってください' },
   too_long: { status: 413, message: '動画は1本60秒までです。短く切ってから送ってください' },
   invalid_angle: { status: 400, message: '撮った角度を選んでください' },
+  no_retake: { status: 409, message: '撮り直しのお願いは、もう終わっています' },
 } as const satisfies Record<
-  UploadVideoError | UploadChatVideoError,
+  UploadVideoError | UploadChatVideoError | UploadRetakeVideoError,
   { status: number; message: string }
 >
 
@@ -62,32 +68,54 @@ export const handleVideoUpload = async (request: Request, threadId: string): Pro
   const durationSec = parseNumber(request.headers.get('x-video-duration'))
   const frameRate = parseNumber(request.headers.get('x-video-frame-rate'))
   const storeVideo = (r2Key: string, type: string) => putMediaObject(r2Key, body, type)
-  // コーチがチャットに添える動画（お手本など）
+  const purpose = new URL(request.url).searchParams.get('purpose')
+  const angle = request.headers.get('x-video-angle') ?? ''
+  // コーチがチャットに添える動画（お手本など）・撮り直しの動画（提出の回数に数えない）・提出の動画
   const result =
-    new URL(request.url).searchParams.get('purpose') === 'chat'
-      ? await uploadChatVideo(
-          { actor, threadId, contentType, sizeBytes, durationSec, frameRate, now: new Date() },
-          { findThread, storeVideo, saveDraftVideo, generateId: () => crypto.randomUUID() }
-        )
-      : await uploadVideo(
+    purpose === 'retake'
+      ? await uploadRetakeVideo(
           {
             actor,
             threadId,
             contentType,
             sizeBytes,
-            angle: request.headers.get('x-video-angle') ?? '',
+            angle,
             durationSec,
             frameRate,
             now: new Date(),
           },
           {
             findThread,
-            findCoachAvailabilityFacts,
+            findRetakeRequests,
             storeVideo,
             saveDraftVideo,
             generateId: () => crypto.randomUUID(),
           }
         )
+      : purpose === 'chat'
+        ? await uploadChatVideo(
+            { actor, threadId, contentType, sizeBytes, durationSec, frameRate, now: new Date() },
+            { findThread, storeVideo, saveDraftVideo, generateId: () => crypto.randomUUID() }
+          )
+        : await uploadVideo(
+            {
+              actor,
+              threadId,
+              contentType,
+              sizeBytes,
+              angle,
+              durationSec,
+              frameRate,
+              now: new Date(),
+            },
+            {
+              findThread,
+              findCoachAvailabilityFacts,
+              storeVideo,
+              saveDraftVideo,
+              generateId: () => crypto.randomUUID(),
+            }
+          )
   if (!result.ok) {
     const { status, message } = UPLOAD_ERROR[result.error]
     return Response.json({ message }, { status })

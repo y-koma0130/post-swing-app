@@ -6,7 +6,7 @@ import type { Annotation, NormalizedPoint } from '@/server/features/thread/domai
  * 座標は動画に対して 0〜1。円の半径と長さは「動画の幅」を 1 とした値で扱う
  */
 
-export const ANNOTATION_TOOLS = ['line', 'arrow', 'circle', 'free'] as const
+export const ANNOTATION_TOOLS = ['line', 'arrow', 'circle', 'free', 'angle'] as const
 export type AnnotationTool = (typeof ANNOTATION_TOOLS)[number]
 
 /** 道具：図形を描く道具と、置いた図形を選んで直す「選択」 */
@@ -63,7 +63,8 @@ export const appendStrokePoint: AppendStrokePoint = (points, point, aspect) => {
 }
 
 export type BuildAnnotation = (params: {
-  tool: AnnotationTool
+  /** 角度は2回に分けて描くので、ここでは作らない（buildAngle を使う） */
+  tool: Exclude<AnnotationTool, 'angle'>
   color: AnnotationColor
   /** 指を置いてから離すまでの点。直線・矢印・円は最初と最後の点だけを使う */
   points: readonly NormalizedPoint[]
@@ -100,6 +101,102 @@ export const buildAnnotation: BuildAnnotation = ({ tool, color, points, aspect }
 }
 
 type PixelPoint = { x: number; y: number }
+
+/** 動画のピクセルの比に直したベクトル（縦動画でも角度がずれないよう、y に縦横比を掛ける） */
+const toAspectVector = (from: NormalizedPoint, to: NormalizedPoint, aspect: number) => ({
+  x: to.x - from.x,
+  y: (to.y - from.y) * aspect,
+})
+
+export type AngleDegrees = (
+  vertex: NormalizedPoint,
+  a: NormalizedPoint,
+  b: NormalizedPoint,
+  aspect: number
+) => number
+
+/** 頂点から a・b への2本の線の間の角度（0〜180 の整数）。線の長さが 0 なら 0 */
+export const angleDegrees: AngleDegrees = (vertex, a, b, aspect) => {
+  const u = toAspectVector(vertex, a, aspect)
+  const v = toAspectVector(vertex, b, aspect)
+  const lengths = Math.hypot(u.x, u.y) * Math.hypot(v.x, v.y)
+  if (lengths === 0) return 0
+  const cos = Math.min(Math.max((u.x * v.x + u.y * v.y) / lengths, -1), 1)
+  return Math.round((Math.acos(cos) * 180) / Math.PI)
+}
+
+export type BuildAngle = (params: {
+  vertex: NormalizedPoint
+  a: NormalizedPoint
+  b: NormalizedPoint
+  color: AnnotationColor
+  aspect: number
+}) => Annotation | null
+
+/** 角度の図形を作る。どちらかの線が短すぎるときは null */
+export const buildAngle: BuildAngle = ({ vertex, a, b, color, aspect }) => {
+  if (
+    distanceInWidth(vertex, a, aspect) < MIN_SHAPE_LENGTH ||
+    distanceInWidth(vertex, b, aspect) < MIN_SHAPE_LENGTH
+  ) {
+    return null
+  }
+  return { kind: 'angle', vertex: clampPoint(vertex), a: clampPoint(a), b: clampPoint(b), color }
+}
+
+/** 角度の弧と数字の置き場所（ピクセル。SVG とキャンバスで同じ計算を使う） */
+export type AngleMarker = Readonly<{
+  radius: number
+  /** 弧の始まりと終わり（ラジアン。始まりから終わりへ時計回りに描くと、内側の角になる） */
+  startAngle: number
+  endAngle: number
+  start: PixelPoint
+  end: PixelPoint
+  /** 数字の真ん中 */
+  label: PixelPoint
+  fontSize: number
+}>
+
+/**
+ * 角度の弧と数字の位置
+ *
+ * @param baseWidth 線の太さ（ピクセル）。弧の大きさと文字の大きさをこれに合わせる
+ */
+export const angleMarker = (
+  vertex: PixelPoint,
+  a: PixelPoint,
+  b: PixelPoint,
+  baseWidth: number
+): AngleMarker => {
+  const angleA = Math.atan2(a.y - vertex.y, a.x - vertex.x)
+  const angleB = Math.atan2(b.y - vertex.y, b.x - vertex.x)
+  // a から b へ時計回りに測った角（0〜2π）。π を超えるなら、b から a へ回るほうが内側
+  const clockwise = (((angleB - angleA) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+  const [startAngle, sweep] =
+    clockwise <= Math.PI ? [angleA, clockwise] : [angleB, Math.PI * 2 - clockwise]
+  const shortest = Math.min(
+    Math.hypot(a.x - vertex.x, a.y - vertex.y),
+    Math.hypot(b.x - vertex.x, b.y - vertex.y)
+  )
+  // 弧は短いほうの線の内側に収め、小さくなりすぎないようにする
+  const radius = Math.max(Math.min(baseWidth * 4, shortest * 0.6), baseWidth * 1.5)
+  const middle = startAngle + sweep / 2
+  const fontSize = baseWidth * 2.6
+  const labelDistance = radius + fontSize * 1.1
+  const at = (angle: number, distance: number): PixelPoint => ({
+    x: vertex.x + Math.cos(angle) * distance,
+    y: vertex.y + Math.sin(angle) * distance,
+  })
+  return {
+    radius,
+    startAngle,
+    endAngle: startAngle + sweep,
+    start: at(startAngle, radius),
+    end: at(startAngle + sweep, radius),
+    label: at(middle, labelDistance),
+    fontSize,
+  }
+}
 
 export type ArrowHeadPoints = (
   from: PixelPoint,

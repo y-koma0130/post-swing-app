@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { Badge } from '@/app/components/ui/Badge'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { useConfirmedSubmit } from '@/app/hooks/useConfirmedSubmit'
 import type { AvailabilitySettingsDto } from '@/server/features/coach/application/dto/AvailabilitySettings.dto'
 import { deleteAbsenceAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -19,6 +20,12 @@ type Props = {
 export const AbsenceList = ({ coachName, settings }: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [state, deleteAction, deleting] = useActionState(deleteAbsenceAction, IDLE_ACTION_STATE)
+  // どの行のフォームから送っても、同じ確認を1つ出す
+  const confirmDelete = useConfirmedSubmit({
+    message: 'この不在期間を消しますか？',
+    confirmLabel: '消す',
+    danger: true,
+  })
 
   if (settings.absences.length === 0) {
     return (
@@ -30,6 +37,7 @@ export const AbsenceList = ({ coachName, settings }: Props) => {
 
   return (
     <div className="space-y-3">
+      {confirmDelete.dialog}
       <FormMessage state={state} />
       <ul className="divide-line-soft divide-y">
         {settings.absences.map((absence) => (
@@ -54,14 +62,9 @@ export const AbsenceList = ({ coachName, settings }: Props) => {
                 >
                   {editingId === absence.id ? '閉じる' : '編集'}
                 </Button>
-                <form
-                  action={deleteAction}
-                  onSubmit={(event) => {
-                    if (!window.confirm('この不在期間を消しますか？')) event.preventDefault()
-                  }}
-                >
+                <form action={deleteAction} onSubmit={confirmDelete.onSubmit}>
                   <input type="hidden" name="absenceId" value={absence.id} />
-                  <Button type="submit" variant="danger" size="sm" disabled={deleting}>
+                  <Button type="submit" variant="danger" size="sm" pending={deleting}>
                     削除
                   </Button>
                 </form>

@@ -17,6 +17,8 @@ export const findCoachSettings: FindCoachSettings = async (userId) => {
     title: coach.title,
     bio: coach.bio,
     instagram: coach.instagram,
+    licenses: coach.licenses,
+    licenseOther: coach.licenseOther,
     avatarUrl: toAvatarUrl(coach.slug, avatarKey),
     monthlyCapacity: coach.monthlyCapacity,
     chargesEnabled: coach.chargesEnabled,

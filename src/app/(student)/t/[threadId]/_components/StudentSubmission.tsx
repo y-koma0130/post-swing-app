@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { chipClass } from '@/app/components/ui/choiceStyles'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
 import {
   ordinalLabel,
   quoteAnchorId,
   submissionLabel,
-  videoLabel,
+  submissionVideoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
@@ -45,7 +46,7 @@ export const StudentSubmission = ({ submission, index }: Props) => {
       </h2>
       <ul className="grid grid-cols-2 gap-3">
         {submission.videos.map((video, i) => {
-          const label = videoLabel(video.angle, count)
+          const label = submissionVideoLabel(video, submission.videos)
           return (
             <li
               key={video.id}
@@ -81,13 +82,9 @@ export const StudentSubmission = ({ submission, index }: Props) => {
                   role="tab"
                   aria-selected={i === shown}
                   onClick={() => setShown(i)}
-                  className={`rounded-full border px-3 py-1 text-sm ${
-                    i === shown
-                      ? 'border-mint bg-mint-soft text-ink font-bold'
-                      : 'border-line text-muted bg-white'
-                  }`}
+                  className={chipClass(i === shown)}
                 >
-                  {videoLabel(video.angle, count)}
+                  {submissionVideoLabel(video, submission.videos)}
                 </button>
               ))}
             </div>

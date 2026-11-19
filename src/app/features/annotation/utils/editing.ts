@@ -14,8 +14,8 @@ export const HANDLE_TOLERANCE = 0.04
 /** 円の半径の下限 */
 const MIN_RADIUS = 0.01
 
-/** つまみ：線・矢印の両端、円の縁。move は図形全体を動かす */
-export type HandleId = 'from' | 'to' | 'radius' | 'move'
+/** つまみ：線・矢印の両端、円の縁、角度の頂点と2本の線の先。move は図形全体を動かす */
+export type HandleId = 'from' | 'to' | 'radius' | 'vertex' | 'a' | 'b' | 'move'
 
 export type Handle = Readonly<{ id: Exclude<HandleId, 'move'>; point: NormalizedPoint }>
 
@@ -46,6 +46,11 @@ const distanceToShape = (annotation: Annotation, p: NormalizedPoint, aspect: num
       return distanceToSegment(p, annotation.from, annotation.to, aspect)
     case 'circle':
       return Math.max(distanceInWidth(annotation.center, p, aspect) - annotation.radius, 0)
+    case 'angle':
+      return Math.min(
+        distanceToSegment(p, annotation.vertex, annotation.a, aspect),
+        distanceToSegment(p, annotation.vertex, annotation.b, aspect)
+      )
     case 'free':
       return annotation.points
         .slice(1)
@@ -86,6 +91,12 @@ export const handlesOf = (annotation: Annotation): Handle[] => {
           point: clampPoint({ x: annotation.center.x + annotation.radius, y: annotation.center.y }),
         },
       ]
+    case 'angle':
+      return [
+        { id: 'vertex', point: annotation.vertex },
+        { id: 'a', point: annotation.a },
+        { id: 'b', point: annotation.b },
+      ]
     case 'free':
       return []
   }
@@ -113,6 +124,13 @@ export const translate = (annotation: Annotation, dx: number, dy: number): Annot
       return { ...annotation, from: move(annotation.from), to: move(annotation.to) }
     case 'circle':
       return { ...annotation, center: move(annotation.center) }
+    case 'angle':
+      return {
+        ...annotation,
+        vertex: move(annotation.vertex),
+        a: move(annotation.a),
+        b: move(annotation.b),
+      }
     case 'free':
       return { ...annotation, points: annotation.points.map(move) }
   }
@@ -135,6 +153,9 @@ export const dragHandle = (
     (original.kind === 'line' || original.kind === 'arrow') &&
     (handle === 'from' || handle === 'to')
   ) {
+    return { ...original, [handle]: point }
+  }
+  if (original.kind === 'angle' && (handle === 'vertex' || handle === 'a' || handle === 'b')) {
     return { ...original, [handle]: point }
   }
   if (original.kind === 'circle' && handle === 'radius') {

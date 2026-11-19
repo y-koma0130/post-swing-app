@@ -99,15 +99,15 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
       return {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
-        subject: 'スレッドの期限が近づいています',
-        text: `${ctx.coachName}さんとのスレッドは${ctx.expiresAt ? formatDate(ctx.expiresAt) : 'もうすぐ'}までです。撮り直した動画やご質問はお早めにどうぞ。\n${studentThreadUrl(message.threadId)}`,
+        subject: 'レッスンの期限が近づいています',
+        text: `${ctx.coachName}さんとのレッスンは${ctx.expiresAt ? formatDate(ctx.expiresAt) : 'もうすぐ'}までです。撮り直した動画やご質問はお早めにどうぞ。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'thread_closed':
       return {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
-        subject: 'スレッドが終わりました',
-        text: `${ctx.coachName}さんとのスレッドが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
+        subject: 'レッスンが終わりました',
+        text: `${ctx.coachName}さんとのレッスンが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
       }
     case 'waitlist_opened':
       return {
@@ -136,6 +136,27 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         recipientUserId: ctx.studentUserId,
         subject: '申し込みをお受けできませんでした',
         text: `${ctx.coachName}さんは、今回の申し込みをお受けできませんでした。請求はされません。\n${studentThreadUrl(message.threadId)}`,
+      }
+    case 'retake_requested':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: '撮り直しのお願いが届きました',
+        text: `${ctx.coachName}さんから、動画の撮り直しのお願いが届きました。撮り直した動画は、提出の回数には数えません。今すぐ撮れないときは、レッスンの画面から伝えられます。\n${studentThreadUrl(message.threadId)}`,
+      }
+    case 'retake_sent':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `${ctx.studentName}さんから撮り直しの動画が届きました`,
+        text: `${ctx.studentName}さんから、お願いした撮り直しの動画が届きました。添削をお願いします（返信の目安は、届いた時点から数えます）。\n\n${coachThreadUrl(message.threadId)}`,
+      }
+    case 'retake_declined':
+      return {
+        channel: 'email',
+        recipientUserId: ctx.coachUserId,
+        subject: `${ctx.studentName}さんは今は撮り直せないそうです`,
+        text: `${ctx.studentName}さんから、今は撮り直せないと返事がありました。いまの動画で添削をお願いします（返信の目安は、この時点から数えます）。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'application_expired':
       return {

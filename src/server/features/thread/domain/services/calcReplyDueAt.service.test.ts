@@ -34,4 +34,12 @@ describe('isReplyDuePassedToday', () => {
     expect(replyClockStart(submittedAt, approvedAt)).toEqual(approvedAt)
     expect(replyClockStart(approvedAt, submittedAt)).toEqual(approvedAt)
   })
+
+  it('撮り直しのお願いが終わった時点から数え直す', () => {
+    const submittedAt = new Date('2026-11-16T10:00:00+09:00')
+    const startedAt = new Date('2026-11-15T09:00:00+09:00')
+    const retakeClosedAt = new Date('2026-11-18T20:00:00+09:00')
+    expect(replyClockStart(submittedAt, startedAt, retakeClosedAt)).toEqual(retakeClosedAt)
+    expect(replyClockStart(submittedAt, startedAt, null)).toEqual(submittedAt)
+  })
 })

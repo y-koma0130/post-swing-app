@@ -1,4 +1,9 @@
 import 'server-only'
+import {
+  resolveFeeAt,
+  resolveFeeOnApproval,
+  startGrantsOnApproval,
+} from '@/server/features/campaign/public'
 import { err, type Result } from '@/server/utils/result'
 import { capturePurchase } from './application/usecases/capturePurchase.usecase'
 import { lowerMonthlyPrices as lowerMonthlyPricesUsecase } from './application/usecases/lowerMonthlyPrices.usecase'
@@ -9,6 +14,7 @@ import {
   changeSubscriptionPrice,
   startSubscription,
 } from './infrastructure/external-services/paymentIntents'
+import { savePayment } from './infrastructure/repositories/paymentRepository'
 import {
   findActiveSubscriptions,
   findPurchase,
@@ -44,8 +50,11 @@ export const capturePayment = (purchaseId: string) =>
       { purchaseId, now: new Date() },
       {
         findPurchase,
+        resolveFeeOnApproval,
         capturePaymentIntent,
+        startGrantsOnApproval,
         startSubscription,
+        savePayment,
         markPurchaseCaptured,
         allowWithoutStripe,
       }
@@ -64,7 +73,7 @@ export const voidPayment = (purchaseId: string) =>
 /** コーチが月額を値下げしたら、いまの生徒にも次の請求から反映する（値上げは何もしない） */
 export const lowerMonthlyPrices = (coachUserId: string, monthlyPriceYen: number) =>
   lowerMonthlyPricesUsecase(
-    { coachUserId, monthlyPriceYen },
+    { coachUserId, monthlyPriceYen, now: new Date() },
     {
       findActiveSubscriptions,
       changeSubscriptionPrice: async (input) => {
@@ -77,5 +86,6 @@ export const lowerMonthlyPrices = (coachUserId: string, monthlyPriceYen: number)
         }
       },
       savePurchasePrice,
+      resolveFeeAt,
     }
   )

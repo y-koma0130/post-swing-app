@@ -7,7 +7,9 @@ import type { SendGuard } from '../../domain/services/decideSendGuard.service'
 import type { Annotation } from '../../domain/values/Annotation'
 import type { ChatQuote, ChatSender } from '../../domain/values/ChatMessage'
 import type { DeclineReason } from '../../domain/values/DeclineReason'
+import type { GolfProfile } from '../../domain/values/GolfProfile'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
+import type { RetakeCloseReason, RetakeReason } from '../../domain/values/RetakeRequest'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import type { VideoAngle } from '../../domain/values/VideoAngle'
 
@@ -23,6 +25,22 @@ export type ThreadDetailDto = {
   studentName: string
   planKind: PlanKind
   theme: string
+  /** 撮り直しのお願い（古い順）と、このスレッドであと何回お願いできるか */
+  retake: {
+    requests: Array<{
+      id: string
+      submissionId: string
+      reason: RetakeReason
+      message: string
+      requestedAt: Date
+      /** 終わっていなければ null */
+      closedAt: Date | null
+      closeReason: RetakeCloseReason | null
+    }>
+    remaining: number
+  }
+  /** 生徒のラウンドの回数と平均スコア（申し込みのときに任意で書いたもの） */
+  golfProfile: GolfProfile
   status: ThreadStatus
   startedAt: Date
   /** 実際の期限（コーチの不在の分だけ延びる） */
@@ -35,6 +53,8 @@ export type ThreadDetailDto = {
     approvalDeadline: Date | null
     /** 断られたとき、その理由とひとこと。それ以外は null */
     decline: { reason: DeclineReason; message: string } | null
+    /** 下書きのとき、申し込みの最終確認に出す金額（申し込んだ時点の値）。それ以外は null */
+    checkout: { priceYen: number; systemFeeYen: number } | null
   }
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
@@ -82,13 +102,16 @@ export type ThreadDetailDto = {
       url: string
       /** 送るときに測ったフレームレート。分からなければ null（再生画面が推定する） */
       frameRate: number | null
+      /** 撮り直しのお願いに応えて送った動画か */
+      retake: boolean
     }>
     reply: {
       sentAt: Date
       /** 全体の説明（以前の添削では空） */
       comment: string
       /** おすすめのドリル */
-      drills: Array<{ title: string; description: string }>
+      /** おすすめのドリル。videoUrl はお手本の動画（動画のないドリルなら null） */
+      drills: Array<{ title: string; description: string; videoUrl: string | null }>
       /** 画像（キャプチャ）と、それぞれの一言 */
       cards: Array<{
         id: string
@@ -109,7 +132,7 @@ export type ThreadDetailDto = {
     sentAt: Date
     attachment:
       | { kind: 'none' }
-      | { kind: 'drill'; title: string; description: string }
+      | { kind: 'drill'; title: string; description: string; videoUrl: string | null }
       | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
     quote: ChatQuote | null
   }>

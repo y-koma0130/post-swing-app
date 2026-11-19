@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
@@ -9,6 +10,7 @@ import {
   availabilityBanner,
   chatReplyHint,
   extensionNote,
+  replyTargetAfterApprovalMessage,
   replyTargetMessage,
   sendConfirmMessage,
 } from '@/app/features/coach-availability/utils/availabilityText'
@@ -21,14 +23,16 @@ import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
 import {
-  ANGLE_LABEL,
   KEY_POSITION_LABEL,
   ordinalLabel,
   STUDENT_CHAT_BLOCKER_MESSAGE,
   SUBMISSION_BLOCKER_SHORT,
   submissionLabel,
+  submissionVideoLabel,
   threadUsageText,
 } from '@/app/features/thread/utils/threadText'
+import { RetakeNotice } from '@/app/features/video-upload/components/RetakeNotice'
+import { ShootingGuide } from '@/app/features/video-upload/components/ShootingGuide'
 import { SubmissionLauncher } from '@/app/features/video-upload/components/SubmissionLauncher'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
@@ -37,7 +41,7 @@ import { ApplicationStatus } from './_components/ApplicationStatus'
 import { MessageVideo } from './_components/MessageVideo'
 import { StudentSubmission } from './_components/StudentSubmission'
 
-export const metadata: Metadata = { title: 'スレッド' }
+export const metadata: Metadata = { title: 'レッスン' }
 
 type Props = {
   params: Promise<{ threadId: string }>
@@ -57,6 +61,7 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
   const availability = thread.coachAvailability
   const banner = availabilityBanner(thread.coachName, availability)
   const { limits } = thread
+  const openRetake = thread.retake.requests.find((r) => r.closedAt === null)
   const statuses: ReadonlyArray<string> = APPLICATION_STATUSES
   const applying = statuses.includes(thread.status)
 
@@ -96,9 +101,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
         />
         <ApplicationStatus thread={thread} justApplied={applied === '1'} />
         {banner && !applying && thread.status !== 'closed' && (
-          <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
-            {banner}
-          </p>
+          <Notice tone="warning" status>
+            <p>{banner}</p>
+          </Notice>
         )}
 
         <ThreadTimeline
@@ -124,7 +129,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                   reply={submission.reply}
                   videoLabel={(videoId) => {
                     const video = submission.videos.find((v) => v.id === videoId)
-                    return video && submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
+                    return video && submission.videos.length > 1
+                      ? submissionVideoLabel(video, submission.videos)
+                      : null
                   }}
                   wrapCard={(card, content) => (
                     <LongPressQuote
@@ -147,6 +154,17 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
           quoteMode="longPress"
         />
 
+        {/* コーチから撮り直しのお願いが来ているとき（いちばん新しいやりとりの下に出す） */}
+        {openRetake && thread.status === 'waiting_coach' && (
+          <RetakeNotice
+            threadId={thread.id}
+            coachName={thread.coachName}
+            request={openRetake}
+            maxVideos={limits.maxVideosPerSubmission}
+            maxBytes={limits.maxVideoBytes}
+            maxSeconds={limits.maxVideoSeconds}
+          />
+        )}
         {thread.studentCloseBlocker === null && (
           <CloseThreadButton threadId={thread.id} coachName={thread.coachName} />
         )}
@@ -197,7 +215,9 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                     }
                     replyHint={
                       availability.kind === 'available'
-                        ? replyTargetMessage(availability.replyTargetHours)
+                        ? (applying ? replyTargetAfterApprovalMessage : replyTargetMessage)(
+                            availability.replyTargetHours
+                          )
                         : null
                     }
                     prominent={false}
@@ -231,11 +251,17 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                   }
                   replyHint={
                     availability.kind === 'available'
-                      ? replyTargetMessage(availability.replyTargetHours)
+                      ? (applying ? replyTargetAfterApprovalMessage : replyTargetMessage)(
+                          availability.replyTargetHours
+                        )
                       : null
                   }
                   prominent
                 />
+                {/* 撮る前に見られるよう、最初の提出の前はここにも置く */}
+                <div className="text-center">
+                  <ShootingGuide label="撮る前に：撮り方のガイド" />
+                </div>
               </div>
             ) : (
               <p className="text-caption text-muted">

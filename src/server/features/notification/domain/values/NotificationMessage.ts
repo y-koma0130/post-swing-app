@@ -61,6 +61,16 @@ export const notificationMessageSchema = z.discriminatedUnion('kind', [
     threadId: z.string(),
     studentUserId: z.string(),
   }),
+  /** 生徒へ：コーチから撮り直しのお願いが届いた（LINE）。理由はスレッドの画面で見る */
+  z.object({
+    kind: z.literal('retake_requested'),
+    threadId: z.string(),
+    studentUserId: z.string(),
+  }),
+  /** コーチへ：撮り直しの動画が届いた（メール） */
+  z.object({ kind: z.literal('retake_sent'), threadId: z.string(), coachUserId: z.string() }),
+  /** コーチへ：生徒が「今は撮れない」と返した（メール）。いまの動画で添削する */
+  z.object({ kind: z.literal('retake_declined'), threadId: z.string(), coachUserId: z.string() }),
   /** 生徒へ：期限までにコーチの返事がなく、申し込みが取り消された（LINE） */
   z.object({
     kind: z.literal('application_expired'),

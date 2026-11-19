@@ -34,6 +34,14 @@ export const annotationSchema = z.discriminatedUnion('kind', [
     points: z.array(normalizedPointSchema).min(2),
     color: colorSchema,
   }),
+  // 角度：頂点から2本の線を引き、その間の角度を出す（角度は表示のときに計算する）
+  z.object({
+    kind: z.literal('angle'),
+    vertex: normalizedPointSchema,
+    a: normalizedPointSchema,
+    b: normalizedPointSchema,
+    color: colorSchema,
+  }),
 ])
 
 export type Annotation = z.infer<typeof annotationSchema>

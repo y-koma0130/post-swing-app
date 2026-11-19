@@ -1,3 +1,4 @@
+import { Notice } from '@/app/components/ui/Notice'
 import type {
   CoachAvailabilityDto,
   UpcomingAbsenceDto,
@@ -5,7 +6,7 @@ import type {
 import {
   absentMessage,
   delayedMessage,
-  replyTargetMessage,
+  replyTargetAfterApprovalMessage,
   upcomingMessage,
 } from '../utils/availabilityText'
 
@@ -19,21 +20,21 @@ type Props = {
 export const CoachAvailabilityNotice = ({ coachName, availability, upcomingAbsence }: Props) => {
   if (availability.kind === 'absent') {
     return (
-      <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
-        {absentMessage(coachName, availability)}
-      </p>
+      <Notice tone="warning" status>
+        <p>{absentMessage(coachName, availability)}</p>
+      </Notice>
     )
   }
   if (availability.kind === 'delayed') {
     return (
-      <p role="status" className="bg-warning-soft text-body rounded-xl p-4 text-sm">
-        {delayedMessage(coachName)}
-      </p>
+      <Notice tone="warning" status>
+        <p>{delayedMessage(coachName)}</p>
+      </Notice>
     )
   }
   return (
     <div className="text-muted space-y-1 text-sm">
-      <p>{replyTargetMessage(availability.replyTargetHours)}</p>
+      <p>{replyTargetAfterApprovalMessage(availability.replyTargetHours)}</p>
       {upcomingAbsence && (
         <p>
           {upcomingMessage(upcomingAbsence)}

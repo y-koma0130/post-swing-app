@@ -13,9 +13,18 @@ export type UpdateCoachProfileParams = Readonly<{
 type Dependencies = Readonly<{
   findCoachSlug: (userId: string) => Promise<CoachSlug | null>
   isSlugTaken: (slug: CoachSlug) => Promise<boolean>
-  saveCoachProfile: (userId: string, profile: CoachProfile) => Promise<void>
+  /** 確かめたあとに同じスラッグを取られていたら slug_taken を返す */
+  saveCoachProfile: (userId: string, profile: CoachProfile) => Promise<'saved' | 'slug_taken'>
   /** ランダムなスラッグ（generateCoachSlug に乱数を渡したもの） */
   generateSlug: () => CoachSlug
+  /** 売上の受け取り口座（Stripe）。まだ作っていなければ null */
+  findStripeAccountId: (userId: string) => Promise<string | null>
+  /** 口座のビジネスの情報（Webサイト＝受付ページ・屋号＝活動名）を合わせる。失敗しても投げない */
+  syncConnectProfile: (input: {
+    stripeAccountId: string
+    slug: CoachSlug
+    displayName: string
+  }) => Promise<void>
 }>
 
 export type UpdateCoachProfile = (
@@ -23,7 +32,12 @@ export type UpdateCoachProfile = (
   dependencies: Dependencies
 ) => Promise<Result<{ slug: CoachSlug }, 'not_found' | 'slug_taken' | 'slug_unavailable'>>
 
-/** コーチが自分のプロフィールを変える */
+/**
+ * コーチが自分のプロフィールを変える
+ *
+ * 売上の受け取り口座があれば、Stripe に登録した受付ページの URL と活動名も合わせる
+ * （スラッグを変えると古い URL が 404 になるため）
+ */
 export const updateCoachProfile: UpdateCoachProfile = async ({ actor, profile }, deps) => {
   const currentSlug = await deps.findCoachSlug(actor.userId)
   if (currentSlug === null) {
@@ -40,6 +54,13 @@ export const updateCoachProfile: UpdateCoachProfile = async ({ actor, profile },
   if (slug === null) {
     return err('slug_unavailable')
   }
-  await deps.saveCoachProfile(actor.userId, { ...profile, slug })
+  const saved = await deps.saveCoachProfile(actor.userId, { ...profile, slug })
+  if (saved === 'slug_taken') {
+    return err('slug_taken')
+  }
+  const stripeAccountId = await deps.findStripeAccountId(actor.userId)
+  if (stripeAccountId !== null) {
+    await deps.syncConnectProfile({ stripeAccountId, slug, displayName: profile.name })
+  }
   return ok({ slug })
 }

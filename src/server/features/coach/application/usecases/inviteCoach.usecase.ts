@@ -15,7 +15,11 @@ type Dependencies = Readonly<{
   findUserByEmail: (email: string) => Promise<{ id: string; isCoach: boolean } | null>
   isSlugTaken: (slug: CoachSlug) => Promise<boolean>
   /** userId が既存なら user は作らず、コーチのプロフィールだけ足す */
-  saveInvitedCoach: (coach: Coach, user: { email: string; isNew: boolean }) => Promise<void>
+  /** 確かめたあとに同じスラッグを取られていたら slug_taken を返す */
+  saveInvitedCoach: (
+    coach: Coach,
+    user: { email: string; isNew: boolean }
+  ) => Promise<'saved' | 'slug_taken'>
   generateId: () => string
   generateSlug: () => CoachSlug
   /** 招待したコーチに、ログインの案内を送る */
@@ -48,7 +52,7 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
   }
 
   const userId = existing?.id ?? deps.generateId()
-  await deps.saveInvitedCoach(
+  const saved = await deps.saveInvitedCoach(
     {
       userId,
       slug,
@@ -56,6 +60,8 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
       title: '',
       bio: '',
       instagram: '',
+      licenses: [],
+      licenseOther: '',
       monthlyCapacity: COACH_RULES.defaultMonthlyCapacity,
       stripeAccountId: null,
       chargesEnabled: false,
@@ -64,6 +70,9 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
     },
     { email: params.email, isNew: existing === null }
   )
+  if (saved === 'slug_taken') {
+    return err('slug_taken')
+  }
   await deps.notifyCoachInvited({ coachUserId: userId })
   return ok({ userId })
 }

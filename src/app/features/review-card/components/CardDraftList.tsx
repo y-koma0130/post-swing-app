@@ -1,5 +1,6 @@
 'use client'
 
+import { textButtonClass } from '@/app/components/ui/Button'
 import { inputClass } from '@/app/components/ui/fieldStyles'
 import { KEY_POSITION_LABEL } from '@/app/features/thread/utils/threadText'
 import type { CardDraft } from '../hooks/useCardDrafts'
@@ -34,7 +35,7 @@ export const CardDraftList = ({ drafts, videoLabel, onChange, onRemove }: Props)
             <button
               type="button"
               onClick={() => onRemove(draft.localId)}
-              className="text-caption text-muted underline"
+              className={textButtonClass()}
             >
               この画像を消す
             </button>

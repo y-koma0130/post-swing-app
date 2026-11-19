@@ -129,6 +129,7 @@ const SUBMIT_ERROR = {
   invalid_video: '動画をもう一度選び直してください',
   theme_required: '直したいところを書いてください',
   note_too_long: 'メモは1000文字までです',
+  invalid_golf_profile: '平均スコアは50〜200の数字で入れてください',
 } as const satisfies Record<SubmitSubmissionError, string>
 
 /**
@@ -151,6 +152,10 @@ export const submitSubmissionAction = async (
       threadId,
       theme: formString(formData, 'theme'),
       note: formString(formData, 'note'),
+      golfProfile: {
+        roundFrequency: formString(formData, 'roundFrequency'),
+        averageScore: formString(formData, 'averageScore'),
+      },
       videoIds: formData.getAll('videoId').filter((v): v is string => typeof v === 'string'),
       now,
     },

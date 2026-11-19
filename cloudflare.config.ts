@@ -29,6 +29,13 @@ export default defineConfig({
       entrypoint: './src/worker.ts',
       compatibilityDate: '2026-11-14',
       compatibilityFlags: ['nodejs_compat'],
+      // ログ（console.error など）を Cloudflare に残し、ダッシュボードで後から探せるようにする。
+      // URL のクエリ（ログインのトークンなど）は残さない
+      observability: {
+        enabled: true,
+        redactQueryString: true,
+        logs: { enabled: true, invocationLogs: true },
+      },
       // 開発（mode が development）では使われない
       domains: [hostnameFor(ctx.mode)],
       assets: {

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { EmptyState } from '@/app/components/ui/EmptyState'
+import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLinks'
@@ -32,20 +33,23 @@ const MyPage = async ({ searchParams }: Props) => {
       <PageHeader title="マイページ" />
       {linePrompt && <LineFriendPrompt addFriendUrl={linePrompt.addFriendUrl} />}
       {checkout === 'success' && (
-        <p className="bg-mint-soft text-ink rounded-xl p-4 text-sm">
-          お支払いが完了しました。スレッドの準備ができたら、ここから動画を送れます。
-        </p>
+        <Notice tone="mint" status>
+          <p>お支払いが完了しました。準備ができたら、ここから動画を送れます。</p>
+        </Notice>
       )}
       {purchases.length === 0 && threads.length === 0 ? (
         <EmptyState
           title="まだ申し込みはありません"
-          description="コーチの受付ページ（インスタのプロフィールなどにあるリンク）から申し込むと、ここに添削のスレッドができます。"
+          description="コーチの受付ページ（インスタのプロフィールなどにあるリンク）から申し込むと、ここに添削のレッスンが表示されます。"
         />
       ) : (
         <section className="space-y-3">
-          <h2 className="text-heading">スレッド</h2>
+          <div className="space-y-1">
+            <h2 className="text-heading">添削のやりとり</h2>
+            <p className="text-muted text-sm">申し込み中のものもここに出ます</p>
+          </div>
           {threads.length === 0 ? (
-            <p className="text-muted text-sm">スレッドの準備ができると、ここに表示されます。</p>
+            <p className="text-muted text-sm">レッスンの準備ができると、ここに表示されます。</p>
           ) : (
             <ThreadList threads={threads} viewer="student" />
           )}
@@ -53,13 +57,21 @@ const MyPage = async ({ searchParams }: Props) => {
       )}
       {purchases.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-heading">コーチ</h2>
+          <div className="space-y-1">
+            <h2 className="text-heading">あなたのコーチ</h2>
+            <p className="text-muted text-sm">押すと、そのコーチとのやりとりやプランを見られます</p>
+          </div>
           <MyCoachLinks coaches={uniqueCoaches(purchases)} />
         </section>
       )}
       {purchases.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-heading">申し込み</h2>
+          <div className="space-y-1">
+            <h2 className="text-heading">購入したプラン</h2>
+            {purchases.some((p) => p.canManage && p.status === 'paid') && (
+              <p className="text-muted text-sm">月額の解約・カードの変更はここから</p>
+            )}
+          </div>
           <MyPurchaseList purchases={purchases} showCoach />
         </section>
       )}

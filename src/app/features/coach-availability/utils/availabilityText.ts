@@ -33,6 +33,10 @@ export const delayedMessage = (coachName: string): string =>
 
 export const replyTargetMessage = (hours: number): string => `通常${hours}時間以内に添削が届きます`
 
+/** 申し込み（コーチの承認待ち）のときの返信の目安。添削は承認されてから始まる */
+export const replyTargetAfterApprovalMessage = (hours: number): string =>
+  `コーチの承認後、通常${hours}時間以内に添削が届きます`
+
 /** 「11/20〜11/23は不在の予定です」 */
 export const upcomingMessage = (
   absence: Readonly<{ startDate: string; endDate: string }>
