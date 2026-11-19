@@ -28,7 +28,7 @@ describe('checkSubmission', () => {
     expect(checkSubmission({ ...base, submissions: [submission(true)] }, now)).toBeNull()
   })
 
-  it('1スレッドは3回まで、お試しは1回まで', () => {
+  it('1レッスンは3回まで、お試しは1回まで', () => {
     const three = [submission(true), submission(true), submission(true)]
     expect(checkSubmission({ ...base, submissions: three }, now)).toBe('submission_limit')
     expect(
@@ -36,7 +36,7 @@ describe('checkSubmission', () => {
     ).toBe('submission_limit')
   })
 
-  it('期限切れ・終了したスレッドには出せない', () => {
+  it('期限切れ・終了したレッスンには出せない', () => {
     expect(checkSubmission({ ...base, expiresAt: now }, now)).toBe('expired')
     expect(checkSubmission({ ...base, status: 'closed' }, now)).toBe('closed')
   })

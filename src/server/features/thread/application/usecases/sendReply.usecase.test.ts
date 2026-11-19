@@ -105,6 +105,15 @@ describe('sendReply', () => {
     expect(saveReply).not.toHaveBeenCalled()
   })
 
+  it('そのスレッドにない提出には返信できず、画像も保存しない', async () => {
+    const { deps, saveReply, storeCardImage, notifyReplySent } = setup()
+    const result = await sendReply({ ...params, submissionId: 'other-submission' }, deps)
+    expect(result).toEqual({ ok: false, error: 'not_found' })
+    expect(storeCardImage).not.toHaveBeenCalled()
+    expect(saveReply).not.toHaveBeenCalled()
+    expect(notifyReplySent).not.toHaveBeenCalled()
+  })
+
   it('添削済みの提出には返せない', async () => {
     const { deps } = setup({ ...thread, submissions: [submission('s1', true)] })
     expect(await sendReply(params, deps)).toEqual({ ok: false, error: 'already_replied' })

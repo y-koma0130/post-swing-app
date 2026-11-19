@@ -75,6 +75,7 @@
 | 並んだ選択肢（動画の角度など） | `chipClass` |
 | ×などの記号だけのボタン | `iconButtonClass`（`aria-label` を必ず付ける） |
 | 入力欄・ラベル | `inputClass`・`labelTextClass` |
+| セレクタ（`select`） | `selectClass`（フォームの中）・`smallSelectClass`（操作の横に並べる小さなもの）。`inputClass` を付けない（ブラウザ標準の矢印が枠に付いてしまう） |
 | 横（スマホは下）から出す作業スペース | `Drawer`（size：sheet・wide） |
 | 読み込み中 | `Skeleton`・`PageSkeleton`（`loading.tsx`） |
 | 404・エラーの画面 | `StatusScreen` |
@@ -98,8 +99,9 @@
 ## 文言
 
 - 生徒向けは、やさしい言い方にする。専門用語や英語（「ステータス」「キャプチャ」など）は、言い換えられるなら言い換える
+- 申し込んでから終わるまでの添削の単位は、画面・通知・メール・規約では**「レッスン」**と呼ぶ（「スレッド」とは書かない）。コードの名前（`thread`・`/t/[threadId]` など）とコメントは、`thread` のままでよい
 - 同じものは、どの画面でも同じ呼び方にする。呼び方を持っている定数があれば、それを使う。画面の中で書き直さない
-  - スレッドの状態：`THREAD_STATUS_LABEL`
+  - レッスンの状態：`THREAD_STATUS_LABEL`
   - プランの種類：`PLAN_KIND_LABEL`
   - キー位置：`KEY_POSITION_LABEL`
   - 資格：`COACH_LICENSE_LABEL`

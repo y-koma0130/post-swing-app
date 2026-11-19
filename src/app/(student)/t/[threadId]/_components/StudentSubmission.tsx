@@ -1,18 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
 import { chipClass } from '@/app/components/ui/choiceStyles'
 import { Drawer } from '@/app/components/ui/Drawer'
-import { LongPressQuote } from '@/app/features/chat/components/LongPressQuote'
-import {
-  ordinalLabel,
-  quoteAnchorId,
-  submissionLabel,
-  submissionVideoLabel,
-} from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
 import { formatDateTime } from '@/app/utils/format'
+import {
+  quoteAnchorId,
+  submissionLabel,
+  submissionVideoLabel,
+  videoQuoteLabel,
+} from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 
 type Props = {
@@ -57,7 +57,7 @@ export const StudentSubmission = ({ submission, index }: Props) => {
                 target={{
                   kind: 'video',
                   targetId: video.id,
-                  label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
+                  label: videoQuoteLabel(index, video, submission.videos),
                 }}
               >
                 <VideoThumbnail src={video.url} label={label} onOpen={() => openVideo(i)} />

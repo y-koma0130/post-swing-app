@@ -10,16 +10,16 @@ import {
   useState,
 } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
+import { CHAT_INPUT_ID, useQuote } from '@/app/components/quote/QuoteContext'
 import { Button } from '@/app/components/ui/Button'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
-import { inputClass } from '@/app/components/ui/fieldStyles'
-import { VideoSlot, type VideoSlotHandle } from '@/app/features/video-upload/components/VideoSlot'
+import { inputClass, selectClass } from '@/app/components/ui/fieldStyles'
+import { VideoSlot, type VideoSlotHandle } from '@/app/components/video/VideoSlot'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { SendGuard } from '@/server/features/thread/domain/services/decideSendGuard.service'
 import { sendChatMessageAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { CHAT_INPUT_ID, useQuote } from './QuoteContext'
 
 /** コーチだけが使う添付（ドリル・動画）の設定 */
 type CoachAttachments = {
@@ -156,7 +156,7 @@ export const ChatComposer = ({
           <select
             value={drillId}
             onChange={(event) => setDrillId(event.currentTarget.value)}
-            className={inputClass}
+            className={selectClass}
             aria-label="送るドリル"
           >
             <option value="">ドリルを選ぶ</option>

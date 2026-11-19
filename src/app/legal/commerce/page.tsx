@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { SYSTEM_FEE_RULE_TEXT } from '@/app/features/apply/utils/systemFeeText'
 import { COACH_LP_URL, CONTACT_EMAIL, OPERATOR_NAME } from '@/app/utils/externalLinks'
+import { SYSTEM_FEE_RULE_TEXT } from '@/app/utils/systemFeeText'
 
 export const metadata: Metadata = { title: '特定商取引法に基づく表記' }
 
@@ -31,7 +31,7 @@ const ROWS = [
   ],
   [
     '提供時期',
-    'コーチが申し込みを受け付けた時点（申し込みから48時間以内）で、添削のやり取り（スレッド）が始まります。期限までに受け付けられなかった申し込みは取り消され、請求されません',
+    'コーチが申し込みを受け付けた時点（申し込みから48時間以内）で、添削のやり取り（レッスン）が始まります。期限までに受け付けられなかった申し込みは取り消され、請求されません',
   ],
   [
     'キャンセル・返金',

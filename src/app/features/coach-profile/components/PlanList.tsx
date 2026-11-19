@@ -1,6 +1,6 @@
 import { Card } from '@/app/components/ui/Card'
-import { SYSTEM_FEE_NOTE } from '@/app/features/apply/utils/systemFeeText'
 import { formatYen } from '@/app/utils/format'
+import { SYSTEM_FEE_NOTE } from '@/app/utils/systemFeeText'
 import type { CoachProfileDto } from '@/server/features/coach/application/dto/CoachProfile.dto'
 
 type Props = {

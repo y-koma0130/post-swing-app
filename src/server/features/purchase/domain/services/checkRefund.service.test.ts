@@ -12,7 +12,7 @@ describe('checkRefund', () => {
     })
   })
 
-  it('月額は、そのスレッドを作った請求だけを返金する', () => {
+  it('月額は、そのレッスンを作った請求だけを返金する', () => {
     expect(checkRefund({ purchase: paid, thread: { ...thread, stripeInvoiceId: 'in_1' } })).toEqual(
       {
         ok: true,

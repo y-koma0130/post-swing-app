@@ -5,10 +5,10 @@ import { CoachSuspendButton } from '@/app/features/admin/components/CoachSuspend
 import { InviteCoachForm } from '@/app/features/admin/components/InviteCoachForm'
 import { RefundThreadButton } from '@/app/features/admin/components/RefundThreadButton'
 import { RevokeGrantButton } from '@/app/features/admin/components/RevokeGrantButton'
-import { THREAD_STATUS_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatFeeRate, grantStateText } from '@/app/utils/feeText'
 import { formatMonthDay, formatYen } from '@/app/utils/format'
 import { PLAN_KIND_LABEL } from '@/app/utils/planText'
+import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import type { CoachFeeGrantSummaryDto } from '@/server/features/campaign/application/dto/CoachFeeGrantSummary.dto'
 import {
   getGrantableCampaigns,
@@ -114,7 +114,7 @@ const AdminPage = async () => {
       </Card>
 
       <Card>
-        <h2 className="text-heading">スレッド（新しく動いた順に{threads.length}件）</h2>
+        <h2 className="text-heading">レッスン（新しく動いた順に{threads.length}件）</h2>
         <table className="mt-4 w-full text-left text-sm">
           <thead className="text-muted">
             <tr>

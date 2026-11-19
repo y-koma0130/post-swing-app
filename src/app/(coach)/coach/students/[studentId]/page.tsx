@@ -7,8 +7,8 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChartEntries } from '@/app/features/student-chart/components/ChartEntries'
 import { ChartMemo } from '@/app/features/student-chart/components/ChartMemo'
 import { ChartTags } from '@/app/features/student-chart/components/ChartTags'
-import { THREAD_STATUS_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
+import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentChart } from '@/server/features/student-chart/presentation/queries'
 
@@ -49,7 +49,7 @@ const StudentChartPage = async ({ params }: Props) => {
         </Card>
       </div>
       <section className="space-y-3">
-        <h2 className="text-heading">これまでのスレッド</h2>
+        <h2 className="text-heading">これまでのレッスン</h2>
         <ul className="space-y-3">
           {chart.threads.map((thread) => (
             <li key={thread.id}>

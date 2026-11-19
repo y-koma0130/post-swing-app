@@ -29,7 +29,7 @@ const SECTIONS = [
     key: 'waiting_coach',
     statuses: ['waiting_coach'],
     title: '添削待ち',
-    empty: '添削待ちのスレッドはありません。',
+    empty: '添削待ちのレッスンはありません。',
     urgent: true,
     folded: false,
   },

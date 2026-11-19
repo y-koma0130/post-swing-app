@@ -31,7 +31,7 @@ const setup = (t: Thread = thread) => {
 }
 
 describe('closeThreadByStudent', () => {
-  it('本人の生徒が終えると、スレッドを終了し、レビューのお願いを送る', async () => {
+  it('本人の生徒が終えると、レッスンを終了し、レビューのお願いを送る', async () => {
     const { deps, closeThreads, notifyThreadClosed } = setup()
     expect(await closeThreadByStudent({ actor: student, threadId: 'thread-1', now }, deps)).toEqual(
       { ok: true, value: { threadId: 'thread-1' } }
@@ -72,5 +72,14 @@ describe('closeThreadByStudent', () => {
       { ok: false, error: 'awaiting_reply' }
     )
     expect(closeThreads).not.toHaveBeenCalled()
+  })
+
+  it('レッスンが始まる前（承認待ち）は終えられない', async () => {
+    const { deps, closeThreads, notifyThreadClosed } = setup({ ...thread, status: 'requested' })
+    expect(await closeThreadByStudent({ actor: student, threadId: 'thread-1', now }, deps)).toEqual(
+      { ok: false, error: 'not_in_lesson' }
+    )
+    expect(closeThreads).not.toHaveBeenCalled()
+    expect(notifyThreadClosed).not.toHaveBeenCalled()
   })
 })

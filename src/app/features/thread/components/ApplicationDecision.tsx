@@ -6,12 +6,12 @@ import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import { formatDateTime } from '@/app/utils/format'
+import { COACH_DECLINE_REASON_OPTION } from '@/app/utils/threadText'
 import {
   approveApplicationAction,
   declineApplicationAction,
 } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { COACH_DECLINE_REASON_OPTION } from '../utils/threadText'
 
 type Props = {
   threadId: string

@@ -15,7 +15,7 @@ const setup = () => {
 }
 
 describe('markThreadRead', () => {
-  it('コーチも生徒も、自分のスレッドを開いたら記録する', async () => {
+  it('コーチも生徒も、自分のレッスンを開いたら記録する', async () => {
     const { deps, saveThreadRead } = setup()
     for (const userId of ['coach', 'student']) {
       expect(
@@ -25,7 +25,7 @@ describe('markThreadRead', () => {
     expect(saveThreadRead).toHaveBeenCalledWith({ threadId: 't1', userId: 'student', at: now })
   })
 
-  it('ほかの人・ないスレッドは記録しない', async () => {
+  it('ほかの人・ないレッスンは記録しない', async () => {
     const { deps, saveThreadRead } = setup()
     expect(
       await markThreadRead({ actor: { userId: 'x', name: '' }, threadId: 't1', now }, deps)

@@ -37,6 +37,19 @@ export const submissionVideoLabel = (
     ? `撮り直し・${ANGLE_LABEL[video.angle]}`
     : videoLabel(video.angle, videos.filter((v) => !v.retake).length)
 
+/**
+ * 添削カードに出す動画の呼び方を返す関数（動画が1本だけなら呼び分けないので null）
+ */
+export const cardVideoLabelOf =
+  (videos: ReadonlyArray<{ id: string; angle: VideoAngle; retake: boolean }>) =>
+  (videoId: string): string | null => {
+    const video = videos.find((v) => v.id === videoId)
+    return video && videos.length > 1 ? submissionVideoLabel(video, videos) : null
+  }
+
+/** カードの動画の呼び方を返す関数の型（添削カードの部品で使う） */
+export type VideoLabelOf = (videoId: string) => string | null
+
 /** 選ぶ順（正面・後方がふつう） */
 export const ANGLES = ['front', 'back', 'other'] as const satisfies VideoAngle[]
 
@@ -112,6 +125,33 @@ export const KEY_POSITION_LABEL = {
   finish: 'フィニッシュ',
 } as const satisfies Record<KeyPosition, string>
 
+/** カードを作る順（スイングの順） */
+export const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
+
+/** 動画を引用するときの見出し（「1回目・正面の動画」。「その他」1本だけなら「1回目・動画」） */
+export const videoQuoteLabel = (
+  submissionIndex: number,
+  video: { angle: VideoAngle; retake: boolean },
+  videos: ReadonlyArray<{ retake: boolean }>
+): string => {
+  const label = submissionVideoLabel(video, videos)
+  return `${ordinalLabel(submissionIndex)}・${label === '動画' ? label : `${label}の動画`}`
+}
+
+/** 添削カードの見出し（「1. 正面・トップ」。動画が1本なら「1. トップ」） */
+export const cardTitle = (
+  card: { videoId: string; position: KeyPosition },
+  index: number,
+  videoLabelOf?: VideoLabelOf | undefined
+): string => {
+  const video = videoLabelOf?.(card.videoId)
+  return `${index + 1}. ${video ? `${video}・` : ''}${KEY_POSITION_LABEL[card.position]}`
+}
+
+/** 添削カードを引用するときの見出し（「1回目の添削・トップ」） */
+export const cardQuoteLabel = (submissionIndex: number, position: KeyPosition): string =>
+  `${ordinalLabel(submissionIndex)}の添削・${KEY_POSITION_LABEL[position]}`
+
 /** 引用の見出し（「1回目・正面の動画」「1回目の添削・トップ」「コーチ：ここの左手…」） */
 export const quoteLabel = (quote: ChatQuote): string => {
   switch (quote.kind) {
@@ -120,7 +160,7 @@ export const quoteLabel = (quote: ChatQuote): string => {
         ? 'コーチの動画'
         : `${ordinalLabel(quote.submissionIndex)}・${ANGLE_LABEL[quote.angle]}の動画`
     case 'card':
-      return `${ordinalLabel(quote.submissionIndex)}の添削・${KEY_POSITION_LABEL[quote.position]}`
+      return cardQuoteLabel(quote.submissionIndex, quote.position)
     case 'message':
       return `${quote.from === 'coach' ? 'コーチ' : '生徒'}：${quote.excerpt}`
   }

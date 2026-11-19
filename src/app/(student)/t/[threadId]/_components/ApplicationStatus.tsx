@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { Notice } from '@/app/components/ui/Notice'
 import { ApplicationCheckoutForm } from '@/app/features/apply/components/ApplicationCheckoutForm'
 import { ApplicationConfirmation } from '@/app/features/apply/components/ApplicationConfirmation'
-import { DECLINE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
 import { formatDateTime } from '@/app/utils/format'
+import { DECLINE_REASON_LABEL } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 
 type Props = {

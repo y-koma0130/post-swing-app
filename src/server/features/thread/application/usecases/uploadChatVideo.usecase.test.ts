@@ -59,14 +59,30 @@ describe('uploadChatVideo', () => {
     expect(storeVideo).not.toHaveBeenCalled()
   })
 
-  it('終了したスレッドと、60秒を超える動画は受け取らない', async () => {
-    expect(await uploadChatVideo(params, setup({ ...thread, status: 'closed' }).deps)).toEqual({
-      ok: false,
-      error: 'closed',
-    })
-    expect(await uploadChatVideo({ ...params, durationSec: 61 }, setup().deps)).toEqual({
+  it('終了したレッスンには上げられず、保存しない', async () => {
+    const { deps, storeVideo, saveDraftVideo } = setup({ ...thread, status: 'closed' })
+    expect(await uploadChatVideo(params, deps)).toEqual({ ok: false, error: 'closed' })
+    expect(storeVideo).not.toHaveBeenCalled()
+    expect(saveDraftVideo).not.toHaveBeenCalled()
+  })
+
+  it('60秒を超える動画は受け取らず、保存しない', async () => {
+    const { deps, storeVideo, saveDraftVideo } = setup()
+    expect(await uploadChatVideo({ ...params, durationSec: 61 }, deps)).toEqual({
       ok: false,
       error: 'too_long',
     })
+    expect(storeVideo).not.toHaveBeenCalled()
+    expect(saveDraftVideo).not.toHaveBeenCalled()
   })
+
+  it.each(['draft', 'requested'] as const)(
+    'レッスンが始まる前（%s）は上げられず、保存しない',
+    async (status) => {
+      const { deps, storeVideo, saveDraftVideo } = setup({ ...thread, status })
+      expect(await uploadChatVideo(params, deps)).toEqual({ ok: false, error: 'not_started' })
+      expect(storeVideo).not.toHaveBeenCalled()
+      expect(saveDraftVideo).not.toHaveBeenCalled()
+    }
+  )
 })

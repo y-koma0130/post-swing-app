@@ -72,6 +72,16 @@ type Dependencies = Readonly<{
   deleteDraftThreads: (threadIds: string[]) => Promise<void>
 }>
 
+/** 毎日の処理の区切り。1つが失敗しても、ほかは続ける */
+export type MaintenanceStep =
+  | 'close_expired'
+  | 'remind_expiring'
+  | 'notify_overdue'
+  | 'delete_closed_videos'
+  | 'delete_draft_videos'
+  | 'expire_applications'
+  | 'delete_draft_threads'
+
 export type RunThreadMaintenance = (
   params: Readonly<{ now: Date }>,
   dependencies: Dependencies
@@ -85,6 +95,8 @@ export type RunThreadMaintenance = (
       deletedDrafts: number
       expiredApplications: number
       deletedDraftThreads: number
+      /** 途中で失敗した処理（ほかの処理は続ける。翌日にもう一度試す） */
+      failed: MaintenanceStep[]
     },
     never
   >
@@ -100,6 +112,31 @@ export type RunThreadMaintenance = (
  */
 export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) => {
   const dates = calcMaintenanceDates(now)
+  const failed: MaintenanceStep[] = []
+  /** 1つの区切りを動かす。失敗しても止めずに記録する（R2・Stripe・通知の一時的な失敗で、ほかの処理を止めない） */
+  const step = async (name: MaintenanceStep, run: () => Promise<number>): Promise<number> => {
+    try {
+      return await run()
+    } catch (error) {
+      console.error(`[scheduled] ${name} に失敗しました`, error)
+      failed.push(name)
+      return 0
+    }
+  }
+  /** R2 の動画を1つずつ消す。消せなかったものは残して、次の日にもう一度試す */
+  const deleteObjects = async <T>(items: ReadonlyArray<T>, keyOf: (item: T) => string[]) => {
+    const deleted: T[] = []
+    for (const item of items) {
+      try {
+        for (const key of keyOf(item)) await deps.deleteMediaObject(key)
+        deleted.push(item)
+      } catch (error) {
+        console.error('[scheduled] 動画を消せませんでした', error)
+      }
+    }
+    return deleted
+  }
+
   const [expired, expiring, unreplied] = await Promise.all([
     deps.findExpiredOpenThreads(now),
     deps.findOpenThreadsExpiringBy(dates.remindExpiringTo),
@@ -112,10 +149,11 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
   ])
   const absencesOf = (coachUserId: string) => absences.get(coachUserId) ?? []
 
-  const toClose = expired.filter((t) =>
-    shouldCloseThread(withEffectiveExpiry(t, absencesOf(t.coachUserId)), now)
-  )
-  if (toClose.length > 0) {
+  const closed = await step('close_expired', async () => {
+    const toClose = expired.filter((t) =>
+      shouldCloseThread(withEffectiveExpiry(t, absencesOf(t.coachUserId)), now)
+    )
+    if (toClose.length === 0) return 0
     await deps.closeThreads(
       toClose.map((t) => t.id),
       now
@@ -123,78 +161,96 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     for (const t of toClose) {
       await deps.notifyThreadClosed({ threadId: t.id, studentUserId: t.studentUserId })
     }
-  }
-
-  const toRemind = expiring.filter((t) => {
-    const { expiresAt } = calcEffectiveExpiry(t, absencesOf(t.coachUserId))
-    return (
-      expiresAt.getTime() > dates.remindExpiringFrom.getTime() &&
-      expiresAt.getTime() <= dates.remindExpiringTo.getTime()
-    )
+    return toClose.length
   })
-  for (const t of toRemind) {
-    await deps.notifyThreadExpiring({ threadId: t.id, studentUserId: t.studentUserId })
-  }
 
-  // 1スレッドに遅れた提出がいくつあっても、知らせるのは1回
-  const overdue = new Map<string, string>()
-  for (const s of unreplied) {
-    // 撮り直しを待っているあいだは、返信の期限を止める
-    if (s.retakeOpen) continue
-    const from = replyClockStart(s.submittedAt, s.threadStartedAt, s.lastRetakeClosedAt)
-    if (isReplyDuePassedToday(calcReplyDueAt(from, absencesOf(s.coachUserId)), now)) {
-      overdue.set(s.threadId, s.coachUserId)
+  const reminded = await step('remind_expiring', async () => {
+    const toRemind = expiring.filter((t) => {
+      const { expiresAt } = calcEffectiveExpiry(t, absencesOf(t.coachUserId))
+      return (
+        expiresAt.getTime() > dates.remindExpiringFrom.getTime() &&
+        expiresAt.getTime() <= dates.remindExpiringTo.getTime()
+      )
+    })
+    for (const t of toRemind) {
+      await deps.notifyThreadExpiring({ threadId: t.id, studentUserId: t.studentUserId })
     }
-  }
-  for (const [threadId, coachUserId] of overdue) {
-    await deps.notifyReplyOverdue({ threadId, coachUserId })
-  }
+    return toRemind.length
+  })
 
-  const videos = await deps.findVideosToDelete(dates.deleteVideosClosedBefore)
-  for (const v of videos) {
-    await deps.deleteMediaObject(v.r2Key)
-  }
-  if (videos.length > 0) {
-    await deps.markVideosDeleted(
-      videos.map((v) => v.id),
-      now
+  const overdue = await step('notify_overdue', async () => {
+    // 1スレッドに遅れた提出がいくつあっても、知らせるのは1回
+    const threads = new Map<string, string>()
+    for (const s of unreplied) {
+      // 撮り直しを待っているあいだは、返信の期限を止める
+      if (s.retakeOpen) continue
+      const from = replyClockStart(s.submittedAt, s.threadStartedAt, s.lastRetakeClosedAt)
+      if (isReplyDuePassedToday(calcReplyDueAt(from, absencesOf(s.coachUserId)), now)) {
+        threads.set(s.threadId, s.coachUserId)
+      }
+    }
+    for (const [threadId, coachUserId] of threads) {
+      await deps.notifyReplyOverdue({ threadId, coachUserId })
+    }
+    return threads.size
+  })
+
+  const deletedVideos = await step('delete_closed_videos', async () => {
+    const videos = await deleteObjects(
+      await deps.findVideosToDelete(dates.deleteVideosClosedBefore),
+      (v) => [v.r2Key]
     )
-  }
+    if (videos.length > 0) {
+      await deps.markVideosDeleted(
+        videos.map((v) => v.id),
+        now
+      )
+    }
+    return videos.length
+  })
 
-  const drafts = await deps.findDraftVideosToDelete(dates.deleteDraftsCreatedBefore)
-  for (const v of drafts) {
-    await deps.deleteMediaObject(v.r2Key)
-  }
-  if (drafts.length > 0) {
-    await deps.deleteDraftVideos(drafts.map((v) => v.id))
-  }
+  const deletedDrafts = await step('delete_draft_videos', async () => {
+    const drafts = await deleteObjects(
+      await deps.findDraftVideosToDelete(dates.deleteDraftsCreatedBefore),
+      (v) => [v.r2Key]
+    )
+    if (drafts.length > 0) await deps.deleteDraftVideos(drafts.map((v) => v.id))
+    return drafts.length
+  })
 
   // 期限までに承認されなかった申し込みは、断った扱いにしてカードの仮押さえを外す。
   // 外せなかったもの（Stripe の一時的な失敗）は承認待ちのまま残し、翌日にもう一度試す
-  let expiredApplications = 0
-  for (const a of await deps.findExpiredApplications(dates.expireApplicationsRequestedBefore)) {
-    const voided = await deps.voidPayment(a.purchaseId)
-    if (!voided.ok) continue
-    await deps.saveDecline(a.threadId, { reason: 'expired', message: '', decidedAt: now })
-    await deps.notifyApplicationExpired({ threadId: a.threadId, studentUserId: a.studentUserId })
-    expiredApplications += 1
-  }
+  const expiredApplications = await step('expire_applications', async () => {
+    let count = 0
+    for (const a of await deps.findExpiredApplications(dates.expireApplicationsRequestedBefore)) {
+      const voided = await deps.voidPayment(a.purchaseId)
+      if (!voided.ok) continue
+      await deps.saveDecline(a.threadId, { reason: 'expired', message: '', decidedAt: now })
+      await deps.notifyApplicationExpired({ threadId: a.threadId, studentUserId: a.studentUserId })
+      count += 1
+    }
+    return count
+  })
 
-  const draftThreads = await deps.findDraftThreadsToDelete(dates.deleteDraftThreadsCreatedBefore)
-  for (const key of draftThreads.flatMap((t) => t.videoR2Keys)) {
-    await deps.deleteMediaObject(key)
-  }
-  if (draftThreads.length > 0) {
-    await deps.deleteDraftThreads(draftThreads.map((t) => t.threadId))
-  }
+  const deletedDraftThreads = await step('delete_draft_threads', async () => {
+    const draftThreads = await deleteObjects(
+      await deps.findDraftThreadsToDelete(dates.deleteDraftThreadsCreatedBefore),
+      (t) => t.videoR2Keys
+    )
+    if (draftThreads.length > 0) {
+      await deps.deleteDraftThreads(draftThreads.map((t) => t.threadId))
+    }
+    return draftThreads.length
+  })
 
   return ok({
-    closed: toClose.length,
-    reminded: toRemind.length,
-    overdue: overdue.size,
-    deletedVideos: videos.length,
-    deletedDrafts: drafts.length,
+    closed,
+    reminded,
+    overdue,
+    deletedVideos,
+    deletedDrafts,
     expiredApplications,
-    deletedDraftThreads: draftThreads.length,
+    deletedDraftThreads,
+    failed,
   })
 }

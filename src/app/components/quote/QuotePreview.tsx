@@ -1,5 +1,5 @@
+import { quoteAnchorId, quoteLabel } from '@/app/utils/threadText'
 import type { ChatQuote } from '@/server/features/thread/domain/values/ChatMessage'
-import { quoteAnchorId, quoteLabel } from '../utils/threadText'
 
 /** 吹き出しの上に出す引用。押すと引用先へスクロールする */
 export const QuotePreview = ({ quote }: { quote: ChatQuote }) => (

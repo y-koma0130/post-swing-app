@@ -70,45 +70,76 @@ describe('saveAbsence', () => {
     expect(save).not.toHaveBeenCalled()
   })
 
-  it('コーチでない・他人の不在の編集は not_found', async () => {
-    expect(
-      await saveAbsence({ actor, absenceId: null, input, now }, saveSetup(false).deps)
-    ).toEqual({
+  it('コーチでなければ not_found で、保存しない', async () => {
+    const { deps, save } = saveSetup(false)
+    expect(await saveAbsence({ actor, absenceId: null, input, now }, deps)).toEqual({
       ok: false,
       error: 'not_found',
     })
-    expect(await saveAbsence({ actor, absenceId: 'other', input, now }, saveSetup().deps)).toEqual({
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('他人の不在の編集は not_found で、保存しない', async () => {
+    const { deps, save } = saveSetup()
+    expect(await saveAbsence({ actor, absenceId: 'other', input, now }, deps)).toEqual({
       ok: false,
       error: 'not_found',
     })
+    expect(save).not.toHaveBeenCalled()
   })
 })
 
 describe('deleteAbsence', () => {
-  it('自分の不在だけ消せる', async () => {
-    const remove = vi.fn(async () => undefined)
-    const deps = { findAbsences: async () => [existing], deleteAbsence: remove }
+  type DeleteDeps = Parameters<typeof deleteAbsence>[1]
+  const deleteSetup = () => {
+    const remove = vi.fn<DeleteDeps['deleteAbsence']>(async () => undefined)
+    const deps: DeleteDeps = { findAbsences: async () => [existing], deleteAbsence: remove }
+    return { deps, remove }
+  }
+
+  it('自分の不在を消す', async () => {
+    const { deps, remove } = deleteSetup()
     expect(await deleteAbsence({ actor, absenceId: 'a1' }, deps)).toEqual({
       ok: true,
       value: undefined,
     })
+    expect(remove).toHaveBeenCalledWith('a1', 'coach-1')
+  })
+
+  it('自分の不在でなければ not_found で、消さない', async () => {
+    const { deps, remove } = deleteSetup()
     expect(await deleteAbsence({ actor, absenceId: 'x' }, deps)).toEqual({
       ok: false,
       error: 'not_found',
     })
-    expect(remove).toHaveBeenCalledTimes(1)
+    expect(remove).not.toHaveBeenCalled()
   })
 })
 
 describe('setDelayFlag', () => {
+  type DelayDeps = Parameters<typeof setDelayFlag>[1]
+  const delaySetup = (isCoach = true) => {
+    const saveDelayFlag = vi.fn<DelayDeps['saveDelayFlag']>(async () => undefined)
+    const deps: DelayDeps = { isCoach: async () => isCoach, saveDelayFlag }
+    return { deps, saveDelayFlag }
+  }
+
   it('立てるときは日時を、下ろすときは null を保存する', async () => {
-    const saveDelayFlag = vi.fn(async () => undefined)
-    const deps = { isCoach: async () => true, saveDelayFlag }
+    const { deps, saveDelayFlag } = delaySetup()
     await setDelayFlag({ actor, on: true, now }, deps)
     await setDelayFlag({ actor, on: false, now }, deps)
     expect(saveDelayFlag.mock.calls).toEqual([
       ['coach-1', now],
       ['coach-1', null],
     ])
+  })
+
+  it('コーチでなければ not_found で、保存しない', async () => {
+    const { deps, saveDelayFlag } = delaySetup(false)
+    expect(await setDelayFlag({ actor, on: true, now }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(saveDelayFlag).not.toHaveBeenCalled()
   })
 })

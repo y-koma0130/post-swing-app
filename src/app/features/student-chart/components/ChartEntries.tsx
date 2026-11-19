@@ -68,7 +68,7 @@ export const ChartEntries = ({ studentUserId, entries, threadId = null, limit }:
                     <>
                       {'・'}
                       <Link href={`/coach/threads/${entry.thread.id}`} className="underline">
-                        {entry.thread.theme || 'スレッド'}
+                        {entry.thread.theme || 'レッスン'}
                       </Link>
                     </>
                   )}

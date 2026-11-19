@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useRef, useState } from 'react'
+import { QuoteButton } from '@/app/components/quote/QuoteContext'
 import { Button } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { chipClass, segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
-import { inputClass } from '@/app/components/ui/fieldStyles'
+import { inputClass, smallSelectClass } from '@/app/components/ui/fieldStyles'
 import { AnnotationLayer } from '@/app/features/annotation/components/AnnotationLayer'
 import { AnnotationToolbar } from '@/app/features/annotation/components/AnnotationToolbar'
 import {
@@ -13,18 +14,21 @@ import {
   renderComparedFrame,
 } from '@/app/features/annotation/components/renderAnnotatedFrame'
 import { useAnnotationEditor } from '@/app/features/annotation/hooks/useAnnotationEditor'
-import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
-import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
-import {
-  KEY_POSITION_LABEL,
-  ordinalLabel,
-  submissionVideoLabel,
-} from '@/app/features/thread/utils/threadText'
+import { GolfProfileSummary } from '@/app/features/thread/components/GolfProfileSummary'
 import { ComparePlayer } from '@/app/features/video-player/components/ComparePlayer'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
+import {
+  cardQuoteLabel,
+  cardVideoLabelOf,
+  KEY_POSITION_LABEL,
+  KEY_POSITIONS,
+  ordinalLabel,
+  submissionVideoLabel,
+  videoQuoteLabel,
+} from '@/app/utils/threadText'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
@@ -45,8 +49,6 @@ type Props = {
   /** 添削を送れたとき（ドロワーを閉じる） */
   onSent: () => void
 }
-
-const KEY_POSITIONS = ['address', 'top', 'impact', 'finish'] as const satisfies KeyPosition[]
 
 /**
  * 添削の作業エリア（ドロワーの中に開く）
@@ -133,10 +135,7 @@ export const ReviewWorkspace = ({
     )
   }
 
-  const angleOf = (videoId: string): string | null => {
-    const video = current.videos.find((v) => v.id === videoId)
-    return video && current.videos.length > 1 ? submissionVideoLabel(video, current.videos) : null
-  }
+  const angleOf = cardVideoLabelOf(current.videos)
 
   const resetLines = () => {
     editor.reset()
@@ -266,7 +265,7 @@ export const ReviewWorkspace = ({
                 setChosenPartnerId(event.currentTarget.value)
                 rightEditor.reset()
               }}
-              className="border-line rounded-full border bg-white px-3 py-1.5 text-sm"
+              className={smallSelectClass}
             >
               {partners.map((video) => (
                 <option key={video.id} value={video.id}>
@@ -335,16 +334,16 @@ export const ReviewWorkspace = ({
             target={{
               kind: 'video',
               targetId: currentVideo.id,
-              label: `${ordinalLabel(index)}・${submissionVideoLabel(currentVideo, current.videos)}の動画`,
+              label: videoQuoteLabel(index, currentVideo, current.videos),
             }}
           />
         </div>
-        {index === 0 && <GolfProfileBox golfProfile={golfProfile} />}
         {current.note && (
           <p className="rounded-card text-body bg-white p-4 text-sm whitespace-pre-wrap shadow-sm">
             {current.note}
           </p>
         )}
+        {index === 0 && <GolfProfileSummary golfProfile={golfProfile} />}
       </div>
 
       <aside className="space-y-4">
@@ -359,7 +358,7 @@ export const ReviewWorkspace = ({
                   target={{
                     kind: 'card',
                     targetId: card.id,
-                    label: `${ordinalLabel(index)}の添削・${KEY_POSITION_LABEL[card.position]}`,
+                    label: cardQuoteLabel(index, card.position),
                   }}
                 />
               )}

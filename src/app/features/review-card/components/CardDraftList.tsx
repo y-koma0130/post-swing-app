@@ -2,13 +2,13 @@
 
 import { textButtonClass } from '@/app/components/ui/Button'
 import { inputClass } from '@/app/components/ui/fieldStyles'
-import { KEY_POSITION_LABEL } from '@/app/features/thread/utils/threadText'
+import { cardTitle, KEY_POSITION_LABEL, type VideoLabelOf } from '@/app/utils/threadText'
 import type { CardDraft } from '../hooks/useCardDrafts'
 
 type Props = {
   drafts: CardDraft[]
   /** カードを作った動画の呼び方（「正面」など）。動画が1本なら null */
-  videoLabel?: ((videoId: string) => string | null) | undefined
+  videoLabel?: VideoLabelOf | undefined
   onChange: (localId: string, patch: Partial<Pick<CardDraft, 'comment'>>) => void
   onRemove: (localId: string) => void
 }
@@ -26,8 +26,7 @@ export const CardDraftList = ({ drafts, videoLabel, onChange, onRemove }: Props)
           />
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-bold">
-              {index + 1}. {videoLabel?.(draft.videoId) ? `${videoLabel(draft.videoId)}・` : ''}
-              {KEY_POSITION_LABEL[draft.position]}
+              {cardTitle(draft, index, videoLabel)}
               <span className="text-caption text-muted ml-2 font-mono font-normal">
                 {draft.timeSec.toFixed(2)}秒
               </span>

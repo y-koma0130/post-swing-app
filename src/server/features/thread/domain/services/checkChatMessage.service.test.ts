@@ -33,7 +33,7 @@ describe('checkChatMessage', () => {
     })
   })
 
-  it('終了したスレッド・空・長すぎる本文は送れない', () => {
+  it('終了したレッスン・空・長すぎる本文は送れない', () => {
     const check = (overrides: Partial<Parameters<typeof checkChatMessage>[0]>) =>
       checkChatMessage({ thread, sender: 'coach', body: 'a', attachmentKind: 'none', ...overrides })
     expect(check({ thread: { ...thread, status: 'closed' } })).toEqual({
@@ -57,7 +57,7 @@ describe('checkChatMessage', () => {
     ).toBe(true)
   })
 
-  it('生徒はスレッド全体の上限まで（お試しは10通）。コーチは無制限', () => {
+  it('生徒はレッスン全体の上限まで（お試しは10通）。コーチは無制限', () => {
     const full = {
       ...thread,
       planKind: 'trial' as const,

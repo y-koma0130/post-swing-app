@@ -82,7 +82,7 @@ describe('checkQuoteTarget', () => {
     expect(video.ok && video.value.kind === 'message' && video.value.excerpt).toBe('動画')
   })
 
-  it('このスレッドにないものは引用できない', () => {
+  it('このレッスンにないものは引用できない', () => {
     const invalid = { ok: false, error: 'invalid_quote' }
     expect(check('video', 'x')).toEqual(invalid)
     expect(check('card', 'x')).toEqual(invalid)

@@ -9,7 +9,7 @@ const coach: EligibilityCoach = {
   monthlyCapacity: 5,
   plans: [
     { kind: 'trial', name: 'お試し', priceYen: 1000, active: true },
-    { kind: 'single', name: '1スレッド', priceYen: 5000, active: true },
+    { kind: 'single', name: '1レッスン', priceYen: 5000, active: true },
     { kind: 'monthly', name: '月額', priceYen: 8000, active: false },
   ],
 }
@@ -30,7 +30,7 @@ describe('checkPurchaseEligibility', () => {
     expect(check()).toEqual({
       ok: true,
       value: {
-        plan: { name: '1スレッド', priceYen: 5000 },
+        plan: { name: '1レッスン', priceYen: 5000 },
         destinationAccountId: 'acct_1',
       },
     })

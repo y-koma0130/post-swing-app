@@ -20,7 +20,9 @@ const supportsVideoFrameCallback = (video: HTMLVideoElement): boolean =>
 /** known：送るときに測った値。estimated：再生して推定した値。default：仮の値 */
 export type FrameRateSource = 'known' | 'default' | 'estimated'
 
-export type VideoSize = { width: number; height: number }
+import type { VideoSize } from '../utils/frame'
+
+export type { VideoSize }
 
 export type VideoPlayerState = {
   currentTimeSec: number

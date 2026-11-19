@@ -11,6 +11,7 @@ import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import type { ErrorOf } from '@/server/utils/result'
 import { deleteAbsence } from '../application/usecases/deleteAbsence.usecase'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
 import { saveAbsence } from '../application/usecases/saveAbsence.usecase'
@@ -83,7 +84,7 @@ const GRANT_ERROR_MESSAGE = {
   campaign_inactive: 'キャンペーンは終了しています',
   already_granted: 'このコーチにはすでに付いています',
   limit_reached: 'キャンペーンの枠がいっぱいです',
-} as const
+} as const satisfies Record<ErrorOf<typeof grantCampaignToCoach>, string>
 
 /** 管理者がコーチを招待する */
 export const inviteCoachAction = async (
@@ -186,8 +187,8 @@ const yen = (value: number) => `${value.toLocaleString('ja-JP')}円`
 const PLANS_ERROR = {
   not_found: 'コーチとして登録されていません',
   duplicate_kind: 'プランの種類が重なっています',
-  below_minimum: `価格は、お試し${yen(PLAN_MIN_PRICE_YEN.trial)}・1スレッド${yen(PLAN_MIN_PRICE_YEN.single)}・月額${yen(PLAN_MIN_PRICE_YEN.monthly)}以上にしてください`,
-} as const
+  below_minimum: `価格は、お試し${yen(PLAN_MIN_PRICE_YEN.trial)}・1レッスン${yen(PLAN_MIN_PRICE_YEN.single)}・月額${yen(PLAN_MIN_PRICE_YEN.monthly)}以上にしてください`,
+} as const satisfies Record<ErrorOf<typeof updatePlans>, string>
 
 /** コーチが自分のプランを保存する。フォームは種類ごとに `<kind>.price` のような名前で送る */
 export const updatePlansAction = async (
@@ -308,7 +309,7 @@ const ABSENCE_ERROR_MESSAGE = {
   invalid_range: '開始日は終了日より前にしてください',
   past: '終わった期間は登録できません',
   overlap: 'ほかの不在期間と重なっています',
-} as const
+} as const satisfies Record<ErrorOf<typeof saveAbsence> | ErrorOf<typeof deleteAbsence>, string>
 
 /** コーチが不在期間を追加・編集する */
 export const saveAbsenceAction = async (

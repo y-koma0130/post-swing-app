@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { linkedTime, moveTogether, needsResync, offsetOf } from './linkedPlayback'
+import { formatOffset, linkedTime, moveTogether, needsResync, offsetOf } from './linkedPlayback'
 
 describe('offsetOf', () => {
   it('右の時刻 − 左の時刻', () => {
@@ -44,5 +44,17 @@ describe('moveTogether', () => {
     expect(
       moveTogether({ leftTimeSec: 1, nextLeftTimeSec: 1.5, offsetSec: -0.3, rightDurationSec: 5 })
     ).toEqual({ left: 1.5, right: 1.2 })
+  })
+})
+
+describe('formatOffset', () => {
+  it('ずれがなければ「ずれ 0秒」（0.005秒未満は丸める）', () => {
+    expect(formatOffset(0)).toBe('ずれ 0秒')
+    expect(formatOffset(0.004)).toBe('ずれ 0秒')
+  })
+
+  it('右が進んでいれば「先」、遅れていれば「後」', () => {
+    expect(formatOffset(0.123)).toBe('右が 0.12秒 先')
+    expect(formatOffset(-1.5)).toBe('右が 1.50秒 後')
   })
 })

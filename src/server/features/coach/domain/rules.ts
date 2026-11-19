@@ -30,7 +30,7 @@ export const DEFAULT_PLANS: readonly Plan[] = [
   },
   {
     kind: 'single',
-    name: '1スレッド',
+    name: '1レッスン',
     price: priceYenSchema.parse(4980),
     description: '提出3回・チャット30通まで・30日間',
     active: true,
@@ -39,7 +39,7 @@ export const DEFAULT_PLANS: readonly Plan[] = [
     kind: 'monthly',
     name: '月額',
     price: priceYenSchema.parse(3980),
-    description: '毎月1スレッド（提出3回・チャット30通まで）',
+    description: '毎月1レッスン（提出3回・チャット30通まで）',
     active: true,
   },
 ]

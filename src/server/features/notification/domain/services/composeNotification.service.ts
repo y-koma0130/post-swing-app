@@ -28,14 +28,6 @@ export type ComposeNotification = (
   ctx: NotificationContext
 ) => ComposedNotification
 
-/**
- * 通知の文面と送り先を決める
- *
- * ドメインルール:
- * - 生徒には LINE（サービス共通の公式アカウント）で、1つの出来事につき1通
- * - コーチにはメールで知らせる
- * - 本文には、開くページの URL を入れる（LINE のトーク画面からそのまま開ける）
- */
 /** まだ見ていないものをまとめた言い方（「添削とメッセージ」）。何もなければ null */
 const unseenPhrase = (
   unseen: NotificationContext['unseen'],
@@ -54,6 +46,14 @@ const unseenPhrase = (
 const nameOrDefault = (name: string, fallback: string): string =>
   name.trim() === '' ? fallback : name
 
+/**
+ * 通知の文面と送り先を決める
+ *
+ * ドメインルール:
+ * - 生徒には LINE（サービス共通の公式アカウント）で、1つの出来事につき1通
+ * - コーチにはメールで知らせる
+ * - 本文には、開くページの URL を入れる（LINE のトーク画面からそのまま開ける）
+ */
 export const composeNotification: ComposeNotification = (message, rawCtx) => {
   const ctx = {
     ...rawCtx,
@@ -170,7 +170,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'email',
         recipientUserId: ctx.coachUserId,
         subject: `${ctx.studentName}さんの月額の新しい月が始まりました`,
-        text: `${ctx.studentName}さんの月額の支払いが済み、新しい月のスレッドが始まりました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
+        text: `${ctx.studentName}さんの月額の支払いが済み、新しい月のレッスンが始まりました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'reply_overdue':
       return {

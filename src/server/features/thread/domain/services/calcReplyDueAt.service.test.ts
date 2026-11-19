@@ -28,7 +28,7 @@ describe('isReplyDuePassedToday', () => {
     expect(isReplyDuePassedToday(new Date('2026-11-20T10:00:00+09:00'), now)).toBe(false)
   })
 
-  it('申し込みで承認前に届いた提出は、承認した時点（スレッドの開始）から数える', () => {
+  it('申し込みで承認前に届いた提出は、承認した時点（レッスンの開始）から数える', () => {
     const submittedAt = new Date('2026-11-16T10:00:00+09:00')
     const approvedAt = new Date('2026-11-17T09:00:00+09:00')
     expect(replyClockStart(submittedAt, approvedAt)).toEqual(approvedAt)

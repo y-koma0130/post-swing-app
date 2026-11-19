@@ -21,7 +21,7 @@ const coach: CheckoutCoach = {
   monthlyCapacity: 2,
   plans: [
     { kind: 'trial', name: 'お試し', priceYen: 550, active: true },
-    { kind: 'single', name: '1スレッド', priceYen: 4980, active: true },
+    { kind: 'single', name: '1レッスン', priceYen: 4980, active: true },
   ],
 }
 
@@ -80,16 +80,47 @@ describe('startApplication', () => {
     expect(createThread).not.toHaveBeenCalled()
   })
 
-  it('満枠・お試し済み・コーチの不在中は申し込めない', async () => {
+  it('コーチが見つからなければ not_found。申し込みも下書きも作らない', async () => {
+    const { deps, savePendingPurchase, createThread } = setup({
+      findCoachForCheckout: async () => null,
+    })
+    expect(await startApplication({ ...params, coachSlug: 'unknown' }, deps)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
+  })
+
+  it('コーチ本人は自分に申し込めない', async () => {
+    const { deps, savePendingPurchase, createThread } = setup()
     expect(
-      await startApplication(params, setup({ countActiveThreads: async () => 2 }).deps)
-    ).toEqual({ ok: false, error: 'full' })
-    expect(
-      await startApplication(
-        { ...params, planKind: 'trial' },
-        setup({ hasPaidTrial: async () => true }).deps
-      )
-    ).toEqual({ ok: false, error: 'trial_used' })
+      await startApplication({ ...params, actor: { userId: 'coach-1', name: '山田' } }, deps)
+    ).toEqual({ ok: false, error: 'own_coach' })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
+  })
+
+  it('満枠なら申し込めず、何も作らない', async () => {
+    const { deps, savePendingPurchase, createThread } = setup({
+      countActiveThreads: async () => 2,
+    })
+    expect(await startApplication(params, deps)).toEqual({ ok: false, error: 'full' })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
+  })
+
+  it('お試し済みならお試しに申し込めず、何も作らない', async () => {
+    const { deps, savePendingPurchase, createThread } = setup({ hasPaidTrial: async () => true })
+    expect(await startApplication({ ...params, planKind: 'trial' }, deps)).toEqual({
+      ok: false,
+      error: 'trial_used',
+    })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
+  })
+
+  it('コーチの不在中（新規を止めている）は申し込めず、何も作らない', async () => {
     const absence = {
       id: 'a1',
       coachUserId: 'coach-1',
@@ -98,17 +129,18 @@ describe('startApplication', () => {
       note: '',
       pauseNewSignups: false,
     }
-    expect(
-      await startApplication(
-        { ...params, acknowledgedDelay: true },
-        setup({
-          findCoachAvailability: async () => ({
-            kind: 'absent',
-            absence,
-            resumeDate: localDateSchema.parse('2026-11-19'),
-          }),
-        }).deps
-      )
-    ).toEqual({ ok: false, error: 'paused_for_absence' })
+    const { deps, savePendingPurchase, createThread } = setup({
+      findCoachAvailability: async () => ({
+        kind: 'absent',
+        absence,
+        resumeDate: localDateSchema.parse('2026-11-19'),
+      }),
+    })
+    expect(await startApplication({ ...params, acknowledgedDelay: true }, deps)).toEqual({
+      ok: false,
+      error: 'paused_for_absence',
+    })
+    expect(savePendingPurchase).not.toHaveBeenCalled()
+    expect(createThread).not.toHaveBeenCalled()
   })
 })

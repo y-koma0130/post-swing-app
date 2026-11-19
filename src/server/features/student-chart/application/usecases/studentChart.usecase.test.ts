@@ -44,13 +44,25 @@ describe('viewStudentChart', () => {
       })
     }
   })
+
+  it('カルテが見つからなければ not_found', async () => {
+    expect(
+      await viewStudentChart(
+        { actor: coach, studentUserId: 'student-1' },
+        { hasLessonWith, findStudentChart: async () => null }
+      )
+    ).toEqual({ ok: false, error: 'not_found' })
+  })
 })
 
 describe('viewChartForThread', () => {
   const deps = { findThreadPair, findStudentChart: async () => chart }
 
-  it('スレッドの担当のコーチだけが見られる', async () => {
-    expect((await viewChartForThread({ actor: coach, threadId: 'thread-1' }, deps)).ok).toBe(true)
+  it('レッスンの担当のコーチだけが見られる', async () => {
+    expect(await viewChartForThread({ actor: coach, threadId: 'thread-1' }, deps)).toEqual({
+      ok: true,
+      value: chart,
+    })
     expect(await viewChartForThread({ actor: student, threadId: 'thread-1' }, deps)).toEqual({
       ok: false,
       error: 'not_found',
@@ -59,6 +71,26 @@ describe('viewChartForThread', () => {
       ok: false,
       error: 'not_found',
     })
+  })
+})
+
+describe('viewChartForThread（カルテなし）', () => {
+  it('カルテが見つからなければ not_found', async () => {
+    expect(
+      await viewChartForThread(
+        { actor: coach, threadId: 'thread-1' },
+        { findThreadPair, findStudentChart: async () => null }
+      )
+    ).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('申し込みの下書き（組がない）なら not_found', async () => {
+    expect(
+      await viewChartForThread(
+        { actor: coach, threadId: 'thread-draft' },
+        { findThreadPair, findStudentChart: async () => chart }
+      )
+    ).toEqual({ ok: false, error: 'not_found' })
   })
 })
 
@@ -91,12 +123,29 @@ describe('saveChart', () => {
   })
 
   it('長すぎるメモは書けない', async () => {
+    const save = vi.fn(async () => undefined)
     expect(
       await saveChart(
         { actor: coach, studentUserId: 'student-1', memo: 'あ'.repeat(5001), now },
-        { hasLessonWith, saveChart: async () => undefined }
+        { hasLessonWith, saveChart: save }
       )
     ).toEqual({ ok: false, error: 'invalid_memo' })
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('タグが多すぎる・空のタグは書けない', async () => {
+    const save = vi.fn(async () => undefined)
+    const run = (tags: string[]) =>
+      saveChart(
+        { actor: coach, studentUserId: 'student-1', tags, now },
+        { hasLessonWith, saveChart: save }
+      )
+    expect(await run(Array.from({ length: 11 }, (_, i) => `タグ${i}`))).toEqual({
+      ok: false,
+      error: 'invalid_tags',
+    })
+    expect(await run(['  '])).toEqual({ ok: false, error: 'invalid_tags' })
+    expect(save).not.toHaveBeenCalled()
   })
 })
 
@@ -108,7 +157,7 @@ describe('addChartEntry', () => {
     generateId: () => 'entry-1',
   })
 
-  it('記録を足せる。スレッドを付けるなら、そのコーチと生徒のスレッドだけ', async () => {
+  it('記録を足せる。レッスンを付けるなら、そのコーチと生徒のレッスンだけ', async () => {
     const d = deps()
     expect(
       await addChartEntry(
@@ -130,6 +179,23 @@ describe('addChartEntry', () => {
         deps()
       )
     ).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('ほかの生徒のレッスンや、ほかのコーチのレッスンは付けられない', async () => {
+    const pairs: Record<string, { coachUserId: string; studentUserId: string }> = {
+      'thread-other-student': { coachUserId: 'coach-1', studentUserId: 'student-2' },
+      'thread-other-coach': { coachUserId: 'coach-2', studentUserId: 'student-1' },
+    }
+    for (const threadId of Object.keys(pairs)) {
+      const d = { ...deps(), findThreadPair: async (id: string) => pairs[id] ?? null }
+      expect(
+        await addChartEntry(
+          { actor: coach, studentUserId: 'student-1', body: 'x', threadId, now },
+          d
+        )
+      ).toEqual({ ok: false, error: 'not_found' })
+      expect(d.saveEntry).not.toHaveBeenCalled()
+    }
   })
 
   it('レッスンのない生徒には書けない。空の記録も書けない', async () => {
@@ -161,5 +227,16 @@ describe('deleteChartEntry', () => {
       ok: true,
       value: undefined,
     })
+  })
+
+  it('記録がなければ not_found で、消さない', async () => {
+    const deleteEntry = vi.fn(async () => undefined)
+    expect(
+      await deleteChartEntry(
+        { actor: coach, entryId: 'unknown' },
+        { findEntryOwner: async () => null, deleteEntry }
+      )
+    ).toEqual({ ok: false, error: 'not_found' })
+    expect(deleteEntry).not.toHaveBeenCalled()
   })
 })
