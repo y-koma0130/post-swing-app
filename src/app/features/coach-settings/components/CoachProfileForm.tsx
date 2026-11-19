@@ -114,9 +114,9 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
           生徒に案内する受付ページのURLの最後の部分です。インスタのプロフィールなどに貼って使います。
           英小文字・数字・ハイフンの3〜30文字（例：yamada-golf）。空欄にして保存すると、ランダムな文字列になります。
         </span>
-        {slug && (
+        {slug.trim() !== settings.slug && (
           <span className="text-caption text-body block break-all">
-            {siteUrl}/c/{slug}
+            保存すると {siteUrl}/c/{newSlugText} になります
           </span>
         )}
       </label>
