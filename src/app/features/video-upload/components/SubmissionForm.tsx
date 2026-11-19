@@ -3,7 +3,7 @@
 import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
-import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { inputClass, labelTextClass, selectClass } from '@/app/components/ui/fieldStyles'
 import { ROUND_FREQUENCIES, ROUND_FREQUENCY_LABEL } from '@/app/features/thread/utils/threadText'
 import { submitSubmissionAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -160,7 +160,7 @@ export const SubmissionForm = ({
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-2">
             <span className={labelTextClass}>ふだんのラウンド（任意）</span>
-            <select name="roundFrequency" defaultValue="" className={inputClass}>
+            <select name="roundFrequency" defaultValue="" className={selectClass}>
               <option value="">選ばない</option>
               {ROUND_FREQUENCIES.map((value) => (
                 <option key={value} value={value}>

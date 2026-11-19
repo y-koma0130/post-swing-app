@@ -75,6 +75,7 @@
 | 並んだ選択肢（動画の角度など） | `chipClass` |
 | ×などの記号だけのボタン | `iconButtonClass`（`aria-label` を必ず付ける） |
 | 入力欄・ラベル | `inputClass`・`labelTextClass` |
+| セレクタ（`select`） | `selectClass`（フォームの中）・`smallSelectClass`（操作の横に並べる小さなもの）。`inputClass` を付けない（ブラウザ標準の矢印が枠に付いてしまう） |
 | 横（スマホは下）から出す作業スペース | `Drawer`（size：sheet・wide） |
 | 読み込み中 | `Skeleton`・`PageSkeleton`（`loading.tsx`） |
 | 404・エラーの画面 | `StatusScreen` |

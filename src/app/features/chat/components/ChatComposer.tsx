@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
-import { inputClass } from '@/app/components/ui/fieldStyles'
+import { inputClass, selectClass } from '@/app/components/ui/fieldStyles'
 import { VideoSlot, type VideoSlotHandle } from '@/app/features/video-upload/components/VideoSlot'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { SendGuard } from '@/server/features/thread/domain/services/decideSendGuard.service'
@@ -156,7 +156,7 @@ export const ChatComposer = ({
           <select
             value={drillId}
             onChange={(event) => setDrillId(event.currentTarget.value)}
-            className={inputClass}
+            className={selectClass}
             aria-label="送るドリル"
           >
             <option value="">ドリルを選ぶ</option>
