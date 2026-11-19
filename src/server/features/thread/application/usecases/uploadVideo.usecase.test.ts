@@ -46,7 +46,7 @@ const setup = (t: Thread | null = thread) => {
 }
 
 describe('uploadVideo', () => {
-  it('下書きとして保存する（スレッドの状態は変えない）', async () => {
+  it('下書きとして保存する（レッスンの状態は変えない）', async () => {
     const { deps, storeVideo, saveDraftVideo } = setup()
     expect(await uploadVideo(params, deps)).toEqual({ ok: true, value: { videoId: 'video-1' } })
     expect(storeVideo).toHaveBeenCalledWith('videos/thread-1/video-1', 'video/quicktime')

@@ -170,7 +170,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'email',
         recipientUserId: ctx.coachUserId,
         subject: `${ctx.studentName}さんの月額の新しい月が始まりました`,
-        text: `${ctx.studentName}さんの月額の支払いが済み、新しい月のスレッドが始まりました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
+        text: `${ctx.studentName}さんの月額の支払いが済み、新しい月のレッスンが始まりました。生徒が動画を送ったら、またお知らせします。\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'reply_overdue':
       return {

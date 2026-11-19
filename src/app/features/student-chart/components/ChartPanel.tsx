@@ -39,7 +39,7 @@ export const ChartPanel = ({ chart, threadId }: Props) => (
         />
       </div>
       <Link href={`/coach/students/${chart.studentUserId}`} className="text-sm underline">
-        カルテを開く（これまでのスレッド・送ったドリル）
+        カルテを開く（これまでのレッスン・送ったドリル）
       </Link>
     </div>
   </details>

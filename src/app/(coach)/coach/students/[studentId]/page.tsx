@@ -49,7 +49,7 @@ const StudentChartPage = async ({ params }: Props) => {
         </Card>
       </div>
       <section className="space-y-3">
-        <h2 className="text-heading">これまでのスレッド</h2>
+        <h2 className="text-heading">これまでのレッスン</h2>
         <ul className="space-y-3">
           {chart.threads.map((thread) => (
             <li key={thread.id}>

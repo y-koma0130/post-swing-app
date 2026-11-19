@@ -3,7 +3,7 @@ import { formatYen } from '@/app/utils/format'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import { APPLICATION_RULES, THREAD_RULES } from '@/server/features/thread/domain/rules'
 
-const PLAN_LABEL = { trial: 'お試し', single: '1スレッド', monthly: '月額プラン' } as const
+const PLAN_LABEL = { trial: 'お試し', single: '1レッスン', monthly: '月額プラン' } as const
 
 type Props = {
   coachName: string
@@ -34,13 +34,13 @@ export const ApplicationConfirmation = ({
     ],
     [
       '内容',
-      `1スレッド${THREAD_RULES.durationDays}日間、動画の提出${maxSubmissions}回まで（コーチの不在期間があるときは、その日数だけ延びます）`,
+      `1レッスン${THREAD_RULES.durationDays}日間、動画の提出${maxSubmissions}回まで（コーチの不在期間があるときは、その日数だけ延びます）`,
     ],
     ...(monthly
       ? [
           [
             '契約期間',
-            '解約するまで毎月自動で更新し、そのたびに新しい1スレッドが始まります。マイページからいつでも解約でき、次の更新日から請求されません',
+            '解約するまで毎月自動で更新し、そのたびに新しい1レッスンが始まります。マイページからいつでも解約でき、次の更新日から請求されません',
           ] as const,
         ]
       : []),

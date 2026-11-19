@@ -38,7 +38,7 @@ describe('checkRetakeRequest', () => {
     )
   })
 
-  it('1つのスレッドで2回まで', () => {
+  it('1つのレッスンで2回まで', () => {
     expect(checkRetakeRequest({ thread, requests: [closed], submissionId: 's2' })).toBeNull()
     expect(checkRetakeRequest({ thread, requests: [closed, closed], submissionId: 's2' })).toBe(
       'retake_limit'

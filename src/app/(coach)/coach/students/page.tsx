@@ -45,7 +45,7 @@ const StudentsPage = async () => {
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   {student.inLesson && <Badge tone="mint">レッスン中</Badge>}
                   <p className="text-caption text-muted">
-                    スレッド {student.threadCount}件・{formatMonthDay(student.lastActivityAt)}
+                    レッスン {student.threadCount}件・{formatMonthDay(student.lastActivityAt)}
                   </p>
                 </div>
               </CardLink>

@@ -53,7 +53,7 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       deleteDraftThreads,
     }
   )
-  if (result.ok) console.info('[scheduled] スレッド', result.value)
+  if (result.ok) console.info('[scheduled] レッスン', result.value)
 }
 
 /** 不在が明けた朝の処理（日本時間9時の Cron）。不在中に届いた件数をコーチに知らせる */

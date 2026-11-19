@@ -15,7 +15,7 @@ const coach: CheckoutCoach & { slug: string } = {
   chargesEnabled: true,
   suspended: false,
   monthlyCapacity: 2,
-  plans: [{ kind: 'single', name: '1スレッド', priceYen: 6000, active: true }],
+  plans: [{ kind: 'single', name: '1レッスン', priceYen: 6000, active: true }],
 }
 const purchase: Purchase = {
   id: 'purchase-1',
@@ -69,7 +69,7 @@ describe('startApplicationCheckout', () => {
     expect(createCheckoutSession.mock.calls[0]?.[0]).toMatchObject({
       purchaseId: 'purchase-1',
       threadId: 'thread-1',
-      productName: '山田：1スレッド',
+      productName: '山田：1レッスン',
       priceYen: 4980,
       systemFeeYen: 200,
       applicationFeeYen: 698,

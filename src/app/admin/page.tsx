@@ -114,7 +114,7 @@ const AdminPage = async () => {
       </Card>
 
       <Card>
-        <h2 className="text-heading">スレッド（新しく動いた順に{threads.length}件）</h2>
+        <h2 className="text-heading">レッスン（新しく動いた順に{threads.length}件）</h2>
         <table className="mt-4 w-full text-left text-sm">
           <thead className="text-muted">
             <tr>

@@ -59,7 +59,7 @@ describe('uploadChatVideo', () => {
     expect(storeVideo).not.toHaveBeenCalled()
   })
 
-  it('終了したスレッドと、60秒を超える動画は受け取らない', async () => {
+  it('終了したレッスンと、60秒を超える動画は受け取らない', async () => {
     expect(await uploadChatVideo(params, setup({ ...thread, status: 'closed' }).deps)).toEqual({
       ok: false,
       error: 'closed',

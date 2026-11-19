@@ -31,7 +31,7 @@ const setup = (t: Thread = thread) => {
 }
 
 describe('closeThreadByStudent', () => {
-  it('本人の生徒が終えると、スレッドを終了し、レビューのお願いを送る', async () => {
+  it('本人の生徒が終えると、レッスンを終了し、レビューのお願いを送る', async () => {
     const { deps, closeThreads, notifyThreadClosed } = setup()
     expect(await closeThreadByStudent({ actor: student, threadId: 'thread-1', now }, deps)).toEqual(
       { ok: true, value: { threadId: 'thread-1' } }

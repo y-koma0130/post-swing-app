@@ -22,7 +22,7 @@ describe('checkStudentClose', () => {
     )
   })
 
-  it('申し込み中・終わったスレッドは終えられない', () => {
+  it('申し込み中・終わったレッスンは終えられない', () => {
     for (const status of ['draft', 'requested', 'closed', 'declined'] as const) {
       expect(checkStudentClose({ status, submissions: [] })).toBe('not_in_lesson')
     }

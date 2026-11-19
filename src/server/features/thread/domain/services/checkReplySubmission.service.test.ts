@@ -23,7 +23,7 @@ describe('checkReplySubmission', () => {
     expect(checkReplySubmission(base)).toBeNull()
   })
 
-  it('終了したスレッド・添削済みの提出には返せない', () => {
+  it('終了したレッスン・添削済みの提出には返せない', () => {
     expect(checkReplySubmission({ ...base, thread: { status: 'closed' } })).toBe('closed')
     expect(
       checkReplySubmission({ ...base, submission: { ...base.submission, replied: true } })

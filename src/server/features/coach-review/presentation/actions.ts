@@ -37,7 +37,7 @@ export const submitCoachReviewAction = async (
     return actionError(
       result.error === 'already_reviewed'
         ? 'レビューはもう書いています'
-        : 'スレッドが終わってから書けます'
+        : 'レッスンが終わってから書けます'
     )
   }
   revalidatePath(`/t/${threadId}`)

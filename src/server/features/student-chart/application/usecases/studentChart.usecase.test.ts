@@ -49,7 +49,7 @@ describe('viewStudentChart', () => {
 describe('viewChartForThread', () => {
   const deps = { findThreadPair, findStudentChart: async () => chart }
 
-  it('スレッドの担当のコーチだけが見られる', async () => {
+  it('レッスンの担当のコーチだけが見られる', async () => {
     expect((await viewChartForThread({ actor: coach, threadId: 'thread-1' }, deps)).ok).toBe(true)
     expect(await viewChartForThread({ actor: student, threadId: 'thread-1' }, deps)).toEqual({
       ok: false,
@@ -108,7 +108,7 @@ describe('addChartEntry', () => {
     generateId: () => 'entry-1',
   })
 
-  it('記録を足せる。スレッドを付けるなら、そのコーチと生徒のスレッドだけ', async () => {
+  it('記録を足せる。レッスンを付けるなら、そのコーチと生徒のレッスンだけ', async () => {
     const d = deps()
     expect(
       await addChartEntry(

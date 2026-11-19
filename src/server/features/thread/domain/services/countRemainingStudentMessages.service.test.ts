@@ -11,7 +11,7 @@ const message = (from: 'coach' | 'student') => ({
 })
 
 describe('countRemainingStudentMessages', () => {
-  it('生徒はスレッド全体で30通。コーチの分は数えない', () => {
+  it('生徒はレッスン全体で30通。コーチの分は数えない', () => {
     expect(countRemainingStudentMessages({ planKind: 'single', messages: [] })).toBe(30)
     const messages = [message('student'), message('coach'), message('student')]
     expect(countRemainingStudentMessages({ planKind: 'monthly', messages })).toBe(28)

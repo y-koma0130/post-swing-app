@@ -47,12 +47,12 @@ import {
 
 const CHAT_ERROR = {
   not_found: '送れませんでした',
-  closed: 'このスレッドは終了しています',
+  closed: 'このレッスンは終了しています',
   not_started: '申し込みが受け付けられてから、チャットを送れます',
   empty: 'メッセージを書いてください',
   too_long: 'メッセージは1000文字までです',
   no_submission: '最初の動画を提出してから、チャットを送れます',
-  limit_reached: 'このスレッドで送れるメッセージの上限に達しました',
+  limit_reached: 'このレッスンで送れるメッセージの上限に達しました',
   attachment_not_allowed: 'チャットではメッセージだけを送れます',
   invalid_drill: '選んだドリルが見つかりません',
   invalid_video: '動画をもう一度選び直してください',
@@ -120,10 +120,10 @@ export const sendChatMessageAction = async (
 
 const SUBMIT_ERROR = {
   not_found: '提出できませんでした',
-  closed: 'このスレッドは終了しています',
-  expired: 'このスレッドは期限が切れています',
+  closed: 'このレッスンは終了しています',
+  expired: 'このレッスンは期限が切れています',
   awaiting_reply: 'コーチの添削が届いてから、次を提出できます',
-  submission_limit: 'このスレッドで提出できる回数に達しています',
+  submission_limit: 'このレッスンで提出できる回数に達しています',
   no_videos: '動画を選んでください',
   too_many_videos: '1回に送れる動画は2本までです',
   invalid_video: '動画をもう一度選び直してください',
@@ -284,11 +284,11 @@ export const closeThreadAction = async (
     return actionError(
       result.error === 'awaiting_reply'
         ? 'コーチの添削が届いてから終えられます'
-        : 'このスレッドは終えられません'
+        : 'このレッスンは終えられません'
     )
   }
   revalidatePath(`/t/${threadId}`)
   revalidatePath('/me')
   revalidatePath(`/coach/threads/${threadId}`)
-  return actionSuccess('スレッドを終えました')
+  return actionSuccess('レッスンを終えました')
 }

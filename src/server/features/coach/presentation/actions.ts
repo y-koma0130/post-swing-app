@@ -186,7 +186,7 @@ const yen = (value: number) => `${value.toLocaleString('ja-JP')}円`
 const PLANS_ERROR = {
   not_found: 'コーチとして登録されていません',
   duplicate_kind: 'プランの種類が重なっています',
-  below_minimum: `価格は、お試し${yen(PLAN_MIN_PRICE_YEN.trial)}・1スレッド${yen(PLAN_MIN_PRICE_YEN.single)}・月額${yen(PLAN_MIN_PRICE_YEN.monthly)}以上にしてください`,
+  below_minimum: `価格は、お試し${yen(PLAN_MIN_PRICE_YEN.trial)}・1レッスン${yen(PLAN_MIN_PRICE_YEN.single)}・月額${yen(PLAN_MIN_PRICE_YEN.monthly)}以上にしてください`,
 } as const
 
 /** コーチが自分のプランを保存する。フォームは種類ごとに `<kind>.price` のような名前で送る */

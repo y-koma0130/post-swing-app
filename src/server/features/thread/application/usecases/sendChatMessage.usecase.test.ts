@@ -121,7 +121,7 @@ describe('sendChatMessage', () => {
     })
   })
 
-  it('生徒はスレッド全体で30通まで（お試しは10通）', async () => {
+  it('生徒はレッスン全体で30通まで（お試しは10通）', async () => {
     const sent = (n: number) => Array.from({ length: n }, () => message('student'))
     expect(await send(student, setup({ ...thread, messages: sent(30) }).deps)).toEqual({
       ok: false,
@@ -175,7 +175,7 @@ describe('sendChatMessage', () => {
     })
   })
 
-  it('引用は送った時点の様子を写す。スレッドにないものは引用できない', async () => {
+  it('引用は送った時点の様子を写す。レッスンにないものは引用できない', async () => {
     const { deps, saveChatMessage } = setup()
     const quote = { kind: 'video' as const, targetId: 'v1' }
     expect((await send(coach, deps, 'ここの左手', false, { quote })).ok).toBe(true)
@@ -203,7 +203,7 @@ describe('sendChatMessage', () => {
     expect(await send(student, deps, '   ')).toEqual({ ok: false, error: 'empty' })
   })
 
-  it('終了したスレッドには送れない', async () => {
+  it('終了したレッスンには送れない', async () => {
     const { deps } = setup({ ...thread, status: 'closed' })
     expect(await send(student, deps)).toEqual({ ok: false, error: 'closed' })
   })

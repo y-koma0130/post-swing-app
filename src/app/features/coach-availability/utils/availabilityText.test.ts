@@ -66,7 +66,7 @@ describe('availabilityText', () => {
   })
 })
 
-describe('スレッドの表示', () => {
+describe('レッスンの表示', () => {
   const absent = {
     kind: 'absent' as const,
     endDate: '2026-11-23',

@@ -21,7 +21,7 @@ const coach: CheckoutCoach = {
   monthlyCapacity: 2,
   plans: [
     { kind: 'trial', name: 'お試し', priceYen: 550, active: true },
-    { kind: 'single', name: '1スレッド', priceYen: 4980, active: true },
+    { kind: 'single', name: '1レッスン', priceYen: 4980, active: true },
   ],
 }
 

@@ -185,7 +185,7 @@ export const openBillingPortalAction = async (
 }
 
 const REFUND_ERROR_MESSAGE = {
-  not_found: 'スレッドが見つかりません',
+  not_found: 'レッスンが見つかりません',
   already_refunded: 'すでに返金しています',
   not_paid: '支払いが済んでいない申し込みです',
   no_stripe_payment: 'Stripe を通っていない支払いなので、返金できません',
@@ -220,5 +220,5 @@ export const refundThreadAction = async (
     )
   }
   revalidatePath('/admin')
-  return actionSuccess('返金し、スレッドを終了しました')
+  return actionSuccess('返金し、レッスンを終了しました')
 }

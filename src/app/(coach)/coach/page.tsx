@@ -49,7 +49,7 @@ const CoachHomePage = async () => {
         </Notice>
       )}
       <PageHeader
-        title="スレッド"
+        title="レッスン"
         actions={
           <ButtonLink href={`/c/${settings.slug}`} variant="secondary" size="sm">
             受付ページを見る
@@ -58,7 +58,7 @@ const CoachHomePage = async () => {
       />
       {threads.length === 0 ? (
         <EmptyState
-          title="まだスレッドはありません"
+          title="まだレッスンはありません"
           description="受付ページのリンクを、インスタのプロフィールやストーリーで生徒に案内しましょう。申し込みがあると、ここに並びます。"
           action={
             <ButtonLink href={`/c/${settings.slug}`} variant="secondary" size="sm">
