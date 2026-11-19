@@ -29,9 +29,16 @@ export const calcReplyDueAt: CalcReplyDueAt = (submittedAt, absences) => {
  *
  * ドメインルール:
  * - 申し込みの最初の提出は、承認する前に届いている。期限は承認した時点（スレッドの開始）から数える
+ * - 撮り直しをお願いしたら、そのあいだは期限を止める。撮り直しが届いた（または生徒が今は撮れないと返した）時点から数え直す
  */
-export const replyClockStart = (submittedAt: Date, threadStartedAt: Date): Date =>
-  submittedAt.getTime() >= threadStartedAt.getTime() ? submittedAt : threadStartedAt
+export const replyClockStart = (
+  submittedAt: Date,
+  threadStartedAt: Date,
+  lastRetakeClosedAt: Date | null = null
+): Date =>
+  new Date(
+    Math.max(submittedAt.getTime(), threadStartedAt.getTime(), lastRetakeClosedAt?.getTime() ?? 0)
+  )
 
 /**
  * 毎日の処理で、コーチに返信の遅れを知らせるか

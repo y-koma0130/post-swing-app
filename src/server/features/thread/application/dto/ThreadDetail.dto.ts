@@ -9,6 +9,7 @@ import type { ChatQuote, ChatSender } from '../../domain/values/ChatMessage'
 import type { DeclineReason } from '../../domain/values/DeclineReason'
 import type { GolfProfile } from '../../domain/values/GolfProfile'
 import type { KeyPosition } from '../../domain/values/KeyPosition'
+import type { RetakeCloseReason, RetakeReason } from '../../domain/values/RetakeRequest'
 import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import type { VideoAngle } from '../../domain/values/VideoAngle'
 
@@ -24,6 +25,20 @@ export type ThreadDetailDto = {
   studentName: string
   planKind: PlanKind
   theme: string
+  /** 撮り直しのお願い（古い順）と、このスレッドであと何回お願いできるか */
+  retake: {
+    requests: Array<{
+      id: string
+      submissionId: string
+      reason: RetakeReason
+      message: string
+      requestedAt: Date
+      /** 終わっていなければ null */
+      closedAt: Date | null
+      closeReason: RetakeCloseReason | null
+    }>
+    remaining: number
+  }
   /** 生徒のラウンドの回数と平均スコア（申し込みのときに任意で書いたもの） */
   golfProfile: GolfProfile
   status: ThreadStatus
@@ -85,6 +100,8 @@ export type ThreadDetailDto = {
       url: string
       /** 送るときに測ったフレームレート。分からなければ null（再生画面が推定する） */
       frameRate: number | null
+      /** 撮り直しのお願いに応えて送った動画か */
+      retake: boolean
     }>
     reply: {
       sentAt: Date

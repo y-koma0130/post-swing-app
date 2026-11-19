@@ -84,6 +84,31 @@ export const submission = sqliteTable(
 )
 
 /**
+ * コーチから生徒への撮り直しのお願い（提出回数には数えない）。
+ * 元の動画はそのまま使えて、コーチは撮り直しを待たずに添削してもよい
+ */
+export const retakeRequest = sqliteTable(
+  'retake_request',
+  {
+    id: text().primaryKey(),
+    threadId: text()
+      .notNull()
+      .references(() => thread.id),
+    submissionId: text()
+      .notNull()
+      .references(() => submission.id),
+    reason: text({ enum: ['framing', 'angle', 'quality', 'other'] }).notNull(),
+    /** コーチのひとこと（任意） */
+    message: text().notNull().default(''),
+    requestedAt: integer({ mode: 'timestamp_ms' }).notNull(),
+    /** お願いが終わった日時（撮り直しが届いた・生徒が今は撮れないと返した・コーチが添削を返した） */
+    closedAt: integer({ mode: 'timestamp_ms' }),
+    closeReason: text({ enum: ['resent', 'declined', 'replied'] }),
+  },
+  (t) => [index('retake_request_thread_idx').on(t.threadId)]
+)
+
+/**
  * 生徒が上げた動画。本体は R2 に置き、ここには場所だけを持つ。
  * 上げた時点では下書き（submission_id も chat_message_id も null）で、提出やチャットを送ったときにひも付ける。
  * 下書きは本人にしか見せず、24時間で消す
@@ -99,6 +124,8 @@ export const video = sqliteTable(
     submissionId: text().references(() => submission.id),
     /** コーチがチャットで送った動画なら、そのメッセージ（提出にもチャットにも付いていなければ下書き） */
     chatMessageId: text(),
+    /** 撮り直しのお願いに応えて送った動画なら、そのお願い（提出は元の提出のまま） */
+    retakeRequestId: text(),
     uploaderUserId: text()
       .notNull()
       .references(() => user.id),

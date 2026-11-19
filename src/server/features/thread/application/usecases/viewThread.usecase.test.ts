@@ -12,6 +12,7 @@ const detail: ThreadDetailDto = {
   planKind: 'single',
   theme: '',
   golfProfile: { roundFrequency: null, averageScore: null },
+  retake: { requests: [], remaining: 2 },
   status: 'waiting_student',
   startedAt: new Date(),
   expiresAt: new Date(),

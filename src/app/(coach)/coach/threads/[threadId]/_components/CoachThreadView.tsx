@@ -9,15 +9,15 @@ import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
 import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
+import { RetakeRequestPanel } from '@/app/features/thread/components/RetakeRequestPanel'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import {
-  ANGLE_LABEL,
   KEY_POSITION_LABEL,
   ordinalLabel,
   quoteAnchorId,
   submissionLabel,
-  videoLabel,
+  submissionVideoLabel,
 } from '@/app/features/thread/utils/threadText'
 import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
 import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
@@ -37,6 +37,7 @@ type Props = {
     | 'limits'
     | 'lastReadAt'
     | 'golfProfile'
+    | 'retake'
   >
   drills: DrillDto[]
 }
@@ -66,7 +67,9 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
 
   const angleOf = (submission: Submission) => (videoId: string) => {
     const video = submission.videos.find((v) => v.id === videoId)
-    return video && submission.videos.length > 1 ? ANGLE_LABEL[video.angle] : null
+    return video && submission.videos.length > 1
+      ? submissionVideoLabel(video, submission.videos)
+      : null
   }
 
   return (
@@ -113,7 +116,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
             <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
               <ul className="flex flex-wrap gap-3">
                 {submission.videos.map((video, videoIndex) => {
-                  const label = videoLabel(video.angle, submission.videos.length)
+                  const label = submissionVideoLabel(video, submission.videos)
                   return (
                     <li
                       key={video.id}
@@ -147,6 +150,19 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                 </p>
               </div>
             </div>
+            <RetakeRequestPanel
+              threadId={thread.id}
+              submissionId={submission.id}
+              requests={thread.retake.requests.filter((r) => r.submissionId === submission.id)}
+              canRequest={
+                thread.status === 'waiting_coach' &&
+                index === submissions.length - 1 &&
+                !submission.reply &&
+                !thread.retake.requests.some((r) => r.closedAt === null) &&
+                thread.retake.remaining > 0
+              }
+              remaining={thread.retake.remaining}
+            />
           </Card>
         )}
         renderReply={(submission, index) =>

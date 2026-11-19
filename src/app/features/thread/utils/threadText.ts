@@ -7,6 +7,7 @@ import type {
 } from '@/server/features/thread/domain/values/DeclineReason'
 import type { RoundFrequency } from '@/server/features/thread/domain/values/GolfProfile'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
+import type { RetakeReason } from '@/server/features/thread/domain/values/RetakeRequest'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
 /** 撮った角度の呼び方 */
@@ -22,6 +23,18 @@ export const ANGLE_LABEL = {
  */
 export const videoLabel = (angle: VideoAngle, videoCount: number): string =>
   angle === 'other' && videoCount === 1 ? '動画' : ANGLE_LABEL[angle]
+
+/**
+ * 提出の中の動画の呼び方。撮り直しの動画には「撮り直し」を付ける
+ * （「その他」で1本だけ、の判定は最初に送った動画だけで数える）
+ */
+export const submissionVideoLabel = (
+  video: { angle: VideoAngle; retake: boolean },
+  videos: ReadonlyArray<{ retake: boolean }>
+): string =>
+  video.retake
+    ? `撮り直し・${ANGLE_LABEL[video.angle]}`
+    : videoLabel(video.angle, videos.filter((v) => !v.retake).length)
 
 /** 選ぶ順（正面・後方がふつう） */
 export const ANGLES = ['front', 'back', 'other'] as const satisfies VideoAngle[]
@@ -133,3 +146,18 @@ export const ROUND_FREQUENCIES = [
   'two_to_three_per_month',
   'weekly',
 ] as const satisfies RoundFrequency[]
+
+/** 撮り直しをお願いする理由の呼び方（コーチが選ぶ・生徒に見せる） */
+export const RETAKE_REASON_LABEL = {
+  framing: '全身やクラブが画面に入っていない',
+  angle: '撮る角度・位置を変えてほしい',
+  quality: '暗い・ぶれて見えにくい',
+  other: 'その他',
+} as const satisfies Record<RetakeReason, string>
+
+export const RETAKE_REASONS = [
+  'framing',
+  'angle',
+  'quality',
+  'other',
+] as const satisfies RetakeReason[]

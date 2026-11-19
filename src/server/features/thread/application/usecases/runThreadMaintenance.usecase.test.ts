@@ -164,6 +164,8 @@ describe('runThreadMaintenance', () => {
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-14T01:00:00Z'),
           threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: null,
         },
         // 12/13 20:00・21:00 に届いた → 期限 12/15 20:00・21:00 → この1日で過ぎた（2回分でも1回）
         {
@@ -171,12 +173,16 @@ describe('runThreadMaintenance', () => {
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-13T11:00:00Z'),
           threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: null,
         },
         {
           threadId: 'due',
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-13T12:00:00Z'),
           threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: null,
         },
         // 12/12 に届いた → 期限はきのうより前で、もう知らせた
         {
@@ -184,12 +190,41 @@ describe('runThreadMaintenance', () => {
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-12T01:00:00Z'),
           threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: null,
         },
       ],
     })
     const result = await runThreadMaintenance({ now }, deps)
     expect(notifyReplyOverdue.mock.calls).toEqual([[{ threadId: 'due', coachUserId: 'coach-1' }]])
     expect(result.ok && result.value.overdue).toBe(1)
+  })
+
+  it('撮り直しを待っているあいだは知らせず、撮り直しが届いた時点から48時間で数える', async () => {
+    const { deps, notifyReplyOverdue } = setup({
+      findUnrepliedSubmissionsSince: async () => [
+        // 期限は過ぎているが、撮り直しを待っている → 知らせない
+        {
+          threadId: 'waiting',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-13T11:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: true,
+          lastRetakeClosedAt: null,
+        },
+        // 12/13 20:00 に届き、12/14 22:00 に撮り直しが届いた → 期限 12/16 22:00 → まだ
+        {
+          threadId: 'resent',
+          coachUserId: 'coach-1',
+          submittedAt: new Date('2026-12-13T11:00:00Z'),
+          threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: new Date('2026-12-14T13:00:00Z'),
+        },
+      ],
+    })
+    await runThreadMaintenance({ now }, deps)
+    expect(notifyReplyOverdue).not.toHaveBeenCalled()
   })
 
   it('不在中に届いた提出は、再開日から48時間で数える', async () => {
@@ -201,6 +236,8 @@ describe('runThreadMaintenance', () => {
             coachUserId: 'coach-1',
             submittedAt: new Date('2026-12-10T01:00:00Z'),
             threadStartedAt: new Date('2026-11-01T00:00:00Z'),
+            retakeOpen: false,
+            lastRetakeClosedAt: null,
           },
         ],
       },
@@ -272,6 +309,8 @@ describe('runThreadMaintenance', () => {
           coachUserId: 'coach-1',
           submittedAt: new Date('2026-12-10T01:00:00Z'),
           threadStartedAt: new Date('2026-12-14T01:00:00Z'),
+          retakeOpen: false,
+          lastRetakeClosedAt: null,
         },
       ],
     })

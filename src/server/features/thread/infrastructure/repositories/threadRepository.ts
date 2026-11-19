@@ -6,6 +6,7 @@ import {
   chatMessage,
   reply,
   replyDrill,
+  retakeRequest,
   reviewCard,
   submission,
   thread,
@@ -259,6 +260,11 @@ export const saveReply: SaveReply = async (r) => {
     ),
     firstCard,
     ...restCards,
+    // 撮り直しを待っていても、添削を返したらお願いは終わり
+    db
+      .update(retakeRequest)
+      .set({ closedAt: r.sentAt, closeReason: 'replied' })
+      .where(and(eq(retakeRequest.submissionId, r.submissionId), isNull(retakeRequest.closedAt))),
     db
       .update(thread)
       .set({ status: r.nextStatus, updatedAt: r.sentAt })
