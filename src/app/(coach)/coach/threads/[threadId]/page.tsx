@@ -8,11 +8,7 @@ import { CoachReviewReplyForm } from '@/app/features/coach-review/components/Coa
 import { ApplicationDecision } from '@/app/features/thread/components/ApplicationDecision'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
 import { latestTimelineAt } from '@/app/features/thread/utils/buildTimeline'
-import {
-  DECLINE_REASON_LABEL,
-  golfProfileText,
-  threadUsageText,
-} from '@/app/features/thread/utils/threadText'
+import { DECLINE_REASON_LABEL, threadUsageText } from '@/app/features/thread/utils/threadText'
 import { formatMonthDay } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
 import { getMyDrills } from '@/server/features/drill/presentation/queries'
@@ -31,7 +27,6 @@ const ReviewPage = async ({ params }: Props) => {
   if (!(await getActor())) redirect('/coach/login')
   const [thread, drills] = await Promise.all([getCoachThread(threadId), getMyDrills()])
   if (!thread) notFound()
-  const golf = golfProfileText(thread.golfProfile)
 
   return (
     <Page layout="list">
@@ -58,8 +53,6 @@ const ReviewPage = async ({ params }: Props) => {
           )
         }
       />
-      {/* 申し込みのときに生徒が任意で書いたもの（添削の参考） */}
-      {golf && <p className="text-caption text-muted -mt-2">生徒のゴルフ：{golf}</p>}
       {thread.status === 'requested' && (
         <ApplicationDecision
           threadId={thread.id}

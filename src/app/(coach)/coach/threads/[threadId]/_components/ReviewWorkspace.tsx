@@ -13,6 +13,7 @@ import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { CardDraftList } from '@/app/features/review-card/components/CardDraftList'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { useCardDrafts } from '@/app/features/review-card/hooks/useCardDrafts'
+import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
 import {
   ANGLE_LABEL,
   KEY_POSITION_LABEL,
@@ -34,6 +35,8 @@ type Props = {
   videoIndex: number
   onVideoIndexChange: (index: number) => void
   drills: DrillDto[]
+  /** 生徒のゴルフの様子（最初の提出を見ているときに出す） */
+  golfProfile: ThreadDetailDto['golfProfile']
   /** 添削を送れたとき（ドロワーを閉じる） */
   onSent: () => void
 }
@@ -62,6 +65,7 @@ export const ReviewWorkspace = ({
   videoIndex,
   onVideoIndexChange,
   drills,
+  golfProfile,
   onSent,
 }: Props) => {
   const router = useRouter()
@@ -233,6 +237,7 @@ export const ReviewWorkspace = ({
             }}
           />
         </div>
+        {index === 0 && <GolfProfileBox golfProfile={golfProfile} />}
         {current.note && (
           <p className="rounded-card text-body bg-white p-4 text-sm whitespace-pre-wrap shadow-sm">
             {current.note}

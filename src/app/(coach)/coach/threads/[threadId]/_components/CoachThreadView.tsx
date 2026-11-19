@@ -8,6 +8,7 @@ import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
 import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
+import { GolfProfileBox } from '@/app/features/thread/components/GolfProfileBox'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
 import {
@@ -28,7 +29,14 @@ import { ReviewWorkspace } from './ReviewWorkspace'
 type Props = {
   thread: Pick<
     ThreadDetailDto,
-    'id' | 'status' | 'submissions' | 'messages' | 'notices' | 'limits' | 'lastReadAt'
+    | 'id'
+    | 'status'
+    | 'submissions'
+    | 'messages'
+    | 'notices'
+    | 'limits'
+    | 'lastReadAt'
+    | 'golfProfile'
   >
   drills: DrillDto[]
 }
@@ -130,6 +138,8 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                   )
                 })}
               </ul>
+              {/* 最初の提出（申し込みの悩み）では、ゴルフの様子も一緒に見る */}
+              {index === 0 && <GolfProfileBox golfProfile={thread.golfProfile} />}
               <div className="bg-surface rounded-lg p-3">
                 <p className="text-caption text-muted font-bold">生徒のメモ</p>
                 <p className="text-body mt-1 text-sm whitespace-pre-wrap">
@@ -196,6 +206,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
             videoIndex={videoIndex}
             onVideoIndexChange={setVideoIndex}
             drills={drills}
+            golfProfile={thread.golfProfile}
             onSent={() => setOpenIndex(null)}
           />
         </Drawer>

@@ -5,10 +5,7 @@ import type {
   CoachDeclineReason,
   DeclineReason,
 } from '@/server/features/thread/domain/values/DeclineReason'
-import type {
-  GolfProfile,
-  RoundFrequency,
-} from '@/server/features/thread/domain/values/GolfProfile'
+import type { RoundFrequency } from '@/server/features/thread/domain/values/GolfProfile'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
 
@@ -136,12 +133,3 @@ export const ROUND_FREQUENCIES = [
   'two_to_three_per_month',
   'weekly',
 ] as const satisfies RoundFrequency[]
-
-/** コーチに見せる一行（「ラウンド 月1回くらい・平均スコア 98」）。どちらも書いていなければ null */
-export const golfProfileText = (profile: GolfProfile): string | null => {
-  const parts = [
-    profile.roundFrequency ? `ラウンド ${ROUND_FREQUENCY_LABEL[profile.roundFrequency]}` : null,
-    profile.averageScore !== null ? `平均スコア ${profile.averageScore}` : null,
-  ].filter((part): part is string => part !== null)
-  return parts.length > 0 ? parts.join('・') : null
-}
