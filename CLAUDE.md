@@ -5,6 +5,7 @@
 - 計画: `docs/service-plan.md`（MOC の記録は `docs/moc-scope.md`）
 - 構成: `docs/architecture.md`、コーディングルール: `docs/coding-rules.md`（必ず従う）
 - 認証・セキュリティ: `docs/auth-and-security.md`（Better Auth＋D1。権限の確認はユースケースで必ず行う）
+- UI（色・文字の大きさ・部品・押したときの反応・文言）: `docs/ui-rules.md`（画面を作る・直すときは必ず従う）
 
 ## 要点
 
