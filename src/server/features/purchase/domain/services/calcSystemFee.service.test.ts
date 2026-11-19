@@ -16,4 +16,8 @@ describe('calcSystemFee', () => {
     expect(calcSystemFee(4980)).toBe(249)
     expect(calcSystemFee(10000)).toBe(500)
   })
+
+  it('無料のモニター（0円）なら、システム利用料も0円', () => {
+    expect(calcSystemFee(0)).toBe(0)
+  })
 })

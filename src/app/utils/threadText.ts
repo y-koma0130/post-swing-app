@@ -5,7 +5,7 @@ import type {
   CoachDeclineReason,
   DeclineReason,
 } from '@/server/features/thread/domain/values/DeclineReason'
-import type { RoundFrequency } from '@/server/features/thread/domain/values/GolfProfile'
+import type { AgeRange, RoundFrequency } from '@/server/features/thread/domain/values/GolfProfile'
 import type { KeyPosition } from '@/server/features/thread/domain/values/KeyPosition'
 import type { RetakeReason } from '@/server/features/thread/domain/values/RetakeRequest'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
@@ -169,6 +169,28 @@ export const quoteLabel = (quote: ChatQuote): string => {
 /** 引用先の要素の id（引用を押すと、そこへスクロールする） */
 export const quoteAnchorId = (kind: QuoteKind, targetId: string): string =>
   `quote-${kind}-${targetId}`
+
+/** 年代の呼び方（申し込みの選択肢と、コーチへの表示） */
+export const AGE_RANGE_LABEL = {
+  under_18: '18歳未満',
+  '18_29': '18〜29歳',
+  '30s': '30代',
+  '40s': '40代',
+  '50s': '50代',
+  '60s': '60代',
+  '70_plus': '70代以上',
+} as const satisfies Record<AgeRange, string>
+
+/** 選択肢の並び（若い順） */
+export const AGE_RANGES = [
+  'under_18',
+  '18_29',
+  '30s',
+  '40s',
+  '50s',
+  '60s',
+  '70_plus',
+] as const satisfies AgeRange[]
 
 /** ふだんのラウンドの回数の呼び方（申し込みの選択肢と、コーチへの表示） */
 export const ROUND_FREQUENCY_LABEL = {

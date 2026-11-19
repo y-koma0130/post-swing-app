@@ -251,6 +251,11 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                       : null
                   }
                   prominent
+                  shareConsent={
+                    thread.status === 'draft'
+                      ? { coachName: thread.coachName, required: thread.application.monitor }
+                      : null
+                  }
                 />
                 {/* 撮る前に見られるよう、最初の提出の前はここにも置く */}
                 <div className="text-center">

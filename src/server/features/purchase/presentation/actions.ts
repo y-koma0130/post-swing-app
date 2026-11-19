@@ -8,12 +8,15 @@ import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { planKindSchema } from '@/server/features/coach/domain/values/Plan'
 import { findCoachAvailability } from '@/server/features/coach/public'
+import { resolveMonitorCodeForStudent } from '@/server/features/monitor/public'
+import { findShareConsent } from '@/server/features/share/public'
 import {
   createThread,
   findApplicationThread,
   findOpenApplication,
   findThreadPayment,
   markThreadRefunded,
+  requestThreadApproval,
 } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
@@ -44,6 +47,7 @@ import {
   findPurchaseForRefund,
   hasActiveSubscription,
   hasPaidTrial,
+  markPurchaseAuthorized,
   savePendingPurchase,
   saveWaitlistEntry,
 } from '../infrastructure/repositories/purchaseRepository'
@@ -57,6 +61,12 @@ const CHECKOUT_ERROR_MESSAGE = {
   full: '今月は満枠です。キャンセル待ちに登録できます',
   trial_used: 'お試しはすでに利用済みです',
   already_subscribed: 'すでに月額で申し込んでいます',
+  monitor_single_only: 'プロモコードは1レッスンだけに使えます',
+  code_not_found: 'プロモコードが見つかりません。もう一度確かめてください',
+  code_stopped: 'このプロモコードの募集は終わりました',
+  code_expired: 'このプロモコードは期限が切れています',
+  code_full: 'このプロモコードの募集は、定員に達しました',
+  already_monitor: 'このコーチのモニターには、すでに申し込んでいます',
 } as const satisfies Record<StartApplicationError, string>
 
 const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
@@ -65,6 +75,7 @@ const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
   not_draft: 'この申し込みは、すでにカードの登録が済んでいます',
   no_submission: '先に、悩みと動画を送ってください',
   full: '受付枠が埋まってしまいました。キャンセル待ちに登録できます',
+  consent_required: 'モニターは、添削の公開を許可することが条件です',
 } as const satisfies Record<StartApplicationCheckoutError, string>
 
 /** プランを選んで申し込む（悩みと動画を送る下書きへ。請求はコーチが承認したとき） */
@@ -96,6 +107,7 @@ export const startApplicationAction = async (
       coachSlug,
       planKind: planKind.data,
       acknowledgedDelay: formChecked(formData, 'acknowledgeDelay'),
+      monitorCode: formString(formData, 'monitorCode').trim() || null,
       now: new Date(),
     },
     {
@@ -105,6 +117,7 @@ export const startApplicationAction = async (
       hasActiveSubscription,
       findCoachAvailability,
       findOpenApplication,
+      resolveMonitorCode: resolveMonitorCodeForStudent,
       savePendingPurchase,
       createThread,
       generateId: () => crypto.randomUUID(),
@@ -138,10 +151,18 @@ export const startApplicationCheckoutAction = async (
       findCoachAvailability,
       createCheckoutSession,
       attachCheckoutSession,
+      findShareConsent,
+      markPurchaseAuthorizedWithoutPayment: (purchaseId) =>
+        markPurchaseAuthorized(purchaseId, { stripePaymentIntentId: null, stripeCustomerId: null }),
+      requestApproval: requestThreadApproval,
     }
   )
   if (!result.ok) {
     return actionError(APPLICATION_CHECKOUT_ERROR_MESSAGE[result.error])
+  }
+  if (result.value.kind === 'free') {
+    revalidatePath(`/t/${threadId}`)
+    redirect(`/t/${threadId}?applied=1`)
   }
   redirect(result.value.url)
 }

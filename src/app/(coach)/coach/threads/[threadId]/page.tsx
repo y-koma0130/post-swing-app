@@ -6,6 +6,7 @@ import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { extensionNote } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewReplyForm } from '@/app/features/coach-review/components/CoachReviewReplyForm'
+import { ShareConsentSummary } from '@/app/features/share/components/ShareConsentSummary'
 import { ChartPanel } from '@/app/features/student-chart/components/ChartPanel'
 import { ApplicationDecision } from '@/app/features/thread/components/ApplicationDecision'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
@@ -60,6 +61,7 @@ const ReviewPage = async ({ params }: Props) => {
           )
         }
       />
+      <ShareConsentSummary consent={thread.shareConsent} monitor={thread.application.monitor} />
       {thread.status === 'requested' && (
         <ApplicationDecision
           threadId={thread.id}

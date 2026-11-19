@@ -1,5 +1,6 @@
 import type { CoachAvailabilityDto } from '@/server/features/coach/application/dto/CoachAvailability.dto'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
+import type { ShareConsentDto } from '@/server/features/share/application/dto/ShareConsent.dto'
 import type { ChatBlocker } from '../../domain/services/checkChatMessage.service'
 import type { StudentCloseBlocker } from '../../domain/services/checkStudentClose.service'
 import type { SubmissionBlocker } from '../../domain/services/checkSubmission.service'
@@ -55,7 +56,14 @@ export type ThreadDetailDto = {
     decline: { reason: DeclineReason; message: string } | null
     /** 下書きのとき、申し込みの最終確認に出す金額（申し込んだ時点の値）。それ以外は null */
     checkout: { priceYen: number; systemFeeYen: number } | null
+    /** モニターのプロモコードでの申し込みか（公開の許可が条件。0円ならカードを登録しない） */
+    monitor: boolean
   }
+  /**
+   * 生徒が選んだ公開の許可（コーチがシェア画像を作るときに使う）。選んでいなければ null。
+   * 名前は、どの場合も出さない
+   */
+  shareConsent: ShareConsentDto
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
   /** 生徒が送る前の確認（提出・チャット） */

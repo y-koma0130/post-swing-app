@@ -2,6 +2,7 @@
 
 import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
+import { ShareConsentFields } from '@/app/components/ShareConsentFields'
 import { Button } from '@/app/components/ui/Button'
 import { inputClass, labelTextClass, selectClass } from '@/app/components/ui/fieldStyles'
 import {
@@ -9,7 +10,12 @@ import {
   type VideoSlotHandle,
   type VideoSlotStatus,
 } from '@/app/components/video/VideoSlot'
-import { ROUND_FREQUENCIES, ROUND_FREQUENCY_LABEL } from '@/app/utils/threadText'
+import {
+  AGE_RANGE_LABEL,
+  AGE_RANGES,
+  ROUND_FREQUENCIES,
+  ROUND_FREQUENCY_LABEL,
+} from '@/app/utils/threadText'
 import { submitSubmissionAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
@@ -34,6 +40,11 @@ type Props = {
   replyHint: string | null
   /** 提出を始めたとき（ドロワーを閉じるなど）。続きは画面の外で進む */
   onStarted?: (() => void) | undefined
+  /**
+   * 申し込みの最初の提出で、添削の公開の許可も聞く（それ以外は null）。
+   * required：モニターの申し込み（公開の許可が条件）
+   */
+  shareConsent?: Readonly<{ coachName: string; required: boolean }> | null | undefined
 }
 
 const IDLE_STATUS: VideoSlotStatus = { selected: false, ready: false, busy: false }
@@ -55,7 +66,9 @@ export const SubmissionForm = ({
   confirmMessage,
   replyHint,
   onStarted,
+  shareConsent = null,
 }: Props) => {
+  const [ageRange, setAgeRange] = useState('')
   const slots = useRef<Array<VideoSlotHandle | null>>([])
   const [statuses, setStatuses] = useState<VideoSlotStatus[]>(() =>
     Array.from({ length: maxVideos }, () => IDLE_STATUS)
@@ -160,6 +173,27 @@ export const SubmissionForm = ({
         </label>
       )}
       {needsTheme && (
+        <label className="block space-y-2">
+          <span className={labelTextClass}>年代</span>
+          <select
+            name="ageRange"
+            required
+            value={ageRange}
+            onChange={(event) => setAgeRange(event.currentTarget.value)}
+            className={selectClass}
+          >
+            <option value="" disabled>
+              選んでください
+            </option>
+            {AGE_RANGES.map((value) => (
+              <option key={value} value={value}>
+                {AGE_RANGE_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {needsTheme && (
         // コーチが添削の参考にする（任意）
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-2">
@@ -187,6 +221,14 @@ export const SubmissionForm = ({
             />
           </label>
         </div>
+      )}
+      {shareConsent && (
+        <ShareConsentFields
+          coachName={shareConsent.coachName}
+          canPublish={ageRange !== '' && ageRange !== 'under_18'}
+          required={shareConsent.required}
+          current={null}
+        />
       )}
       <label className="block space-y-2">
         <span className={labelTextClass}>メモ（クラブ・悩みなど）</span>

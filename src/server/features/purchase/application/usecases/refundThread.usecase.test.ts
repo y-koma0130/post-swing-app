@@ -14,6 +14,7 @@ const purchase = {
   status: 'paid' as const,
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,
+  monitorCodeId: null,
   stripeCheckoutSessionId: 'cs_1',
 }
 

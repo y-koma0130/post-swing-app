@@ -58,17 +58,21 @@ export const handleDevPurchase = async (request: Request): Promise<Response> => 
   }
 
   const purchaseId = crypto.randomUUID()
-  await savePendingPurchase({
-    id: purchaseId,
-    studentUserId: actor.userId,
-    coachUserId: coach.userId,
-    planKind: plan.kind,
-    priceYen: plan.priceYen,
-    systemFeeYen: calcSystemFee(plan.priceYen),
-    status: 'pending',
-    stripeSubscriptionId: null,
-    stripePaymentIntentId: null,
-  })
+  await savePendingPurchase(
+    {
+      id: purchaseId,
+      studentUserId: actor.userId,
+      coachUserId: coach.userId,
+      planKind: plan.kind,
+      priceYen: plan.priceYen,
+      systemFeeYen: calcSystemFee(plan.priceYen),
+      status: 'pending',
+      stripeSubscriptionId: null,
+      stripePaymentIntentId: null,
+      monitorCodeId: null,
+    },
+    null
+  )
   const draft = startDraftThread({
     id: crypto.randomUUID(),
     purchaseId,

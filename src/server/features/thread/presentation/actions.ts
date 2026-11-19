@@ -7,6 +7,8 @@ import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { capturePayment, voidPayment } from '@/server/features/purchase/public'
+import { parseShareConsentForm } from '@/server/features/share/domain/values/ShareConsent'
+import { recordShareConsent } from '@/server/features/share/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import {
@@ -130,6 +132,8 @@ const SUBMIT_ERROR = {
   theme_required: '直したいところを書いてください',
   note_too_long: 'メモは1000文字までです',
   invalid_golf_profile: '平均スコアは50〜200の数字で入れてください',
+  age_required: '年代を選んでください',
+  not_adult: '18歳未満の方は、公開を許可できません（公開しない、を選んでください）',
 } as const satisfies Record<SubmitSubmissionError, string>
 
 /**
@@ -153,10 +157,17 @@ export const submitSubmissionAction = async (
       theme: formString(formData, 'theme'),
       note: formString(formData, 'note'),
       golfProfile: {
+        ageRange: formString(formData, 'ageRange'),
         roundFrequency: formString(formData, 'roundFrequency'),
         averageScore: formString(formData, 'averageScore'),
       },
       videoIds: formData.getAll('videoId').filter((v): v is string => typeof v === 'string'),
+      shareConsent: parseShareConsentForm({
+        allowPublish: formString(formData, 'allowPublish'),
+        showFace: formString(formData, 'showFace'),
+        showAgeRange: formString(formData, 'showAgeRange'),
+        showScore: formString(formData, 'showScore'),
+      }),
       now,
     },
     {
@@ -167,6 +178,7 @@ export const submitSubmissionAction = async (
       saveThreadNotice,
       notifySubmitted: (input) =>
         notify({ kind: 'video_submitted', ...input, occurredAt: now.toISOString() }),
+      recordShareConsent,
       generateId: () => crypto.randomUUID(),
     }
   )

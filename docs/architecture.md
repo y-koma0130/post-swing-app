@@ -164,12 +164,15 @@ src/
 | server | `drill` | ドリル |
 | server | `coach-review` | コーチへのレビュー |
 | server | `notification` | 通知（キュー・LINE・メール） |
+| server | `monitor` | モニター募集のプロモコード（コーチが発行。1レッスンをモニター価格で。0円なら無料） |
+| server | `share` | 添削の公開の許可（コーチと生徒の組ごと。申し込みのときに聞き、マイページで変えられる。履歴を残す） |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |
 | app | `apply` | プランの選択・キャンセル待ち |
 | app | `thread`・`video-upload` | レッスン一覧・時系列・提出（動画の変換と送信） |
 | app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
 | app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
+| app | `monitor`・`share` | プロモコードの設定・公開の許可（変更のフォームと、コーチへの表示） |
 
 ### 依存の向き
 

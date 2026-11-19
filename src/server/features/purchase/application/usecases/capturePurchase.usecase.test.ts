@@ -13,6 +13,15 @@ const authorized: Purchase = {
   status: 'authorized',
   stripeSubscriptionId: null,
   stripePaymentIntentId: 'pi_1',
+  monitorCodeId: null,
+}
+
+const freeMonitor: Purchase = {
+  ...authorized,
+  priceYen: 0,
+  systemFeeYen: 0,
+  stripePaymentIntentId: null,
+  monitorCodeId: 'code-1',
 }
 
 const now = new Date('2026-11-20T00:00:00Z')
@@ -207,6 +216,23 @@ describe('capturePurchase', () => {
     expect(capturePaymentIntent).not.toHaveBeenCalled()
     expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', { stripeSubscriptionId: null })
   })
+
+  it('無料のモニターは、本番でも Stripe を通さずに確定し、0円で記録する', async () => {
+    const { deps, capturePaymentIntent, savePayment, markPurchaseCaptured } =
+      captureDeps(freeMonitor)
+    expect(await capturePurchase({ purchaseId: 'purchase-1', now }, deps)).toEqual({
+      ok: true,
+      value: { purchaseId: 'purchase-1' },
+    })
+    expect(capturePaymentIntent).not.toHaveBeenCalled()
+    expect(savePayment.mock.calls[0]?.[0]).toMatchObject({
+      priceYen: 0,
+      systemFeeYen: 0,
+      platformFeeYen: 0,
+      stripePaymentIntentId: null,
+    })
+    expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', { stripeSubscriptionId: null })
+  })
 })
 
 describe('voidPurchase', () => {
@@ -236,5 +262,12 @@ describe('voidPurchase', () => {
       error: 'void_failed',
     })
     expect(markPurchaseVoided).not.toHaveBeenCalled()
+  })
+
+  it('無料のモニターは、本番でも Stripe を呼ばずに取り消す', async () => {
+    const { deps, cancelPaymentIntent, markPurchaseVoided } = voidDeps(freeMonitor)
+    expect((await voidPurchase({ purchaseId: 'purchase-1' }, deps)).ok).toBe(true)
+    expect(cancelPaymentIntent).not.toHaveBeenCalled()
+    expect(markPurchaseVoided).toHaveBeenCalledWith('purchase-1')
   })
 })

@@ -11,6 +11,7 @@ export type SubmissionContentsBlocker =
   | 'theme_required'
   | 'note_too_long'
   | 'invalid_golf_profile'
+  | 'age_required'
 
 export type AcceptedSubmission = Readonly<{
   videos: Submission['videos']
@@ -32,7 +33,7 @@ export type CheckSubmissionContents = (
     theme: string
     note: string
     /** フォームのまま（空なら書かなかった）。2回目以降の提出では見ない */
-    golfProfile: Readonly<{ roundFrequency: string; averageScore: string }>
+    golfProfile: Readonly<{ ageRange: string; roundFrequency: string; averageScore: string }>
   }>
 ) => Result<AcceptedSubmission, SubmissionContentsBlocker>
 
@@ -43,7 +44,7 @@ export type CheckSubmissionContents = (
  * - 動画は1〜2本
  * - 使えるのは、このスレッドに本人が上げて、まだ提出に使っていない動画だけ
  * - 最初の提出ではテーマ（直したいところ）を書く。2回目以降はテーマを変えない
- * - 最初の提出では、ラウンドの回数と平均スコアも書ける（任意）
+ * - 最初の提出では、年代を必ず聞く（公開の許可に使う）。ラウンドの回数と平均スコアは任意
  * - メモは1000文字まで
  */
 export const checkSubmissionContents: CheckSubmissionContents = (input) => {
@@ -57,6 +58,7 @@ export const checkSubmissionContents: CheckSubmissionContents = (input) => {
   if (theme && !theme.success) return err('theme_required')
   const golfProfile = isFirst ? parseGolfProfile(input.golfProfile) : null
   if (isFirst && golfProfile === null) return err('invalid_golf_profile')
+  if (isFirst && golfProfile?.ageRange === null) return err('age_required')
   return ok({ videos, note, theme: theme?.success ? theme.data : null, golfProfile })
 }
 
