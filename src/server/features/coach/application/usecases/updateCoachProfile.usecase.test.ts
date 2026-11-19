@@ -15,7 +15,7 @@ const profile = {
 const deps = (overrides: Partial<Parameters<typeof updateCoachProfile>[1]> = {}) => ({
   findCoachSlug: vi.fn(async () => coachSlugSchema.parse('old-slug')),
   isSlugTaken: vi.fn(async () => false),
-  saveCoachProfile: vi.fn(async () => undefined),
+  saveCoachProfile: vi.fn(async (): Promise<'saved' | 'slug_taken'> => 'saved'),
   generateSlug: () => coachSlugSchema.parse('random01'),
   ...overrides,
 })
@@ -73,5 +73,15 @@ describe('updateCoachProfile', () => {
       error: 'slug_unavailable',
     })
     expect(d.saveCoachProfile).not.toHaveBeenCalled()
+  })
+
+  it('確かめたあとに同じスラッグを取られていたら slug_taken', async () => {
+    const d = deps({
+      saveCoachProfile: vi.fn(async (): Promise<'saved' | 'slug_taken'> => 'slug_taken'),
+    })
+    expect(await updateCoachProfile({ actor, profile }, d)).toEqual({
+      ok: false,
+      error: 'slug_taken',
+    })
   })
 })

@@ -13,7 +13,8 @@ export type UpdateCoachProfileParams = Readonly<{
 type Dependencies = Readonly<{
   findCoachSlug: (userId: string) => Promise<CoachSlug | null>
   isSlugTaken: (slug: CoachSlug) => Promise<boolean>
-  saveCoachProfile: (userId: string, profile: CoachProfile) => Promise<void>
+  /** 確かめたあとに同じスラッグを取られていたら slug_taken を返す */
+  saveCoachProfile: (userId: string, profile: CoachProfile) => Promise<'saved' | 'slug_taken'>
   /** ランダムなスラッグ（generateCoachSlug に乱数を渡したもの） */
   generateSlug: () => CoachSlug
 }>
@@ -40,6 +41,9 @@ export const updateCoachProfile: UpdateCoachProfile = async ({ actor, profile },
   if (slug === null) {
     return err('slug_unavailable')
   }
-  await deps.saveCoachProfile(actor.userId, { ...profile, slug })
+  const saved = await deps.saveCoachProfile(actor.userId, { ...profile, slug })
+  if (saved === 'slug_taken') {
+    return err('slug_taken')
+  }
   return ok({ slug })
 }

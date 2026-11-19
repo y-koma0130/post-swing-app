@@ -66,7 +66,8 @@ const generateSlug = () =>
   generateCoachSlug(crypto.getRandomValues(new Uint8Array(RANDOM_SLUG_LENGTH)))
 
 const inviteInputSchema = z.object({
-  email: z.email('メールアドレスの形が正しくありません'),
+  // コピーで前後に空白が入っても通す（大文字・小文字は保存と検索のときにそろえる）
+  email: z.string().trim().pipe(z.email('メールアドレスの形が正しくありません')),
   name: z.string().trim().min(1, '名前を入れてください').max(50),
   slug: optionalSlugSchema,
   /** 付けるキャンペーン（任意。空なら付けない） */
