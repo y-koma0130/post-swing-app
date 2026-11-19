@@ -1,4 +1,5 @@
 import type { SignupGuard } from '../../domain/services/decideSignupGuard.service'
+import type { CoachLicense } from '../../domain/values/CoachLicense'
 import type { PlanKind } from '../../domain/values/Plan'
 import type { CoachAvailabilityDto, UpcomingAbsenceDto } from './CoachAvailability.dto'
 
@@ -11,6 +12,10 @@ export type CoachProfileDto = {
   title: string
   bio: string
   instagram: string
+  /** 資格（選択肢から選んだもの） */
+  licenses: CoachLicense[]
+  /** 選択肢にない資格（自由に書いたもの。なければ空） */
+  licenseOther: string
   /** プロフィール画像。なければ null（名前の頭文字を出す） */
   avatarUrl: string | null
   remainingCapacity: number

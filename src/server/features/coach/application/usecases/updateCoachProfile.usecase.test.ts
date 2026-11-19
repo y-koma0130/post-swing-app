@@ -9,6 +9,8 @@ const profile = {
   title: 'ティーチングプロ',
   bio: '',
   instagram: '',
+  licenses: ['pga_teaching_a' as const],
+  licenseOther: '',
   monthlyCapacity: 10,
 }
 

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { coachLicensesSchema, licenseOtherSchema } from './CoachLicense'
 import { coachSlugSchema } from './CoachSlug'
 import { planSchema } from './Plan'
 
@@ -7,6 +8,7 @@ import { planSchema } from './Plan'
  *
  * ドメインルール:
  * - 月の受付枠は1〜100
+ * - 資格は選択肢から複数選べる（選択肢にないものは「その他」に書く）
  */
 export const coachProfileSchema = z.object({
   slug: coachSlugSchema,
@@ -14,6 +16,8 @@ export const coachProfileSchema = z.object({
   title: z.string().trim().max(50),
   bio: z.string().trim().max(1000),
   instagram: z.string().trim().max(50),
+  licenses: coachLicensesSchema,
+  licenseOther: licenseOtherSchema,
   monthlyCapacity: z.number().int().min(1, '受付枠は1以上です').max(100, '受付枠は100までです'),
 })
 

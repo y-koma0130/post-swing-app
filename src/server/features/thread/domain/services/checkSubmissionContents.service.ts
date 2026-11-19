@@ -1,5 +1,6 @@
 import { err, ok, type Result } from '@/server/utils/result'
 import { THREAD_RULES } from '../rules'
+import { type GolfProfile, parseGolfProfile } from '../values/GolfProfile'
 import { type DraftVideo, isUnusedDraft, type Submission } from '../values/Submission'
 import { type Thread, threadThemeSchema } from '../values/Thread'
 
@@ -9,12 +10,15 @@ export type SubmissionContentsBlocker =
   | 'invalid_video'
   | 'theme_required'
   | 'note_too_long'
+  | 'invalid_golf_profile'
 
 export type AcceptedSubmission = Readonly<{
   videos: Submission['videos']
   note: string
   /** 最初の提出のときだけ。スレッドのテーマになる */
   theme: string | null
+  /** 最初の提出のときだけ。ラウンドの回数と平均スコア（どちらも任意） */
+  golfProfile: GolfProfile | null
 }>
 
 export type CheckSubmissionContents = (
@@ -27,6 +31,8 @@ export type CheckSubmissionContents = (
     drafts: ReadonlyArray<DraftVideo>
     theme: string
     note: string
+    /** フォームのまま（空なら書かなかった）。2回目以降の提出では見ない */
+    golfProfile: Readonly<{ roundFrequency: string; averageScore: string }>
   }>
 ) => Result<AcceptedSubmission, SubmissionContentsBlocker>
 
@@ -37,6 +43,7 @@ export type CheckSubmissionContents = (
  * - 動画は1〜2本
  * - 使えるのは、このスレッドに本人が上げて、まだ提出に使っていない動画だけ
  * - 最初の提出ではテーマ（直したいところ）を書く。2回目以降はテーマを変えない
+ * - 最初の提出では、ラウンドの回数と平均スコアも書ける（任意）
  * - メモは1000文字まで
  */
 export const checkSubmissionContents: CheckSubmissionContents = (input) => {
@@ -61,5 +68,7 @@ export const checkSubmissionContents: CheckSubmissionContents = (input) => {
   const isFirst = input.thread.submissions.length === 0
   const theme = isFirst ? threadThemeSchema.safeParse(input.theme) : null
   if (theme && !theme.success) return err('theme_required')
-  return ok({ videos, note, theme: theme?.success ? theme.data : null })
+  const golfProfile = isFirst ? parseGolfProfile(input.golfProfile) : null
+  if (isFirst && golfProfile === null) return err('invalid_golf_profile')
+  return ok({ videos, note, theme: theme?.success ? theme.data : null, golfProfile })
 }

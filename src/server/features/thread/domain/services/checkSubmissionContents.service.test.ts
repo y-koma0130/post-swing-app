@@ -16,6 +16,7 @@ const base = {
   drafts: [draft('v1', 'front'), draft('v2', 'back')],
   theme: ' トップで右ひざが流れる ',
   note: '  ドライバーです ',
+  golfProfile: { roundFrequency: 'monthly', averageScore: '98' },
 }
 const earlier = {
   id: 's0',
@@ -36,6 +37,7 @@ describe('checkSubmissionContents', () => {
         ],
         note: 'ドライバーです',
         theme: 'トップで右ひざが流れる',
+        golfProfile: { roundFrequency: 'monthly', averageScore: 98 },
       },
     })
   })
@@ -102,5 +104,26 @@ describe('checkSubmissionContents', () => {
       ok: false,
       error: 'note_too_long',
     })
+  })
+
+  it('ラウンドの回数と平均スコアは任意。書くなら平均スコアは50〜200の数字', () => {
+    const blank = { roundFrequency: '', averageScore: '' }
+    const accepted = checkSubmissionContents({ ...base, golfProfile: blank })
+    expect(accepted.ok && accepted.value.golfProfile).toEqual({
+      roundFrequency: null,
+      averageScore: null,
+    })
+    expect(
+      checkSubmissionContents({ ...base, golfProfile: { roundFrequency: '', averageScore: '20' } })
+    ).toEqual({ ok: false, error: 'invalid_golf_profile' })
+  })
+
+  it('2回目以降の提出では、ラウンドの回数と平均スコアを見ない', () => {
+    const result = checkSubmissionContents({
+      ...base,
+      thread: { id: 't1', submissions: [earlier] },
+      golfProfile: { roundFrequency: 'daily', averageScore: 'x' },
+    })
+    expect(result.ok && result.value.golfProfile).toBeNull()
   })
 })

@@ -4,6 +4,7 @@ import { getDb } from '@/server/db/client'
 import { isUniqueViolation } from '@/server/db/isUniqueViolation'
 import { coachProfile, plan, user } from '@/server/db/schema'
 import { type Coach, type CoachProfile, coachSchema } from '../../domain/values/Coach'
+import { knownLicenses } from '../../domain/values/CoachLicense'
 import { type CoachSlug, coachSlugSchema } from '../../domain/values/CoachSlug'
 import type { Plan } from '../../domain/values/Plan'
 
@@ -56,6 +57,8 @@ export const findCoachByUserId: FindCoachByUserId = async (userId) => {
     title: profile.title,
     bio: profile.bio,
     instagram: profile.instagram,
+    licenses: knownLicenses(profile.licenses),
+    licenseOther: profile.licenseOther,
     monthlyCapacity: profile.monthlyCapacity,
     stripeAccountId: profile.stripeAccountId,
     chargesEnabled: profile.chargesEnabled,
@@ -113,6 +116,8 @@ export const saveInvitedCoach: SaveInvitedCoach = async (coach, invitedUser) => 
     title: coach.title,
     bio: coach.bio,
     instagram: coach.instagram,
+    licenses: [...coach.licenses],
+    licenseOther: coach.licenseOther,
     monthlyCapacity: coach.monthlyCapacity,
     stripeAccountId: coach.stripeAccountId,
     chargesEnabled: coach.chargesEnabled,
@@ -151,6 +156,8 @@ export const saveCoachProfile: SaveCoachProfile = async (userId, profile) =>
         title: profile.title,
         bio: profile.bio,
         instagram: profile.instagram,
+        licenses: [...profile.licenses],
+        licenseOther: profile.licenseOther,
         monthlyCapacity: profile.monthlyCapacity,
         updatedAt: new Date(),
       })

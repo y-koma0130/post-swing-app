@@ -60,6 +60,8 @@ export const inviteCoach: InviteCoach = async (params, deps) => {
       title: '',
       bio: '',
       instagram: '',
+      licenses: [],
+      licenseOther: '',
       monthlyCapacity: COACH_RULES.defaultMonthlyCapacity,
       stripeAccountId: null,
       chargesEnabled: false,

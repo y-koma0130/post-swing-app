@@ -134,6 +134,13 @@
       "when": 1795049266805,
       "tag": "0018_drill_video",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795050946782,
+      "tag": "0019_golf_profile_and_licenses",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { COACH_LICENSE_LABEL, COACH_LICENSES } from '@/app/features/coach-profile/utils/licenseText'
 import type { CoachSettingsDto } from '@/server/features/coach/application/dto/CoachSettings.dto'
 import { updateCoachProfileAction } from '@/server/features/coach/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -65,6 +66,37 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
           className={inputClass}
         />
       </label>
+      <fieldset className="space-y-2">
+        <legend className={labelTextClass}>資格（あてはまるものをすべて）</legend>
+        <div className="flex flex-wrap gap-2">
+          {COACH_LICENSES.map((license) => (
+            <label
+              key={license}
+              className="has-checked:border-mint has-checked:bg-mint-soft has-checked:text-ink border-line text-body has-focus-visible:ring-mint flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm has-focus-visible:ring-2"
+            >
+              <input
+                type="checkbox"
+                name="licenses"
+                value={license}
+                defaultChecked={settings.licenses.includes(license)}
+                className="accent-mint"
+              />
+              {COACH_LICENSE_LABEL[license]}
+            </label>
+          ))}
+        </div>
+        <label className="block space-y-1">
+          <span className="text-caption text-muted">その他の資格（選択肢にないもの）</span>
+          <input
+            name="licenseOther"
+            defaultValue={settings.licenseOther}
+            maxLength={50}
+            placeholder="例：JLPGA ティーチングプロ A級"
+            className={inputClass}
+          />
+        </label>
+        <span className="text-caption text-muted block">受付ページに表示します。</span>
+      </fieldset>
       <label className="block space-y-1">
         <span className={labelTextClass}>受付ページのURL</span>
         <div className="flex items-center gap-2">

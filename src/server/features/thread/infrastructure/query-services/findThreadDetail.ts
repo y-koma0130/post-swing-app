@@ -70,6 +70,8 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
         studentName: user.name,
         declineReason: thread.declineReason,
         declineMessage: thread.declineMessage,
+        roundFrequency: thread.roundFrequency,
+        averageScore: thread.averageScore,
       })
       .from(thread)
       .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
@@ -147,6 +149,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
     studentName: people.studentName,
     planKind: t.planKind,
     theme: t.theme,
+    golfProfile: { roundFrequency: people.roundFrequency, averageScore: people.averageScore },
     status: t.status,
     startedAt: t.startedAt,
     expiresAt: expiry.expiresAt,

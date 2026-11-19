@@ -5,6 +5,7 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
+import { CoachLicenses } from '@/app/features/coach-profile/components/CoachLicenses'
 import { ThreadList } from '@/app/features/thread/components/ThreadList'
 import { getActor } from '@/server/auth/getActor'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
@@ -46,6 +47,7 @@ const MyCoachPage = async ({ params }: Props) => {
           <p className="text-caption text-muted">{coach.title}</p>
           <p className="text-title">{coach.name}</p>
           {coach.instagram && <p className="text-caption text-muted">{coach.instagram}</p>}
+          <CoachLicenses licenses={coach.licenses} licenseOther={coach.licenseOther} />
         </div>
       </section>
       {coach.bio && (

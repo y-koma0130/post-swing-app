@@ -148,6 +148,8 @@ export const updateCoachProfileAction = async (
     title: formString(formData, 'title'),
     bio: formString(formData, 'bio'),
     instagram: formString(formData, 'instagram'),
+    licenses: formData.getAll('licenses').filter((v): v is string => typeof v === 'string'),
+    licenseOther: formString(formData, 'licenseOther'),
     monthlyCapacity: Number(formString(formData, 'monthlyCapacity')),
   })
   if (!input.success) {

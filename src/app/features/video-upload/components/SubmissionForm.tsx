@@ -4,6 +4,7 @@ import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { ROUND_FREQUENCIES, ROUND_FREQUENCY_LABEL } from '@/app/features/thread/utils/threadText'
 import { submitSubmissionAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
@@ -149,6 +150,35 @@ export const SubmissionForm = ({
             className={inputClass}
           />
         </label>
+      )}
+      {needsTheme && (
+        // コーチが添削の参考にする（任意）
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-2">
+            <span className={labelTextClass}>ふだんのラウンド（任意）</span>
+            <select name="roundFrequency" defaultValue="" className={inputClass}>
+              <option value="">選ばない</option>
+              {ROUND_FREQUENCIES.map((value) => (
+                <option key={value} value={value}>
+                  {ROUND_FREQUENCY_LABEL[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-2">
+            <span className={labelTextClass}>平均スコア（任意）</span>
+            <input
+              name="averageScore"
+              type="number"
+              inputMode="numeric"
+              min={50}
+              max={200}
+              step={1}
+              placeholder="例：98"
+              className={inputClass}
+            />
+          </label>
+        </div>
       )}
       <label className="block space-y-2">
         <span className={labelTextClass}>メモ（クラブ・悩みなど）</span>
