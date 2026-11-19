@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { QuoteButton } from '@/app/components/quote/QuoteContext'
-import { Button } from '@/app/components/ui/Button'
+import { Button, textButtonClass } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
@@ -40,6 +41,7 @@ type Props = {
     | 'lastReadAt'
     | 'golfProfile'
     | 'retake'
+    | 'shareConsent'
   >
   drills: DrillDto[]
 }
@@ -183,6 +185,20 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                   />
                 )}
               />
+              <div className="flex justify-end">
+                {thread.shareConsent?.allowPublish ? (
+                  <Link
+                    href={`/coach/threads/${thread.id}/share/${submission.id}`}
+                    className={textButtonClass()}
+                  >
+                    シェア画像を作る
+                  </Link>
+                ) : (
+                  <span className="text-caption text-muted">
+                    シェア画像：生徒が公開を許可していません
+                  </span>
+                )}
+              </div>
             </Card>
           )
         }
