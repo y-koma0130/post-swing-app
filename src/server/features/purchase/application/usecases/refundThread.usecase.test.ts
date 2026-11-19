@@ -35,7 +35,7 @@ const setup = (
 }
 
 describe('refundThread', () => {
-  it('Stripe で返金してから、スレッドを返金済みにして終了する', async () => {
+  it('Stripe で返金してから、レッスンを返金済みにして終了する', async () => {
     const { deps, refundStripePayment, markThreadRefunded, markPaymentRefunded } = setup()
     expect(await refundThread({ threadId: 't1', now }, deps)).toEqual({
       ok: true,
@@ -84,7 +84,7 @@ describe('refundThread', () => {
     expect(markThreadRefunded).not.toHaveBeenCalled()
   })
 
-  it('ないスレッドは not_found', async () => {
+  it('ないレッスンは not_found', async () => {
     const { deps } = setup({ findThreadPayment: async () => null })
     expect(await refundThread({ threadId: 'x', now }, deps)).toEqual({
       ok: false,

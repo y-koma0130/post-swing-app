@@ -34,7 +34,7 @@ describe('checkChatAttachment', () => {
     expect(checkChatAttachment({ ...base, request })).toEqual({ ok: false, error: 'invalid_drill' })
   })
 
-  it('このスレッドに自分が上げた、未使用の動画だけ添えられる', () => {
+  it('このレッスンに自分が上げた、未使用の動画だけ添えられる', () => {
     const request = { kind: 'video' as const, videoId: 'v1' }
     expect(checkChatAttachment({ ...base, request, video })).toEqual({
       ok: true,

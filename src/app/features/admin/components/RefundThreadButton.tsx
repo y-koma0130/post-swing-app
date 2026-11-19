@@ -21,7 +21,7 @@ type Props = {
 export const RefundThreadButton = ({ threadId, studentName, priceYen }: Props) => {
   const [state, action, pending] = useActionState(refundThreadAction, IDLE_ACTION_STATE)
   const confirm = useConfirmedSubmit({
-    message: `${studentName}さんに ${formatYen(priceYen)} を全額返金し、スレッドを終了します。\nコーチへ送った売上も取り戻します。取り消せません。よろしいですか？`,
+    message: `${studentName}さんに ${formatYen(priceYen)} を全額返金し、レッスンを終了します。\nコーチへ送った売上も取り戻します。取り消せません。よろしいですか？`,
     confirmLabel: '返金する',
     danger: true,
   })

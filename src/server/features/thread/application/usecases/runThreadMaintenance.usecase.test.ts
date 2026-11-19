@@ -94,7 +94,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
 }
 
 describe('runThreadMaintenance', () => {
-  it('期限切れで、すべて添削済みのスレッドだけを終了し、生徒にレビューをお願いする', async () => {
+  it('期限切れで、すべて添削済みのレッスンだけを終了し、生徒にレビューをお願いする', async () => {
     const { deps, closeThreads, notifyThreadClosed } = setup({
       findExpiredOpenThreads: async () => [
         thread('done', [true, true]),
@@ -131,7 +131,7 @@ describe('runThreadMaintenance', () => {
     expect(closeThreads).not.toHaveBeenCalled()
   })
 
-  it('実際の期限まで2〜3日のスレッドに知らせる（不在で延びた期限で数える）', async () => {
+  it('実際の期限まで2〜3日のレッスンに知らせる（不在で延びた期限で数える）', async () => {
     const base = {
       coachUserId: 'coach-1',
       studentUserId: 's1',

@@ -57,7 +57,7 @@ describe('checkSubmissionContents', () => {
     expect(checkSubmissionContents({ ...base, videoIds: ['v1', 'v1'] }).ok).toBe(true)
   })
 
-  it('他人の動画・別のスレッドの動画・提出済みの動画・見つからない動画は使えない', () => {
+  it('他人の動画・別のレッスンの動画・提出済みの動画・見つからない動画は使えない', () => {
     const invalid = { ok: false, error: 'invalid_video' }
     expect(
       checkSubmissionContents({

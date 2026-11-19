@@ -37,7 +37,7 @@ const setup = (
 }
 
 describe('recordPayment', () => {
-  it('都度払い：支払い済みにして、30日のスレッドを作る', async () => {
+  it('都度払い：支払い済みにして、30日のレッスンを作る', async () => {
     const { deps, createThread, markPurchasePaid } = setup()
     const result = await recordPayment(
       { purchaseId: 'purchase-1', stripeCustomerId: 'cus_1', subscription: null, paidAt },
@@ -56,7 +56,7 @@ describe('recordPayment', () => {
     })
   })
 
-  it('スレッドを作ったら、コーチに申し込みを知らせる', async () => {
+  it('レッスンを作ったら、コーチに申し込みを知らせる', async () => {
     const { deps, notifyThreadStarted } = setup()
     await recordPayment(
       { purchaseId: 'purchase-1', stripeCustomerId: 'cus_1', subscription: null, paidAt },
@@ -68,7 +68,7 @@ describe('recordPayment', () => {
     })
   })
 
-  it('同じ通知が2回届いても、スレッドは1つだけ（知らせるのも1回）', async () => {
+  it('同じ通知が2回届いても、レッスンは1つだけ（知らせるのも1回）', async () => {
     const { deps, createThread, notifyThreadStarted } = setup({
       findPurchase: async () => ({ ...purchase, status: 'paid' }),
       threadExists: async () => true,
@@ -82,7 +82,7 @@ describe('recordPayment', () => {
     expect(notifyThreadStarted).not.toHaveBeenCalled()
   })
 
-  it('月額：請求ごとにスレッドを作り、請求IDで重複を見分ける', async () => {
+  it('月額：請求ごとにレッスンを作り、請求IDで重複を見分ける', async () => {
     const threadExists = vi.fn<Deps['threadExists']>(async () => false)
     const { deps, createThread } = setup({
       findPurchase: async () => ({ ...purchase, planKind: 'monthly', status: 'paid' }),

@@ -55,14 +55,14 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | 用途 | サービス | 備考 |
 |---|---|---|
 | アプリ本体 | Workers ＋ Static Assets | vinext のビルド結果をそのまま載せる |
-| DB | D1 | ユーザー・コーチ・プラン・申し込み・スレッド・提出・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
+| DB | D1 | ユーザー・コーチ・プラン・申し込み・レッスン・提出・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
 | 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
 | 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
 | 定期処理 | Cron Triggers（毎日4:00・9:00 JST） | 4:00：期限切れの終了、期限前のお知らせ、返信の期限（48時間）を過ぎたコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡。9:00：不在が明けたコーチへ、不在中に届いた件数のお知らせ。どちらの処理かは `src/worker.ts` が cron の値で見分ける |
 | メール | Email Service（`send_email`） | コーチのログインコードとお知らせ。届きにくければ Resend に切り替え |
 | 秘密情報 | Workers Secrets | 一覧は `.dev.vars.example` |
 | ログ | Workers Logs | Sentry は未導入 |
-| 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する。コーチの招待・受付の停止、スレッドの一覧（返信の遅れ）、返金（全額。コーチへの送金も取り戻す） |
+| 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する。コーチの招待・受付の停止、レッスンの一覧（返信の遅れ）、返金（全額。コーチへの送金も取り戻す） |
 | ドメイン | DNS（Cloudflare） | 未確認（計画書 13章） |
 
 環境は `staging` と `production`。Worker・D1・R2・キューは環境ごとに分ける（`cloudflare.config.ts` が mode で名前を変える）。
@@ -82,7 +82,7 @@ Web（Next.js）── Server Component / Server Actions ───────�
 
 コーチの返信目安は48時間。守れない期間は、コーチが不在期間（日付。日本時間）か返信遅れフラグ（7日で自動で外れる）を登録する。
 
-- 判定はすべて domain：コーチの今の状態は coach の `calcCoachAvailability`、申し込みの扱いは `decideSignupGuard`、送る前の確認は thread の `decideSendGuard`、スレッドの期限は `calcEffectiveExpiry`（保存値は書き換えず、不在日数だけ延ばして計算）、返信の期限は `calcReplyDueAt`
+- 判定はすべて domain：コーチの今の状態は coach の `calcCoachAvailability`、申し込みの扱いは `decideSignupGuard`、送る前の確認は thread の `decideSendGuard`、レッスンの期限は `calcEffectiveExpiry`（保存値は書き換えず、不在日数だけ延ばして計算）、返信の期限は `calcReplyDueAt`
 - 数値（48時間・7日など）は coach の `AVAILABILITY_RULES` にまとめる。画面の文言は `app/features/coach-availability/utils/availabilityText.ts`
 - 不在中に届いた動画・チャットには `sent_during_absence_id` を残す（あとで返信時間を集計するとき除くため）
 
@@ -102,7 +102,7 @@ Better Auth（外部サービスではなくライブラリ）を使い、ユー
 | 本番 | ローカル |
 |---|---|
 | Workers・D1・R2・Queues・Cron | Vite 開発サーバー内の workerd・Miniflare が再現（データはコンテナのボリューム）。マイグレーションは開発サーバーが自動で流す。Cron は `/cdn-cgi/local/scheduled` で手で動かす |
-| Stripe | テストモード＋ `stripe listen`。キーがなくても `/api/dev/purchase` でスレッドを作れる |
+| Stripe | テストモード＋ `stripe listen`。キーがなくても `/api/dev/purchase` でレッスンを作れる |
 | LINE・メール | 送らずにログに出す |
 | ログイン | コードはログに出る。生徒もメールのコードでログインできる |
 
@@ -160,14 +160,14 @@ src/
 |---|---|---|
 | server | `coach` | コーチ・プラン・受付枠・招待・売上の口座（Stripe Connect） |
 | server | `purchase` | 申し込み・決済（Checkout・Webhook）・キャンセル待ち |
-| server | `thread` | スレッド・提出（動画1〜2本）・添削カード・チャット・毎日の処理 |
+| server | `thread` | レッスン・提出（動画1〜2本）・添削カード・チャット・毎日の処理 |
 | server | `drill` | ドリル |
 | server | `coach-review` | コーチへのレビュー |
 | server | `notification` | 通知（キュー・LINE・メール） |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |
 | app | `apply` | プランの選択・キャンセル待ち |
-| app | `thread`・`video-upload` | スレッド一覧・時系列・提出（動画の変換と送信） |
+| app | `thread`・`video-upload` | レッスン一覧・時系列・提出（動画の変換と送信） |
 | app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
 | app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
 

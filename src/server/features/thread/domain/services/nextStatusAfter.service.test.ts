@@ -38,7 +38,7 @@ describe('nextStatusAfter', () => {
     ).toBe('waiting_coach')
   })
 
-  it('終了したスレッドは変わらない', () => {
+  it('終了したレッスンは変わらない', () => {
     expect(nextStatusAfter({ status: 'closed', submissions: [] }, 'student_submitted')).toBe(
       'closed'
     )

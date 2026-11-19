@@ -3,7 +3,7 @@ import { checkReviewReply } from './checkReviewReply.service'
 import { checkReviewSubmission } from './checkReviewSubmission.service'
 
 describe('checkReviewSubmission', () => {
-  it('終わったスレッドに1回だけ書ける', () => {
+  it('終わったレッスンに1回だけ書ける', () => {
     expect(checkReviewSubmission({ closed: true, reviewed: false })).toBeNull()
     expect(checkReviewSubmission({ closed: false, reviewed: false })).toBe('not_closed')
     expect(checkReviewSubmission({ closed: true, reviewed: true })).toBe('already_reviewed')

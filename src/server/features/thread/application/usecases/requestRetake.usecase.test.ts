@@ -56,7 +56,7 @@ describe('requestRetake', () => {
     expect(saveRetakeRequest).not.toHaveBeenCalled()
   })
 
-  it('1つのスレッドで2回まで', async () => {
+  it('1つのレッスンで2回まで', async () => {
     const done = openRetake({ closedAt: now, closeReason: 'declined' })
     const { deps } = setup([done, { ...done, id: 'req-0' }])
     expect(await requestRetake(params, deps)).toEqual({ ok: false, error: 'retake_limit' })

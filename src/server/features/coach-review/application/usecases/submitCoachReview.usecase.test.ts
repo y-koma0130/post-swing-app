@@ -22,7 +22,7 @@ const run = (thread: Awaited<ReturnType<Deps['findThreadForReview']>>, actor = s
 }
 
 describe('submitCoachReview', () => {
-  it('終わったスレッドの生徒はレビューを書ける', async () => {
+  it('終わったレッスンの生徒はレビューを書ける', async () => {
     const { result, saveReview } = run(closedThread)
     expect(await result).toEqual({ ok: true, value: undefined })
     expect(saveReview.mock.calls[0]?.[0]).toMatchObject({ rating: 5, coachUserId: 'coach-1' })
@@ -42,7 +42,7 @@ describe('submitCoachReview', () => {
     })
   })
 
-  it('他人のスレッドには書けない', async () => {
+  it('他人のレッスンには書けない', async () => {
     expect(await run(closedThread, { userId: 'other', name: '' }).result).toEqual({
       ok: false,
       error: 'not_found',

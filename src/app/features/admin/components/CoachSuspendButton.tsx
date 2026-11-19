@@ -19,7 +19,7 @@ export const CoachSuspendButton = ({ coachUserId, coachName, suspended }: Props)
   const confirm = useConfirmedSubmit({
     message: suspended
       ? `${coachName}さんの受付を再開しますか？`
-      : `${coachName}さんの受付を止めますか？\n新しい申し込みを受けなくなります（進行中のスレッドは続きます）。`,
+      : `${coachName}さんの受付を止めますか？\n新しい申し込みを受けなくなります（進行中のレッスンは続きます）。`,
     confirmLabel: suspended ? '再開する' : '止める',
     danger: !suspended,
   })

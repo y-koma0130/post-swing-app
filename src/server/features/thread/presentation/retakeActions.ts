@@ -27,13 +27,13 @@ const revalidateThread = (threadId: string) => {
 }
 
 const REQUEST_ERROR = {
-  not_found: 'スレッドが見つかりません',
+  not_found: 'レッスンが見つかりません',
   invalid_reason: '理由を選んでください',
   message_too_long: 'ひとことは200文字までです',
   not_in_lesson: '添削を待っている動画があるときだけ、お願いできます',
   not_waiting: '添削を待っている、いちばん新しい動画にだけお願いできます',
   already_open: 'お願いへの返事を待っています',
-  retake_limit: 'このスレッドでお願いできる回数（2回）に達しています',
+  retake_limit: 'このレッスンでお願いできる回数（2回）に達しています',
 } as const satisfies Record<RequestRetakeError, string>
 
 /** コーチが撮り直しをお願いする */
