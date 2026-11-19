@@ -1,11 +1,25 @@
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 
+/**
+ * 口座を作るときに渡す情報。受付ページと活動名は、Stripe の本人確認でビジネスの情報
+ * （Webサイト・屋号）として入力済みにして、コーチが自分で書かなくて済むようにする
+ */
+export type ConnectAccountInput = Readonly<{
+  userId: string
+  email: string
+  slug: string
+  displayName: string
+}>
+
 type Dependencies = Readonly<{
-  findPayoutAccount: (
-    userId: string
-  ) => Promise<{ stripeAccountId: string | null; email: string } | null>
-  createConnectAccount: (input: { userId: string; email: string }) => Promise<string>
+  findPayoutAccount: (userId: string) => Promise<{
+    stripeAccountId: string | null
+    email: string
+    slug: string
+    displayName: string
+  } | null>
+  createConnectAccount: (input: ConnectAccountInput) => Promise<string>
   saveStripeAccountId: (userId: string, stripeAccountId: string) => Promise<void>
   createOnboardingLink: (stripeAccountId: string) => Promise<string>
 }>
@@ -18,7 +32,8 @@ export type StartPayoutOnboarding = (
 /**
  * コーチが売上を受け取る口座（Stripe Connect Express）を開設・設定する画面へ進む
  *
- * 口座がまだなければ作る。途中でやめても、次は同じ口座の続きから始まる
+ * 口座がまだなければ作る（受付ページと活動名を、ビジネスの情報として入力済みにする）。
+ * 途中でやめても、次は同じ口座の続きから始まる
  */
 export const startPayoutOnboarding: StartPayoutOnboarding = async ({ actor }, deps) => {
   const coach = await deps.findPayoutAccount(actor.userId)
@@ -27,7 +42,12 @@ export const startPayoutOnboarding: StartPayoutOnboarding = async ({ actor }, de
   }
   let accountId = coach.stripeAccountId
   if (accountId === null) {
-    accountId = await deps.createConnectAccount({ userId: actor.userId, email: coach.email })
+    accountId = await deps.createConnectAccount({
+      userId: actor.userId,
+      email: coach.email,
+      slug: coach.slug,
+      displayName: coach.displayName,
+    })
     await deps.saveStripeAccountId(actor.userId, accountId)
   }
   return ok({ url: await deps.createOnboardingLink(accountId) })
