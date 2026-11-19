@@ -4,6 +4,7 @@ import { Card } from '@/app/components/ui/Card'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvatarUploader } from '@/app/features/coach-settings/components/AvatarUploader'
 import { CoachProfileForm } from '@/app/features/coach-settings/components/CoachProfileForm'
+import { PageLinkCard } from '@/app/features/coach-settings/components/PageLinkCard'
 import { PayoutSection } from '@/app/features/coach-settings/components/PayoutSection'
 import { PlansForm } from '@/app/features/coach-settings/components/PlansForm'
 import { coachFeeText } from '@/app/utils/feeText'
@@ -34,6 +35,10 @@ const CoachSettingsPage = async () => {
   return (
     <Page layout="form">
       <PageHeader title="設定" />
+      <PageLinkCard
+        url={`${getSiteUrl().origin}/c/${settings.slug}`}
+        path={`/c/${settings.slug}`}
+      />
       <Card className="space-y-4">
         <h2 className="text-heading">売上の受け取り</h2>
         <PayoutSection settings={settings} />
