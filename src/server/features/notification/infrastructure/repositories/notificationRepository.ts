@@ -1,7 +1,7 @@
 import 'server-only'
 import { and, eq } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
-import { account, coachProfile, lineFriend, thread, user } from '@/server/db/schema'
+import { account, coachProfile, lineFriend, purchase, thread, user } from '@/server/db/schema'
 import type { NotificationContext } from '../../domain/services/composeNotification.service'
 import type { NotificationMessage } from '../../domain/values/NotificationMessage'
 
@@ -16,13 +16,17 @@ const findThreadContext = async (threadId: string): Promise<Context | null> => {
       studentName: user.name,
       studentUserId: thread.studentUserId,
       expiresAt: thread.expiresAt,
+      priceYen: purchase.priceYen,
     })
     .from(thread)
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
     .innerJoin(user, eq(user.id, thread.studentUserId))
+    .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
     .where(eq(thread.id, threadId))
     .get()
-  return row ?? null
+  if (!row) return null
+  const { priceYen, ...context } = row
+  return { ...context, free: priceYen === 0 }
 }
 
 /** 生徒がいない通知（コーチの招待）。生徒の欄は空にする */

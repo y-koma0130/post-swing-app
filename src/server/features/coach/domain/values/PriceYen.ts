@@ -8,7 +8,7 @@ import { z } from 'zod'
  * - Stripe の最低決済額（50円）以上
  */
 export const priceYenSchema = z
-  .number()
+  .number({ error: '価格を数字で入れてください' })
   .int('価格は整数です')
   .min(50, '価格は50円以上です')
   .brand<'PriceYen'>()

@@ -74,6 +74,8 @@ type Dependencies = Readonly<{
     choices: ShareConsentChoices
     now: Date
   }) => Promise<void>
+  /** モニターで申し込んだことのあるコーチか（公開をやめられない。share が持つ） */
+  isShareConsentLocked: (studentUserId: string, coachUserId: string) => Promise<boolean>
   generateId: () => string
 }>
 
@@ -117,11 +119,13 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
     return err(contents.error)
   }
   // 申し込み（下書き）の最初の提出でだけ、公開の許可を聞く
+  // モニターで申し込んだことのあるコーチには、あとの申し込みでも公開をやめられない
   const consent =
     thread.status === 'draft' && contents.value.golfProfile !== null
       ? checkShareConsent({
           choices: params.shareConsent,
           ageRange: contents.value.golfProfile.ageRange,
+          locked: await deps.isShareConsentLocked(thread.studentUserId, thread.coachUserId),
         })
       : null
   if (consent && !consent.ok) {

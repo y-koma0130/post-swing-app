@@ -173,6 +173,7 @@ src/
 | app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
 | app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
 | app | `monitor`・`share` | プロモーションコードの設定・公開の許可（変更のフォームと、コーチへの表示） |
+| app | `share-image` | シェア画像の作成（ブラウザだけで組み立て・顔のぼかし。顔の検出は MediaPipe を作る画面でだけ CDN から読み込む）。いまは `SHARE_IMAGE_ENABLED` で画面に出していない |
 
 ### 依存の向き
 

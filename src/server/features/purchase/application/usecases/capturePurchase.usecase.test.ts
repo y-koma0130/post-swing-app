@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { paymentSchema } from '../../domain/values/Payment'
 import type { Purchase } from '../../domain/values/Purchase'
 import { capturePurchase } from './capturePurchase.usecase'
 import { voidPurchase } from './voidPurchase.usecase'
@@ -231,6 +232,8 @@ describe('capturePurchase', () => {
       platformFeeYen: 0,
       stripePaymentIntentId: null,
     })
+    // 0円の記録も、保存のときの検証を通る
+    expect(paymentSchema.safeParse(savePayment.mock.calls[0]?.[0]).success).toBe(true)
     expect(markPurchaseCaptured).toHaveBeenCalledWith('purchase-1', { stripeSubscriptionId: null })
   })
 })

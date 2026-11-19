@@ -86,6 +86,7 @@ const MyCoachPage = async ({ params }: Props) => {
             coachName={coach.name}
             consent={share.consent}
             canPublish={share.canPublish}
+            locked={share.locked}
           />
         </section>
       )}

@@ -69,6 +69,7 @@
 | 状態・残り枠などの小さな札 | `Badge`（tone：mint・neutral・warning・danger） |
 | 中身がまだないとき | `EmptyState`（「ない」だけでなく、次にすることを書く） |
 | 送る前の確認 | `useConfirmedSubmit`（フォーム）か `ConfirmDialog`。ブラウザの `confirm()` は使わない |
+| Server Action で送るフォーム | `useActionForm`（`form` に `noValidate` と `onSubmit`） |
 | Server Action の結果をフォームの下に出す | `FormMessage` |
 | 開け閉めできる区分 | `details` に `summaryClass` と `DisclosureToggle` |
 | 1つを選ぶ切り替え（道具・速度・タブ） | `segmentGroupClass` で囲んで `segmentClass` |
@@ -107,6 +108,7 @@
   - 資格：`COACH_LICENSE_LABEL`
 - 確認ダイアログは、何が起きるか・取り消せるかを書く。確定のボタンは動詞にする（「消す」「終える」「送る」）。「OK」「はい」にしない
 - エラーは、何が起きたかと、次にどうすればいいかを書く
+- 入力のエラーは、ブラウザの吹き出し（`required`・`min`・`max` の標準の表示）に任せない。`form` に `noValidate` を付け、サーバーの確認の結果を `FormMessage` で出す。Server Action で送るフォームは `useActionForm`（エラーのときも入力が消えない）。動画を上げてから送るフォームは、上げる前にサーバーと同じ確認（domain のサービス）を画面で行う
 
 ## アクセシビリティ
 

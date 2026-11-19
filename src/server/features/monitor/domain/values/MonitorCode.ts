@@ -22,9 +22,12 @@ export const monitorOfferSchema = z.object({
     .min(1, '呼び名を入れてください')
     .max(MONITOR_RULES.labelMaxLength, `呼び名は${MONITOR_RULES.labelMaxLength}文字までです`),
   /** モニター価格。0なら無料 */
-  priceYen: z.number().int('価格は整数です').min(0, '価格は0円以上です'),
+  priceYen: z
+    .number({ error: 'モニター価格を数字で入れてください' })
+    .int('価格は整数です')
+    .min(0, '価格は0円以上です'),
   maxUses: z
-    .number()
+    .number({ error: '先着の人数を数字で入れてください' })
     .int('人数は整数です')
     .min(1, '人数は1人以上です')
     .max(MONITOR_RULES.maxUsesPerCode, `人数は${MONITOR_RULES.maxUsesPerCode}人までです`),

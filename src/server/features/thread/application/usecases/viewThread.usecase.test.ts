@@ -17,8 +17,15 @@ const detail: ThreadDetailDto = {
   startedAt: new Date(),
   expiresAt: new Date(),
   extendedDays: 0,
-  application: { approvalDeadline: null, decline: null, checkout: null, monitor: false },
+  application: {
+    approvalDeadline: null,
+    decline: null,
+    checkout: null,
+    monitor: false,
+    free: false,
+  },
   shareConsent: null,
+  shareConsentLocked: false,
   coachAvailability: { kind: 'available', replyTargetHours: 48 },
   sendGuard: { video: 'none', chat: 'none' },
   limits: {

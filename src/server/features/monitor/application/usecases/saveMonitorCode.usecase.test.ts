@@ -21,6 +21,7 @@ const setup = (overrides: Partial<Deps> = {}) => {
   const deps: Deps = {
     findSinglePrice: async (id) => (id === 'coach-1' ? 4980 : null),
     findMonitorCode: async (id) => (id === 'code-1' ? existing : null),
+    countCodeUses: async () => 2,
     countActiveCodes: async () => 0,
     codeTaken: async () => false,
     saveMonitorCode,
@@ -110,5 +111,32 @@ describe('saveMonitorCode', () => {
     expect(full.saveMonitorCode).not.toHaveBeenCalled()
     // 止めたコードなら、上限でも保存できる
     expect((await saveMonitorCode({ ...params, active: false }, full.deps)).ok).toBe(true)
+  })
+
+  it('作ったあとは価格を変えられず、人数は申し込んだ数より減らせない', async () => {
+    const { deps, saveMonitorCode: save } = setup()
+    expect(
+      await saveMonitorCode(
+        { ...params, codeId: 'code-1', offer: { ...offer, priceYen: 1000 } },
+        deps
+      )
+    ).toEqual({ ok: false, error: 'price_locked' })
+    expect(
+      await saveMonitorCode({ ...params, codeId: 'code-1', offer: { ...offer, maxUses: 1 } }, deps)
+    ).toEqual({ ok: false, error: 'max_uses_below_used' })
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('1レッスンの価格を下げたあとでも、前からのコードの人数や期限は変えられる', async () => {
+    const discounted = { ...existing, priceYen: 3000 }
+    const { deps } = setup({
+      findSinglePrice: async () => 2980,
+      findMonitorCode: async () => discounted,
+    })
+    const result = await saveMonitorCode(
+      { ...params, codeId: 'code-1', offer: { ...offer, priceYen: 3000, maxUses: 5 } },
+      deps
+    )
+    expect(result.ok).toBe(true)
   })
 })

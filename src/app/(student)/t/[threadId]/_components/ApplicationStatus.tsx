@@ -42,7 +42,7 @@ const FREE_STEPS = [
 export const ApplicationStatus = ({ thread, justApplied }: Props) => {
   if (thread.status === 'draft') {
     const step = thread.submissions.length === 0 ? 0 : 1
-    const free = thread.application.monitor && thread.application.checkout?.priceYen === 0
+    const free = thread.application.free
     return (
       <Notice title="申し込みの手順" className="space-y-4">
         <ol className="space-y-2">
@@ -96,7 +96,9 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
       >
         <p>
           {deadline ? `${formatDateTime(deadline)}までに` : ''}
-          お返事します。受け付けられたときに請求され、添削が始まります（まだ請求されていません）。
+          {thread.application.free
+            ? 'お返事します。受け付けられたら、添削が始まります。'
+            : 'お返事します。受け付けられたときに請求され、添削が始まります（まだ請求されていません）。'}
         </p>
       </Notice>
     )
@@ -111,7 +113,9 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
             {thread.coachName}さんより：{decline.message}
           </p>
         )}
-        <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
+        {!thread.application.free && (
+          <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
+        )}
         <Link href={`/c/${thread.coachSlug}`} className="text-mint-text inline-block font-bold">
           {thread.coachName}さんのページへ
         </Link>

@@ -19,9 +19,12 @@ export type PlanKind = z.infer<typeof planKindSchema>
  */
 export const planSchema = z.object({
   kind: planKindSchema,
-  name: z.string().min(1).max(30),
+  name: z
+    .string()
+    .min(1, 'プランの表示名を入れてください')
+    .max(30, 'プランの表示名は30文字までです'),
   price: priceYenSchema,
-  description: z.string().max(200),
+  description: z.string().max(200, 'プランの説明は200文字までです'),
   active: z.boolean(),
 })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Badge, type BadgeTone } from '@/app/components/ui/Badge'
 import { Button, textButtonClass } from '@/app/components/ui/Button'
@@ -9,12 +9,12 @@ import { CopyButton } from '@/app/components/ui/CopyButton'
 import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { useActionForm } from '@/app/hooks/useActionForm'
 import { formatYen } from '@/app/utils/format'
 import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import type { MonitorCodeDto } from '@/server/features/monitor/application/dto/MonitorCode.dto'
 import { MONITOR_RULES } from '@/server/features/monitor/domain/rules'
 import { saveMonitorCodeAction } from '@/server/features/monitor/presentation/actions'
-import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import {
   MONITOR_CODE_STATE_LABEL,
   type MonitorCodeState,
@@ -158,13 +158,18 @@ const MonitorCodeForm = ({
   code: MonitorCodeDto | null
   singlePriceYen: number
 }) => {
-  const [state, action, pending] = useActionState(saveMonitorCodeAction, IDLE_ACTION_STATE)
+  const { state, pending, onSubmit } = useActionForm(saveMonitorCodeAction)
   const formRef = useRef<HTMLFormElement>(null)
   const regenerateRef = useRef<HTMLButtonElement>(null)
   const [confirmingRegenerate, setConfirmingRegenerate] = useState(false)
 
+  // 新しいコードを作れたら、次のために入力を空にする
+  useEffect(() => {
+    if (code === null && state.status === 'success') formRef.current?.reset()
+  }, [code, state])
+
   return (
-    <form ref={formRef} action={action} className="space-y-3">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3">
       {code && <input type="hidden" name="codeId" value={code.id} />}
       {code?.active && <input type="hidden" name="active" value="on" />}
       <label className="block space-y-1">
@@ -179,20 +184,29 @@ const MonitorCodeForm = ({
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="block space-y-1">
-          <span className={labelTextClass}>モニター価格（円）</span>
-          <input
-            name="priceYen"
-            type="number"
-            inputMode="numeric"
-            required
-            min={0}
-            max={singlePriceYen - 1}
-            step={1}
-            defaultValue={code?.priceYen ?? 0}
-            className={inputClass}
-          />
-        </label>
+        {code ? (
+          // 作ったあとは価格を変えられない（告知した内容と食い違わないように）
+          <div className="space-y-1">
+            <span className={labelTextClass}>モニター価格</span>
+            <input type="hidden" name="priceYen" value={code.priceYen} />
+            <p className="text-body py-2.5">{monitorPriceText(code.priceYen)}</p>
+          </div>
+        ) : (
+          <label className="block space-y-1">
+            <span className={labelTextClass}>モニター価格（円）</span>
+            <input
+              name="priceYen"
+              type="number"
+              inputMode="numeric"
+              required
+              min={0}
+              max={singlePriceYen - 1}
+              step={1}
+              defaultValue={0}
+              className={inputClass}
+            />
+          </label>
+        )}
         <label className="block space-y-1">
           <span className={labelTextClass}>先着の人数</span>
           <input
@@ -200,7 +214,7 @@ const MonitorCodeForm = ({
             type="number"
             inputMode="numeric"
             required
-            min={1}
+            min={Math.max(1, code?.usedCount ?? 0)}
             max={MONITOR_RULES.maxUsesPerCode}
             step={1}
             defaultValue={code?.maxUses ?? 3}
@@ -208,11 +222,20 @@ const MonitorCodeForm = ({
           />
         </label>
       </div>
-      <p className="text-caption text-muted">
-        0円で無料（カードの登録なし）。有料なら{MONITOR_RULES.minPaidPriceYen}円以上で、1レッスン（
-        {formatYen(singlePriceYen)}
-        ）より安くしてください。割引の場合は、生徒にシステム利用料がかかります。
-      </p>
+      {code ? (
+        <p className="text-caption text-muted">
+          価格は、作ったあとは変えられません。変えるときは、このコードを止めて新しく作ってください。
+          {code.usedCount > 0 &&
+            `先着の人数は、申し込んだ${code.usedCount}人より少なくできません。`}
+        </p>
+      ) : (
+        <p className="text-caption text-muted">
+          0円で無料（カードの登録なし）。有料なら{MONITOR_RULES.minPaidPriceYen}
+          円以上で、1レッスン（
+          {formatYen(singlePriceYen)}
+          ）より安くしてください。割引の場合は、生徒にシステム利用料がかかります。価格は、作ったあとは変えられません。
+        </p>
+      )}
       <label className="block space-y-1">
         <span className={labelTextClass}>期限（任意。この日まで使えます）</span>
         <input

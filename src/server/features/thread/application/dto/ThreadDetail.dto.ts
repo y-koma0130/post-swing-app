@@ -58,12 +58,16 @@ export type ThreadDetailDto = {
     checkout: { priceYen: number; systemFeeYen: number } | null
     /** モニターのプロモーションコードでの申し込みか（公開の許可が条件。0円ならカードを登録しない） */
     monitor: boolean
+    /** 0円の申し込みか（無料のモニター）。カードも請求もない */
+    free: boolean
   }
   /**
    * 生徒が選んだ公開の許可（コーチがシェア画像を作るときに使う）。選んでいなければ null。
    * 名前は、どの場合も出さない
    */
   shareConsent: ShareConsentDto
+  /** モニターで申し込んだことのあるコーチか（生徒は公開をやめられない。出す項目は変えられる） */
+  shareConsentLocked: boolean
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
   /** 生徒が送る前の確認（提出・チャット） */
