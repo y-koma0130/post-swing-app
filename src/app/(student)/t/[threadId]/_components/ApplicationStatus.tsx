@@ -102,7 +102,7 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
           </p>
         )}
         <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
-        <Link href={`/c/${thread.coachSlug}`} className="text-mint inline-block font-bold">
+        <Link href={`/c/${thread.coachSlug}`} className="text-mint-text inline-block font-bold">
           {thread.coachName}さんのページへ
         </Link>
       </Notice>

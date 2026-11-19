@@ -79,7 +79,7 @@ const ReviewPage = async ({ params }: Props) => {
       {thread.review && (
         <Card className="space-y-2">
           <p className="font-bold">
-            レビュー <span className="text-mint">{'★'.repeat(thread.review.rating)}</span>
+            レビュー <span className="text-mint-text">{'★'.repeat(thread.review.rating)}</span>
           </p>
           {thread.review.comment && (
             <p className="text-body text-sm whitespace-pre-wrap">{thread.review.comment}</p>

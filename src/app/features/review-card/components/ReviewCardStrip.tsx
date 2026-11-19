@@ -59,7 +59,7 @@ export const ReviewCardStrip = ({ reply, videoLabel, onOpen, renderAction }: Pro
           {cards.map((card, index) => (
             <li key={card.id} className="flex items-start justify-between gap-2">
               <p className="text-caption min-w-0">
-                <span className="text-mint font-bold">{title(card, index)}</span>
+                <span className="text-mint-text font-bold">{title(card, index)}</span>
                 {card.comment && <span className="text-body ml-2">{card.comment}</span>}
               </p>
               {renderAction?.(card)}

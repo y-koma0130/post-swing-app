@@ -91,7 +91,7 @@ export const ThreadTimeline = ({
                 aria-label="ここから新着"
               >
                 <span className="bg-mint h-px flex-1" />
-                <span className="text-caption text-mint font-bold">ここから新着</span>
+                <span className="text-caption text-mint-text font-bold">ここから新着</span>
                 <span className="bg-mint h-px flex-1" />
               </li>
             )}

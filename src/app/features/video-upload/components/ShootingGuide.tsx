@@ -144,7 +144,7 @@ const CameraIcon = () => (
   <svg
     aria-hidden
     viewBox="0 0 24 24"
-    className="text-mint size-4"
+    className="text-mint-text size-4"
     fill="none"
     stroke="currentColor"
     strokeWidth={2}

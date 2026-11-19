@@ -47,7 +47,7 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
               />
               <div className="space-y-1 p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-mint text-caption font-bold">
+                  <p className="text-mint-text text-caption font-bold">
                     {cardTitle(card, index, videoLabel)}
                   </p>
                   {renderAction?.(card)}

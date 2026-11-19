@@ -16,7 +16,7 @@ const ErrorPage = ({ error, reset }: Props) => (
       <>
         通信が不安定だったか、一時的な不具合の可能性があります。もう一度お試しください。
         {error.digest && (
-          <span className="text-caption text-subtle mt-2 block">エラー番号：{error.digest}</span>
+          <span className="text-caption text-muted mt-2 block">エラー番号：{error.digest}</span>
         )}
       </>
     }
