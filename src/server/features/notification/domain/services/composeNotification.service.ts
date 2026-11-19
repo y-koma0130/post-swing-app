@@ -111,6 +111,13 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         subject: 'レッスンが終わりました',
         text: `${ctx.coachName}さんとのレッスンが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
       }
+    case 'review_replied':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: 'レビューに返信が届きました',
+        text: `${ctx.coachName}さんから、レビューへの返信が届きました。\n${studentThreadUrl(message.threadId)}`,
+      }
     case 'waitlist_opened':
       return {
         channel: 'line',

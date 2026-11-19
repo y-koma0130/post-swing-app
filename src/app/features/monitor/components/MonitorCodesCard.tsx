@@ -49,7 +49,8 @@ export const MonitorCodesCard = ({ codes, singlePriceYen, siteUrl, coachSlug }: 
       <div className="space-y-1">
         <h2 className="text-heading">モニター募集（プロモーションコード）</h2>
         <p className="text-muted text-sm">
-          コードを入れた人だけが、1レッスンをモニター価格で申し込めます。モニターは、添削の公開を許可することが条件です。月の受付枠にも数えます。
+          コードを入れた人だけが、1レッスンをモニター価格で申し込めます。モニターは、添削を SNS
+          で紹介してよいと許可することが条件です（紹介するかはあなたが決められます）。月の受付枠にも数えます。
         </p>
       </div>
       {singlePriceYen === null ? (

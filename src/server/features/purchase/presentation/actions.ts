@@ -75,7 +75,7 @@ const APPLICATION_CHECKOUT_ERROR_MESSAGE = {
   not_draft: 'この申し込みは、すでにカードの登録が済んでいます',
   no_submission: '先に、悩みと動画を送ってください',
   full: '受付枠が埋まってしまいました。キャンセル待ちに登録できます',
-  consent_required: 'モニターは、添削の公開を許可することが条件です',
+  consent_required: 'モニターは、SNS での紹介を許可することが条件です',
 } as const satisfies Record<StartApplicationCheckoutError, string>
 
 /** プランを選んで申し込む（悩みと動画を送る下書きへ。請求はコーチが承認したとき） */
