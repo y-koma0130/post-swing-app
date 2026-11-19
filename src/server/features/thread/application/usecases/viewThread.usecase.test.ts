@@ -25,6 +25,7 @@ const detail: ThreadDetailDto = {
     free: false,
   },
   shareConsent: null,
+  shareConsentLocked: false,
   coachAvailability: { kind: 'available', replyTargetHours: 48 },
   sendGuard: { video: 'none', chat: 'none' },
   limits: {

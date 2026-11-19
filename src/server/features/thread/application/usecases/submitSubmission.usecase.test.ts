@@ -61,7 +61,8 @@ const setup = (
   facts: Awaited<ReturnType<Deps['findCoachAvailabilityFacts']>> = {
     absences: [],
     delayFlagSetAt: null,
-  }
+  },
+  consentLocked = false
 ) => {
   const saveSubmission = vi.fn<Deps['saveSubmission']>(async () => undefined)
   const saveThreadNotice = vi.fn<Deps['saveThreadNotice']>(async () => undefined)
@@ -76,6 +77,7 @@ const setup = (
     saveThreadNotice,
     notifySubmitted,
     recordShareConsent,
+    isShareConsentLocked: async () => consentLocked,
     generateId: () => `id-${++n}`,
   }
   return { deps, saveSubmission, saveThreadNotice, notifySubmitted, recordShareConsent }
@@ -184,6 +186,23 @@ describe('submitSubmission', () => {
         deps
       )
     ).toEqual({ ok: false, error: 'not_adult' })
+    expect(saveSubmission).not.toHaveBeenCalled()
+    expect(recordShareConsent).not.toHaveBeenCalled()
+  })
+
+  it('モニターで申し込んだことのあるコーチには、次の申し込みでも公開をやめられない', async () => {
+    const draft: Thread = { ...thread, status: 'draft' }
+    const { deps, saveSubmission, recordShareConsent } = setup(
+      draft,
+      { absences: [], delayFlagSetAt: null },
+      true
+    )
+    expect(
+      await submitSubmission(
+        { ...params, now, shareConsent: { ...params.shareConsent, allowPublish: false } },
+        deps
+      )
+    ).toEqual({ ok: false, error: 'monitor_locked' })
     expect(saveSubmission).not.toHaveBeenCalled()
     expect(recordShareConsent).not.toHaveBeenCalled()
   })

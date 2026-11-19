@@ -22,6 +22,7 @@ import {
   toAvailabilityDto,
   toAvatarUrl,
 } from '@/server/features/coach/public'
+import { isShareConsentLocked } from '@/server/features/share/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
 import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
@@ -140,7 +141,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
   if (!people) {
     return null
   }
-  const [facts, notices, acks, reads, retakeRequests] = await Promise.all([
+  const [facts, notices, acks, reads, retakeRequests, shareConsentLocked] = await Promise.all([
     findCoachAvailabilityFacts(t.coachUserId),
     db
       .select()
@@ -159,6 +160,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
       .where(eq(threadRead.threadId, threadId))
       .all(),
     findRetakeRequests(threadId),
+    isShareConsentLocked(t.studentUserId, t.coachUserId),
   ])
   const readAtOf = (userId: string) => reads.find((r) => r.userId === userId)?.lastReadAt ?? null
   const now = new Date()
@@ -213,6 +215,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             showScore: people.consentShowScore,
             updatedAt: people.consentUpdatedAt,
           },
+    shareConsentLocked,
     coachAvailability: toAvailabilityDto(availability),
     sendGuard: {
       video: decideSendGuard({ availability, target: 'video', acknowledged: false }),

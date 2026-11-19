@@ -66,6 +66,8 @@ export type ThreadDetailDto = {
    * 名前は、どの場合も出さない
    */
   shareConsent: ShareConsentDto
+  /** モニターで申し込んだことのあるコーチか（生徒は公開をやめられない。出す項目は変えられる） */
+  shareConsentLocked: boolean
   /** コーチの今の状態（不在・返信遅れ・通常） */
   coachAvailability: CoachAvailabilityDto
   /** 生徒が送る前の確認（提出・チャット） */

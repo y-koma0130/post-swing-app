@@ -253,7 +253,12 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                   prominent
                   shareConsent={
                     thread.status === 'draft'
-                      ? { coachName: thread.coachName, required: thread.application.monitor }
+                      ? {
+                          coachName: thread.coachName,
+                          required: thread.application.monitor,
+                          locked: thread.shareConsentLocked,
+                          current: thread.shareConsentLocked ? thread.shareConsent : null,
+                        }
                       : null
                   }
                 />

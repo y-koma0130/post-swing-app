@@ -10,11 +10,14 @@ import { changeShareConsent } from '../application/usecases/changeShareConsent.u
 import { parseShareConsentForm } from '../domain/values/ShareConsent'
 import { findCoachUserIdBySlug } from '../infrastructure/query-services/coachBySlug'
 import { findLatestAgeRange } from '../infrastructure/query-services/latestAgeRange'
+import { isShareConsentLocked } from '../infrastructure/query-services/monitorLock'
 import { saveShareConsent } from '../infrastructure/repositories/shareConsentRepository'
 
 const CHANGE_ERROR = {
   not_found: 'コーチが見つかりません',
   not_adult: '18歳未満の方は、公開を許可できません',
+  monitor_locked:
+    'モニターで申し込んだため、公開をやめることはできません。やめたいときは、運営にメールでお問い合わせください',
 } as const satisfies Record<ErrorOf<typeof changeShareConsent>, string>
 
 /** 生徒が、あるコーチへの公開の許可を変える（マイページから） */
@@ -38,7 +41,7 @@ export const changeShareConsentAction = async (
       }),
       now: new Date(),
     },
-    { findLatestAgeRange, saveShareConsent }
+    { findLatestAgeRange, isShareConsentLocked, saveShareConsent }
   )
   if (!result.ok) return actionError(CHANGE_ERROR[result.error])
   revalidatePath('/me', 'layout')

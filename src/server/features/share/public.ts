@@ -1,6 +1,7 @@
 import 'server-only'
 import { SHARE_RULES } from './domain/rules'
 import type { ShareConsentChoices } from './domain/values/ShareConsent'
+import { isShareConsentLocked } from './infrastructure/query-services/monitorLock'
 import {
   findShareConsent,
   saveShareConsent,
@@ -29,4 +30,5 @@ export const recordShareConsent = (input: {
   })
 
 /** コーチと生徒の組の公開の許可（選んでいなければ null。purchase がモニターの条件を確かめる） */
-export { findShareConsent }
+/** モニターで申し込んだコーチか（生徒は公開をやめられない。thread の最初の提出と、添削画面の表示で使う） */
+export { findShareConsent, isShareConsentLocked }

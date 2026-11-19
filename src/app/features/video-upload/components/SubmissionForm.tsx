@@ -16,6 +16,7 @@ import {
   ROUND_FREQUENCIES,
   ROUND_FREQUENCY_LABEL,
 } from '@/app/utils/threadText'
+import type { ShareConsentChoices } from '@/server/features/share/domain/values/ShareConsent'
 import { submitSubmissionAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
@@ -44,7 +45,17 @@ type Props = {
    * 申し込みの最初の提出で、添削の公開の許可も聞く（それ以外は null）。
    * required：モニターの申し込み（公開の許可が条件）
    */
-  shareConsent?: Readonly<{ coachName: string; required: boolean }> | null | undefined
+  shareConsent?:
+    | Readonly<{
+        coachName: string
+        required: boolean
+        /** モニターで申し込んだことのあるコーチ（公開をやめられない） */
+        locked: boolean
+        /** いまの許可（あれば、出す項目の初めの値にする） */
+        current: ShareConsentChoices | null
+      }>
+    | null
+    | undefined
 }
 
 const IDLE_STATUS: VideoSlotStatus = { selected: false, ready: false, busy: false }
@@ -227,7 +238,8 @@ export const SubmissionForm = ({
           coachName={shareConsent.coachName}
           canPublish={ageRange !== '' && ageRange !== 'under_18'}
           required={shareConsent.required}
-          current={null}
+          locked={shareConsent.locked}
+          current={shareConsent.current}
         />
       )}
       <label className="block space-y-2">

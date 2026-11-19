@@ -4,20 +4,23 @@ import { isAdultAgeRange } from '@/server/features/thread/domain/values/GolfProf
 import type { ShareConsentDto } from '../application/dto/ShareConsent.dto'
 import { findCoachUserIdBySlug } from '../infrastructure/query-services/coachBySlug'
 import { findLatestAgeRange } from '../infrastructure/query-services/latestAgeRange'
+import { isShareConsentLocked } from '../infrastructure/query-services/monitorLock'
 import { findShareConsent } from '../infrastructure/repositories/shareConsentRepository'
 
 /**
- * ログイン中の生徒の、あるコーチへの公開の許可と、許可を選べるか（18歳以上か）。
+ * ログイン中の生徒の、あるコーチへの公開の許可と、許可を選べるか（18歳以上か）、
+ * 公開をやめられないか（モニターで申し込んだ）。
  * 申し込んだことのないコーチなら null
  */
 export const getMyShareConsent = async (
   coachSlug: string
-): Promise<{ consent: ShareConsentDto; canPublish: boolean } | null> => {
+): Promise<{ consent: ShareConsentDto; canPublish: boolean; locked: boolean } | null> => {
   const [actor, coachUserId] = await Promise.all([getActor(), findCoachUserIdBySlug(coachSlug)])
   if (!actor || !coachUserId) return null
-  const [latest, consent] = await Promise.all([
+  const [latest, consent, locked] = await Promise.all([
     findLatestAgeRange(actor.userId, coachUserId),
     findShareConsent(coachUserId, actor.userId),
+    isShareConsentLocked(actor.userId, coachUserId),
   ])
   if (!latest) return null
   return {
@@ -29,5 +32,6 @@ export const getMyShareConsent = async (
       updatedAt: consent.updatedAt,
     },
     canPublish: isAdultAgeRange(latest.ageRange),
+    locked,
   }
 }

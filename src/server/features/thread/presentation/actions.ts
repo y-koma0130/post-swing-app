@@ -8,7 +8,7 @@ import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { capturePayment, voidPayment } from '@/server/features/purchase/public'
 import { parseShareConsentForm } from '@/server/features/share/domain/values/ShareConsent'
-import { recordShareConsent } from '@/server/features/share/public'
+import { isShareConsentLocked, recordShareConsent } from '@/server/features/share/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import {
@@ -134,6 +134,8 @@ const SUBMIT_ERROR = {
   invalid_golf_profile: '平均スコアは50〜200の数字で入れてください',
   age_required: '年代を選んでください',
   not_adult: '18歳未満の方は、公開を許可できません（公開しない、を選んでください）',
+  monitor_locked:
+    'このコーチにはモニターで申し込んだため、公開をやめることはできません。やめたいときは、運営にメールでお問い合わせください',
 } as const satisfies Record<SubmitSubmissionError, string>
 
 /**
@@ -179,6 +181,7 @@ export const submitSubmissionAction = async (
       notifySubmitted: (input) =>
         notify({ kind: 'video_submitted', ...input, occurredAt: now.toISOString() }),
       recordShareConsent,
+      isShareConsentLocked,
       generateId: () => crypto.randomUUID(),
     }
   )
