@@ -70,7 +70,12 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
       <div className="space-y-2">
         <p className="text-caption text-muted font-bold">おすすめのドリル</p>
         {reply.drills.map((drill) => (
-          <DrillDetails key={drill.title} title={drill.title} description={drill.description} />
+          <DrillDetails
+            key={drill.title}
+            title={drill.title}
+            description={drill.description}
+            videoUrl={drill.videoUrl}
+          />
         ))}
       </div>
     )}

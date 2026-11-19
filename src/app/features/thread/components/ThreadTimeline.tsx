@@ -146,7 +146,11 @@ const MessageBubble = ({
     >
       {message.quote && <QuotePreview quote={message.quote} />}
       {attachment.kind === 'drill' && (
-        <DrillDetails title={attachment.title} description={attachment.description} />
+        <DrillDetails
+          title={attachment.title}
+          description={attachment.description}
+          videoUrl={attachment.videoUrl}
+        />
       )}
       {attachment.kind === 'video' && (
         <div id={quoteAnchorId('video', attachment.videoId)} className="scroll-mt-20">

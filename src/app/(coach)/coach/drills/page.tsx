@@ -9,7 +9,7 @@ import { getMyDrills } from '@/server/features/drill/presentation/queries'
 
 export const metadata: Metadata = { title: 'ドリル' }
 
-/** ドリルの登録。添削カードに添えて使い回す */
+/** ドリルの登録。レッスン（添削・チャット）で使い回す */
 const DrillsPage = async () => {
   const current = await getCurrentCoach()
   if (current.kind === 'signed_out') redirect('/coach/login')
@@ -20,7 +20,7 @@ const DrillsPage = async () => {
     <Page layout="form">
       <PageHeader
         title="ドリル"
-        description="よく使う練習方法を登録しておくと、添削カードに添えて使い回せます。"
+        description="よく使う練習方法を登録しておくと、レッスンのとき（添削やチャット）に生徒へ送れます。"
       />
       <Card className="space-y-4">
         <h2 className="text-heading">新しいドリル</h2>
@@ -34,7 +34,23 @@ const DrillsPage = async () => {
                 <h2 className="text-heading">{drill.title}</h2>
                 <DeleteDrillButton drillId={drill.id} />
               </div>
-              <p className="text-muted text-sm whitespace-pre-wrap">{drill.description}</p>
+              {drill.videoId ? (
+                // biome-ignore lint/a11y/useMediaCaption: コーチが撮ったお手本の動画で、字幕はない
+                <video
+                  src={`/api/drill-videos/${drill.videoId}`}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="aspect-video w-full rounded-lg bg-black object-contain"
+                />
+              ) : (
+                <p className="text-caption text-muted">
+                  お手本の動画はありません（動画が必須になる前に登録したドリル）
+                </p>
+              )}
+              {drill.description && (
+                <p className="text-muted text-sm whitespace-pre-wrap">{drill.description}</p>
+              )}
             </Card>
           </li>
         ))}

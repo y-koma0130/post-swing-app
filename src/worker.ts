@@ -1,5 +1,6 @@
 import vinext from 'vinext/server/fetch-handler'
 import { applyDevMigrations } from './server/db/applyDevMigrations'
+import { runDailyDrillVideoCleanup } from './server/features/drill/presentation/scheduled'
 import { handleNotificationBatch } from './server/features/notification/presentation/handleNotificationBatch'
 import {
   runDailyFeeAdjustmentSummary,
@@ -38,5 +39,6 @@ export default {
     await runDailyThreadMaintenance(now)
     await runDailyWaitlistNotification(now)
     await runDailyFeeAdjustmentSummary(now)
+    await runDailyDrillVideoCleanup(now)
   },
 } satisfies ExportedHandler<Env>

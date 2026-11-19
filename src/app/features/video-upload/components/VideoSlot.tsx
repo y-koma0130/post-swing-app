@@ -36,7 +36,8 @@ export type VideoSlotStatus = {
 
 type Props = {
   ref: Ref<VideoSlotHandle>
-  threadId: string
+  /** 送り先（スレッドの動画・ドリルの動画で違う） */
+  uploadUrl: string
   /** 「1本目」「2本目（任意）」 */
   label: string
   /** 最初の角度（1本目は正面、2本目は後方） */
@@ -44,8 +45,8 @@ type Props = {
   maxBytes: number
   maxSeconds: number
   disabled: boolean
-  /** submission：生徒の提出（角度を選ぶ）、chat：コーチがチャットに添える（角度は選ばない） */
-  purpose?: 'submission' | 'chat' | undefined
+  /** 撮った角度を選ばせるか（生徒の提出だけ。チャットやドリルの動画では選ばない） */
+  chooseAngle?: boolean | undefined
   onStatusChange: (status: VideoSlotStatus) => void
 }
 
@@ -55,14 +56,14 @@ type Props = {
  */
 export const VideoSlot = ({
   ref,
-  threadId,
+  uploadUrl,
   label,
   defaultAngle,
   maxBytes,
   maxSeconds,
   disabled,
   onStatusChange,
-  purpose = 'submission',
+  chooseAngle = true,
 }: Props) => {
   const [angle, setAngle] = useState<VideoAngle>(defaultAngle)
   const conversion = useVideoConversion(maxBytes)
@@ -94,8 +95,7 @@ export const VideoSlot = ({
           ? analysis.info.duration
           : conversion.durationSec
       return upload({
-        threadId,
-        purpose,
+        url: uploadUrl,
         file: toSend,
         angle,
         durationSec,
@@ -113,7 +113,7 @@ export const VideoSlot = ({
   return (
     <fieldset className="border-line rounded-card space-y-3 border p-4" disabled={disabled}>
       <legend className={`${labelTextClass} px-1`}>{label}</legend>
-      {purpose === 'submission' && (
+      {chooseAngle && (
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="撮った角度">
           {ANGLES.map((value) => (
             <label

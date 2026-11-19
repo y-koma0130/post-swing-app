@@ -88,7 +88,8 @@ export type ThreadDetailDto = {
       /** 全体の説明（以前の添削では空） */
       comment: string
       /** おすすめのドリル */
-      drills: Array<{ title: string; description: string }>
+      /** おすすめのドリル。videoUrl はお手本の動画（動画のないドリルなら null） */
+      drills: Array<{ title: string; description: string; videoUrl: string | null }>
       /** 画像（キャプチャ）と、それぞれの一言 */
       cards: Array<{
         id: string
@@ -109,7 +110,7 @@ export type ThreadDetailDto = {
     sentAt: Date
     attachment:
       | { kind: 'none' }
-      | { kind: 'drill'; title: string; description: string }
+      | { kind: 'drill'; title: string; description: string; videoUrl: string | null }
       | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
     quote: ChatQuote | null
   }>

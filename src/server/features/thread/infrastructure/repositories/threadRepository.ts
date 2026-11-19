@@ -85,7 +85,12 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
     sentAt: m.sentAt,
     attachment:
       m.attachmentKind === 'drill'
-        ? { kind: 'drill', title: m.drillTitle ?? '', description: m.drillDescription ?? '' }
+        ? {
+            kind: 'drill',
+            title: m.drillTitle ?? '',
+            description: m.drillDescription ?? '',
+            videoId: m.drillVideoId,
+          }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
           : { kind: 'none' },
@@ -248,6 +253,7 @@ export const saveReply: SaveReply = async (r) => {
         drillId: d.drillId,
         title: d.title,
         description: d.description,
+        videoId: d.videoId,
       })
     ),
     firstCard,
@@ -272,6 +278,7 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       attachmentKind: m.attachment.kind,
       drillTitle: m.attachment.kind === 'drill' ? m.attachment.title : null,
       drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
+      drillVideoId: m.attachment.kind === 'drill' ? m.attachment.videoId : null,
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
       quote: m.quote,
       sentAt: m.sentAt,

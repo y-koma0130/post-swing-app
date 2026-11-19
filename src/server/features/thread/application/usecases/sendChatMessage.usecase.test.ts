@@ -62,7 +62,9 @@ const setup = (
     findThread: async () => t,
     findThreadCards: async () => [{ id: 'c1', submissionId: 's1', position: 'top' }],
     findOwnDrill: async (_coach, drillId) =>
-      drillId === 'own' ? { title: '壁ドリル', description: '壁の前で素振り' } : null,
+      drillId === 'own'
+        ? { title: '壁ドリル', description: '壁の前で素振り', videoId: 'dv1' }
+        : null,
     findDraftVideo: async (videoId) =>
       videoId === 'coach-video'
         ? {
@@ -154,6 +156,8 @@ describe('sendChatMessage', () => {
       kind: 'drill',
       title: '壁ドリル',
       description: '壁の前で素振り',
+      // お手本の動画も写す（ドリルを消しても生徒は見られる）
+      videoId: 'dv1',
     })
     expect(
       await send(coach, deps, '', false, { attachment: { kind: 'drill', drillId: 'others' } })

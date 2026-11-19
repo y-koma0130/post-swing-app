@@ -172,8 +172,8 @@ export const ChatComposer = ({
             ref={(handle) => {
               slotRef.current = handle
             }}
-            threadId={threadId}
-            purpose="chat"
+            uploadUrl={`/api/threads/${threadId}/videos?purpose=chat`}
+            chooseAngle={false}
             label="送る動画"
             defaultAngle="other"
             maxBytes={coach.maxVideoBytes}
