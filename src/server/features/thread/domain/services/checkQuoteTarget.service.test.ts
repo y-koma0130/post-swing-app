@@ -36,7 +36,7 @@ const thread = {
       from: 'coach' as const,
       body: '',
       sentAt: new Date(),
-      attachment: { kind: 'drill' as const, title: '壁ドリル', description: '' },
+      attachment: { kind: 'drill' as const, title: '壁ドリル', description: '', videoId: null },
       quote: null,
     },
   ],

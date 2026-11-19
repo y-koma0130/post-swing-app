@@ -11,7 +11,13 @@ export type ChatSender = z.infer<typeof chatSenderSchema>
  */
 export const chatAttachmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
-  z.object({ kind: z.literal('drill'), title: z.string(), description: z.string() }),
+  z.object({
+    kind: z.literal('drill'),
+    title: z.string(),
+    description: z.string(),
+    /** ドリルのお手本の動画（drill_video）。動画のないドリルなら null */
+    videoId: z.string().nullable(),
+  }),
   z.object({ kind: z.literal('video'), videoId: z.string().min(1) }),
 ])
 

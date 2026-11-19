@@ -1,4 +1,5 @@
 import { Badge } from '@/app/components/ui/Badge'
+import { buttonClass } from '@/app/components/ui/Button'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import { ThreadList } from './ThreadList'
@@ -76,9 +77,16 @@ const Section = ({ section, threads }: SectionProps) => {
   if (section.folded) {
     return (
       <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-2">
+        {/* 見出しの行全体を押せるようにし、右端にボタンの形で「表示する／閉じる」を出す */}
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
           {heading}
-          <span className="text-caption text-muted group-open:hidden">表示する</span>
+          <span className={buttonClass({ variant: 'secondary', size: 'sm' })}>
+            <span className="group-open:hidden">表示する</span>
+            <span className="hidden group-open:inline">閉じる</span>
+            <span aria-hidden className="inline-block transition-transform group-open:rotate-180">
+              ▾
+            </span>
+          </span>
         </summary>
         <div className="pt-3">{body}</div>
       </details>

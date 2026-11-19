@@ -129,7 +129,7 @@ export const SubmissionForm = ({
           ref={(handle) => {
             slots.current[index] = handle
           }}
-          threadId={threadId}
+          uploadUrl={`/api/threads/${threadId}/videos`}
           label={index === 0 ? '1本目' : `${index + 1}本目（任意）`}
           defaultAngle={DEFAULT_ANGLES[index] ?? 'other'}
           maxBytes={maxBytes}

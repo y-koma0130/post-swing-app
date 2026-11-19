@@ -1,0 +1,14 @@
+import 'server-only'
+import { deleteMediaObject } from '@/server/utils/mediaStorage'
+import { cleanupDrillVideos } from '../application/usecases/cleanupDrillVideos.usecase'
+import { findOrphanDrillVideos } from '../infrastructure/query-services/drillVideoAccess'
+import { deleteDrillVideos } from '../infrastructure/repositories/drillRepository'
+
+/** 毎日の処理：使われていないドリルの動画を消す */
+export const runDailyDrillVideoCleanup = async (now: Date) => {
+  const result = await cleanupDrillVideos(
+    { now },
+    { findOrphanDrillVideos, deleteMediaObject, deleteDrillVideos }
+  )
+  if (result.deleted > 0) console.info('[scheduled] 使われていないドリルの動画を消しました', result)
+}

@@ -32,6 +32,10 @@ import { decideSendGuard } from '../../domain/services/decideSendGuard.service'
 import { annotationSchema } from '../../domain/values/Annotation'
 import { findThread } from '../repositories/threadRepository'
 
+/** ドリルのお手本の動画の URL（見てよいかは drill の Route Handler が確かめる） */
+const drillVideoUrl = (videoId: string | null): string | null =>
+  videoId === null ? null : `/api/drill-videos/${videoId}`
+
 export type FindThreadDetail = (
   threadId: string
 ) => Promise<{ detail: ThreadDetailDto; members: ThreadMembers } | null>
@@ -98,6 +102,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             replyId: replyDrill.replyId,
             title: replyDrill.title,
             description: replyDrill.description,
+            videoId: replyDrill.videoId,
           })
           .from(replyDrill)
           .innerJoin(reply, eq(reply.id, replyDrill.replyId))
@@ -190,7 +195,11 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               comment: r.comment,
               drills: replyDrills
                 .filter((d) => d.replyId === r.id)
-                .map(({ title, description }) => ({ title, description })),
+                .map(({ title, description, videoId }) => ({
+                  title,
+                  description,
+                  videoUrl: drillVideoUrl(videoId),
+                })),
               cards: cards
                 .filter((c) => c.submissionId === s.id)
                 .map(({ card }) => ({
@@ -215,7 +224,14 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               url: `/api/videos/${attachment.videoId}`,
               frameRate: frameRates.find((x) => x.id === attachment.videoId)?.frameRate ?? null,
             }
-          : attachment,
+          : attachment.kind === 'drill'
+            ? {
+                kind: 'drill',
+                title: attachment.title,
+                description: attachment.description,
+                videoUrl: drillVideoUrl(attachment.videoId),
+              }
+            : attachment,
     })),
     notices: notices.map((n) => ({
       id: n.id,

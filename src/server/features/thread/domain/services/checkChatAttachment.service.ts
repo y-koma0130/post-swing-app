@@ -16,7 +16,7 @@ export type CheckChatAttachment = (
     threadId: string
     actorUserId: string
     /** request のドリルのうち、送る人（コーチ）自身のもの。見つからなければ null */
-    ownDrill: Readonly<{ title: string; description: string }> | null
+    ownDrill: Readonly<{ title: string; description: string; videoId: string | null }> | null
     /** request の動画。見つからなければ null */
     video: DraftVideo | null
   }>
@@ -26,7 +26,7 @@ export type CheckChatAttachment = (
  * チャットに添えるものを受け付けられるか（コーチだけ添えられることは checkChatMessage で確かめる）
  *
  * ドメインルール:
- * - ドリルは、そのコーチ自身のもの。送った時点の中身を写して残す
+ * - ドリルは、そのコーチ自身のもの。送った時点の中身（お手本の動画も）を写して残す
  * - 動画は、このスレッドに本人が上げて、まだ提出にもチャットにも使っていないもの
  */
 export const checkChatAttachment: CheckChatAttachment = ({

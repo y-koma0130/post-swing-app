@@ -1,9 +1,10 @@
 'use client'
 
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useRef, useState } from 'react'
 import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { authClient } from '@/app/utils/authClient'
+import { CodeInput } from './CodeInput'
 
 type Props = {
   /** ログイン後に開くページ */
@@ -29,6 +30,7 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
   const [captchaKey, setCaptchaKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const codeFormRef = useRef<HTMLFormElement>(null)
 
   const sendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -91,20 +93,18 @@ export const EmailCodeLoginForm = ({ redirectTo, turnstileSiteKey }: Props) => {
       </Button>
     </form>
   ) : (
-    <form onSubmit={verifyCode} className="space-y-4">
+    <form ref={codeFormRef} onSubmit={verifyCode} className="space-y-4">
       <p className="text-muted text-sm">{step.email} に届いた6桁のコードを入れてください。</p>
-      <label className="block space-y-2">
+      <div className="space-y-2">
         <span className="text-sm font-bold">ログインコード</span>
-        <input
+        {/* 6桁そろったら、そのままログインする（押し忘れを防ぐ） */}
+        <CodeInput
           name="code"
-          inputMode="numeric"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          required
-          autoComplete="one-time-code"
-          className={`${inputClass} tracking-[0.5em]`}
+          length={6}
+          disabled={pending}
+          onComplete={() => codeFormRef.current?.requestSubmit()}
         />
-      </label>
+      </div>
       {error && <p className="text-danger text-sm">{error}</p>}
       <Button type="submit" pending={pending} size="lg" className="w-full">
         {pending ? '確認しています…' : 'ログイン'}
