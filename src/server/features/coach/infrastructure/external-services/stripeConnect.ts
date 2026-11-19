@@ -2,6 +2,7 @@ import 'server-only'
 import { env } from 'cloudflare:workers'
 import type Stripe from 'stripe'
 import { getStripe } from '@/server/utils/stripeClient'
+import type { ConnectAccountInput } from '../../application/usecases/startPayoutOnboarding.usecase'
 
 /**
  * コーチの売上の受け取り口座（Stripe Connect、Accounts v2）
@@ -13,8 +14,26 @@ import { getStripe } from '@/server/utils/stripeClient'
  * 新しい Connect の組み込みでは Accounts v1（POST /v1/accounts）は使えない
  */
 
-export type CreateConnectAccount = (input: { userId: string; email: string }) => Promise<string>
-export const createConnectAccount: CreateConnectAccount = async ({ userId, email }) => {
+/** Stripe の審査に使う、コーチのサービスの説明（外には出ない）。どのコーチも同じ */
+const PRODUCT_DESCRIPTION = 'SwingPost を通じた、ゴルフのスイング動画のオンライン添削'
+
+/**
+ * 受付ページの URL。Stripe は localhost などの URL を受け付けないので、https のときだけ渡す
+ * （渡さなければ、コーチが本人確認の画面で入力する）
+ */
+const businessUrlOf = (slug: string): string | undefined => {
+  const url = `${env.APP_URL}/c/${slug}`
+  return url.startsWith('https://') ? url : undefined
+}
+
+export type CreateConnectAccount = (input: ConnectAccountInput) => Promise<string>
+export const createConnectAccount: CreateConnectAccount = async ({
+  userId,
+  email,
+  slug,
+  displayName,
+}) => {
+  const businessUrl = businessUrlOf(slug)
   const account = await getStripe().v2.core.accounts.create({
     contact_email: email,
     identity: { country: 'JP' },
@@ -22,6 +41,12 @@ export const createConnectAccount: CreateConnectAccount = async ({ userId, email
     dashboard: 'express',
     defaults: {
       responsibilities: { fees_collector: 'application', losses_collector: 'application' },
+      // 本人確認の画面で、ビジネスの情報を入力済みにする（コーチがビジネスの説明を書かなくて済む）
+      profile: {
+        product_description: PRODUCT_DESCRIPTION,
+        doing_business_as: displayName,
+        ...(businessUrl ? { business_url: businessUrl } : {}),
+      },
     },
     configuration: {
       recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } },

@@ -184,12 +184,20 @@ export const savePlans: SavePlans = async (userId, plans) => {
   await db.batch([first, ...rest])
 }
 
-export type FindPayoutAccount = (
-  userId: string
-) => Promise<{ stripeAccountId: string | null; email: string } | null>
+export type FindPayoutAccount = (userId: string) => Promise<{
+  stripeAccountId: string | null
+  email: string
+  slug: string
+  displayName: string
+} | null>
 export const findPayoutAccount: FindPayoutAccount = async (userId) => {
   const row = await getDb()
-    .select({ stripeAccountId: coachProfile.stripeAccountId, email: user.email })
+    .select({
+      stripeAccountId: coachProfile.stripeAccountId,
+      email: user.email,
+      slug: coachProfile.slug,
+      displayName: coachProfile.displayName,
+    })
     .from(coachProfile)
     .innerJoin(user, eq(user.id, coachProfile.userId))
     .where(eq(coachProfile.userId, userId))
