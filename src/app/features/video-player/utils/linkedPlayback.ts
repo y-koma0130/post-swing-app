@@ -46,3 +46,10 @@ export const moveTogether = (params: {
   left: params.nextLeftTimeSec,
   right: linkedTime(params.nextLeftTimeSec, params.offsetSec, params.rightDurationSec),
 })
+
+/** 2本のずれの見せ方（「右が 0.12秒 先」）。0.01秒未満は「ずれ 0秒」 */
+export const formatOffset = (offsetSec: number): string => {
+  const rounded = Math.round(offsetSec * 100) / 100
+  if (rounded === 0) return 'ずれ 0秒'
+  return `右が ${Math.abs(rounded).toFixed(2)}秒 ${rounded > 0 ? '先' : '後'}`
+}

@@ -4,7 +4,8 @@ import {
   checkVideoUpload,
   type VideoUploadBlocker,
 } from '../../domain/services/checkVideoUpload.service'
-import { isOpenRetake, type RetakeRequest } from '../../domain/values/RetakeRequest'
+import { findRespondableRetake } from '../../domain/services/findRespondableRetake.service'
+import type { RetakeRequest } from '../../domain/values/RetakeRequest'
 import type { Thread } from '../../domain/values/Thread'
 import type { NewDraftVideo } from './uploadVideo.usecase'
 
@@ -43,8 +44,12 @@ export const uploadRetakeVideo: UploadRetakeVideo = async (params, deps) => {
   if (!thread || thread.studentUserId !== params.actor.userId) {
     return err('not_found')
   }
-  const requests = await deps.findRetakeRequests(thread.id)
-  if (thread.status !== 'waiting_coach' || !requests.some(isOpenRetake)) {
+  const request = findRespondableRetake({
+    threadStatus: thread.status,
+    requests: await deps.findRetakeRequests(thread.id),
+    requestId: null,
+  })
+  if (!request) {
     return err('no_retake')
   }
   const upload = checkVideoUpload(params)

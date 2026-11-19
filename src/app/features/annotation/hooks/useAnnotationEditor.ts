@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useReducer, useState } from 'react'
+import { isTypingTarget } from '@/app/hooks/isTypingTarget'
 import type { Annotation } from '@/server/features/thread/domain/values/Annotation'
 import { EMPTY_ANNOTATION_HISTORY, reduceAnnotationHistory } from '../utils/history'
 import { ANNOTATION_COLORS, type AnnotationColor, type EditorTool } from '../utils/shapes'
-
-const isTypingTarget = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 /**
  * 線引きの状態（描いた線・選んでいる道具と色・選んだ図形・元に戻す）

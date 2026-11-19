@@ -1,7 +1,7 @@
 'use client'
 
+import { CoachAvatar } from '@/app/components/CoachAvatar'
 import { Button, buttonClass } from '@/app/components/ui/Button'
-import { CoachAvatar } from '@/app/features/coach-profile/components/CoachAvatar'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
 
 type Props = {

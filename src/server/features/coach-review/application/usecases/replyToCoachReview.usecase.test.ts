@@ -40,7 +40,8 @@ describe('replyToCoachReview', () => {
   })
 
   it('レビューがなければ not_found', async () => {
-    const { deps } = setup(null)
+    const { deps, saveReviewReply } = setup(null)
     expect(await replyToCoachReview(params, deps)).toEqual({ ok: false, error: 'not_found' })
+    expect(saveReviewReply).not.toHaveBeenCalled()
   })
 })

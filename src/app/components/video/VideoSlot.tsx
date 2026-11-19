@@ -3,10 +3,10 @@
 import { type Ref, useEffect, useImperativeHandle, useState } from 'react'
 import { buttonClass } from '@/app/components/ui/Button'
 import { labelTextClass } from '@/app/components/ui/fieldStyles'
-import { ANGLE_LABEL, ANGLES } from '@/app/features/thread/utils/threadText'
+import { useVideoConversion } from '@/app/hooks/useVideoConversion'
+import { type UploadOutcome, useVideoUpload } from '@/app/hooks/useVideoUpload'
+import { ANGLE_LABEL, ANGLES } from '@/app/utils/threadText'
 import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
-import { useVideoConversion } from '../hooks/useVideoConversion'
-import { type UploadOutcome, useVideoUpload } from '../hooks/useVideoUpload'
 import { Progress } from './Progress'
 import { VideoClipPicker } from './VideoClipPicker'
 

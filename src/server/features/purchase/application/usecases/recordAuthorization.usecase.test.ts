@@ -19,13 +19,13 @@ const purchase: Purchase = {
 }
 const params = { purchaseId: 'purchase-1', paymentIntentId: 'pi_1', stripeCustomerId: 'cus_1', now }
 
-const setup = (p: Purchase | null = purchase, requested = true) => {
+const setup = (p: Purchase | null = purchase, requested = true, cancelled = true) => {
   const markPurchaseAuthorized = vi.fn<Deps['markPurchaseAuthorized']>(async () => undefined)
   const markPurchaseVoided = vi.fn<Deps['markPurchaseVoided']>(async () => undefined)
   const requestApproval = vi.fn<Deps['requestApproval']>(async () =>
     requested ? ok(null) : err('not_draft')
   )
-  const cancelPaymentIntent = vi.fn<Deps['cancelPaymentIntent']>(async () => true)
+  const cancelPaymentIntent = vi.fn<Deps['cancelPaymentIntent']>(async () => cancelled)
   const deps: Deps = {
     findPurchase: async () => p,
     markPurchaseAuthorized,
@@ -86,10 +86,39 @@ describe('recordAuthorization', () => {
     expect(markPurchaseVoided).toHaveBeenCalledWith('purchase-1')
   })
 
+  it('別の支払い画面の仮押さえを外せなければ失敗（Stripe に再送してもらう）', async () => {
+    const { deps, requestApproval, markPurchaseVoided, markPurchaseAuthorized } = setup(
+      { ...purchase, status: 'authorized', stripePaymentIntentId: 'pi_first' },
+      true,
+      false
+    )
+    expect(await recordAuthorization(params, deps)).toEqual({
+      ok: false,
+      error: 'release_failed',
+    })
+    expect(markPurchaseAuthorized).not.toHaveBeenCalled()
+    expect(requestApproval).not.toHaveBeenCalled()
+    expect(markPurchaseVoided).not.toHaveBeenCalled()
+  })
+
+  it('承認待ちにできず、仮押さえも外せなければ失敗し、申し込みは取り消さない', async () => {
+    const { deps, cancelPaymentIntent, markPurchaseVoided } = setup(purchase, false, false)
+    expect(await recordAuthorization(params, deps)).toEqual({
+      ok: false,
+      error: 'release_failed',
+    })
+    expect(cancelPaymentIntent).toHaveBeenCalledWith('pi_1')
+    expect(markPurchaseVoided).not.toHaveBeenCalled()
+  })
+
   it('申し込みがなければ失敗（Stripe に再送してもらう）', async () => {
-    expect(await recordAuthorization(params, setup(null).deps)).toEqual({
+    const { deps, markPurchaseAuthorized, requestApproval, cancelPaymentIntent } = setup(null)
+    expect(await recordAuthorization(params, deps)).toEqual({
       ok: false,
       error: 'purchase_not_found',
     })
+    expect(markPurchaseAuthorized).not.toHaveBeenCalled()
+    expect(requestApproval).not.toHaveBeenCalled()
+    expect(cancelPaymentIntent).not.toHaveBeenCalled()
   })
 })

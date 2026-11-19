@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
+import { Progress } from '@/app/components/video/Progress'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
 import { dismissBackgroundSubmission, type SubmissionStep } from '../utils/backgroundSubmission'
-import { Progress } from './Progress'
 
 const STEP_LABEL: Record<SubmissionStep, string> = {
   converting: '変換中',

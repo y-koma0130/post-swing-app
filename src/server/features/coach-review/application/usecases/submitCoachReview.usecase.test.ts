@@ -29,47 +29,51 @@ describe('submitCoachReview', () => {
   })
 
   it('終わる前は書けない', async () => {
-    expect(await run({ ...closedThread, closed: false }).result).toEqual({
-      ok: false,
-      error: 'not_closed',
-    })
+    const { result, saveReview } = run({ ...closedThread, closed: false })
+    expect(await result).toEqual({ ok: false, error: 'not_closed' })
+    expect(saveReview).not.toHaveBeenCalled()
   })
 
   it('1回だけ書ける', async () => {
-    expect(await run({ ...closedThread, reviewed: true }).result).toEqual({
-      ok: false,
-      error: 'already_reviewed',
-    })
+    const { result, saveReview } = run({ ...closedThread, reviewed: true })
+    expect(await result).toEqual({ ok: false, error: 'already_reviewed' })
+    expect(saveReview).not.toHaveBeenCalled()
   })
 
   it('他人のレッスンには書けない', async () => {
-    expect(await run(closedThread, { userId: 'other', name: '' }).result).toEqual({
-      ok: false,
-      error: 'not_found',
-    })
+    const { result, saveReview } = run(closedThread, { userId: 'other', name: '' })
+    expect(await result).toEqual({ ok: false, error: 'not_found' })
+    expect(saveReview).not.toHaveBeenCalled()
   })
 })
 
 describe('replyToCoachReview', () => {
+  type ReplyDeps = Parameters<typeof replyToCoachReview>[1]
   const review = { id: 'r1', coachUserId: 'coach-1', replied: false }
-  const reply = (actorId: string, found = review) =>
-    replyToCoachReview(
+  const reply = (actorId: string, found = review) => {
+    const saveReviewReply = vi.fn<ReplyDeps['saveReviewReply']>(async () => undefined)
+    const result = replyToCoachReview(
       { actor: { userId: actorId, name: '' }, threadId: 't1', reply: 'ありがとうございます', now },
-      { findReviewByThread: async () => found, saveReviewReply: async () => undefined }
+      { findReviewByThread: async () => found, saveReviewReply }
     )
+    return { result, saveReviewReply }
+  }
 
   it('担当のコーチは返信できる', async () => {
-    expect((await reply('coach-1')).ok).toBe(true)
+    const { result, saveReviewReply } = reply('coach-1')
+    expect((await result).ok).toBe(true)
+    expect(saveReviewReply).toHaveBeenCalledWith('r1', 'ありがとうございます', now)
   })
 
-  it('他のコーチは返信できない', async () => {
-    expect(await reply('coach-2')).toEqual({ ok: false, error: 'not_found' })
+  it('他のコーチは返信できず、保存しない', async () => {
+    const { result, saveReviewReply } = reply('coach-2')
+    expect(await result).toEqual({ ok: false, error: 'not_found' })
+    expect(saveReviewReply).not.toHaveBeenCalled()
   })
 
-  it('返信は1回だけ', async () => {
-    expect(await reply('coach-1', { ...review, replied: true })).toEqual({
-      ok: false,
-      error: 'already_replied',
-    })
+  it('返信は1回だけ。2回目は保存しない', async () => {
+    const { result, saveReviewReply } = reply('coach-1', { ...review, replied: true })
+    expect(await result).toEqual({ ok: false, error: 'already_replied' })
+    expect(saveReviewReply).not.toHaveBeenCalled()
   })
 })

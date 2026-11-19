@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/components/ui/Button'
-import { CLIP_RULES, type ClipRange } from '../utils/clipPlan'
+import { CLIP_RULES, type ClipRange } from '@/app/utils/clipPlan'
 
 type Props = {
   file: File

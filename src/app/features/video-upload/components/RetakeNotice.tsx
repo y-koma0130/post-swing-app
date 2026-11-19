@@ -6,7 +6,12 @@ import { Button } from '@/app/components/ui/Button'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { Notice } from '@/app/components/ui/Notice'
-import { RETAKE_REASON_LABEL } from '@/app/features/thread/utils/threadText'
+import {
+  VideoSlot,
+  type VideoSlotHandle,
+  type VideoSlotStatus,
+} from '@/app/components/video/VideoSlot'
+import { RETAKE_REASON_LABEL } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import {
   declineRetakeAction,
@@ -14,7 +19,6 @@ import {
 } from '@/server/features/thread/presentation/retakeActions'
 import { actionError, IDLE_ACTION_STATE } from '@/server/utils/actionState'
 import { ShootingGuide } from './ShootingGuide'
-import { VideoSlot, type VideoSlotHandle, type VideoSlotStatus } from './VideoSlot'
 
 type Request = ThreadDetailDto['retake']['requests'][number]
 

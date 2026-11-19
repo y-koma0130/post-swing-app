@@ -1,27 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { QuoteButton } from '@/app/components/quote/QuoteContext'
 import { Button } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { Drawer } from '@/app/components/ui/Drawer'
 import { ChatComposer } from '@/app/features/chat/components/ChatComposer'
-import { QuoteButton } from '@/app/features/chat/components/QuoteContext'
 import { formatShortDate } from '@/app/features/coach-availability/utils/availabilityText'
 import { ReviewCardStrip } from '@/app/features/review-card/components/ReviewCardStrip'
 import { GolfProfileSummary } from '@/app/features/thread/components/GolfProfileSummary'
 import { RetakeRequestPanel } from '@/app/features/thread/components/RetakeRequestPanel'
 import { ScrollToLatest } from '@/app/features/thread/components/ScrollToLatest'
 import { ThreadTimeline } from '@/app/features/thread/components/ThreadTimeline'
+import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
+import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
+import { formatDateTime } from '@/app/utils/format'
 import {
-  KEY_POSITION_LABEL,
+  cardQuoteLabel,
+  cardVideoLabelOf,
   ordinalLabel,
   quoteAnchorId,
   submissionLabel,
   submissionVideoLabel,
-} from '@/app/features/thread/utils/threadText'
-import { VideoPlayer } from '@/app/features/video-player/components/VideoPlayer'
-import { VideoThumbnail } from '@/app/features/video-player/components/VideoThumbnail'
-import { formatDateTime } from '@/app/utils/format'
+  videoQuoteLabel,
+} from '@/app/utils/threadText'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
 import { ReviewWorkspace } from './ReviewWorkspace'
@@ -42,8 +44,6 @@ type Props = {
   drills: DrillDto[]
 }
 
-type Submission = ThreadDetailDto['submissions'][number]
-
 /**
  * コーチのスレッド画面。生徒と同じ時系列と入力欄を置き、添削の作業はドロワーで開く
  *
@@ -63,13 +63,6 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
     setWorkIndex(index)
     setVideoIndex(video)
     setOpenIndex(index)
-  }
-
-  const angleOf = (submission: Submission) => (videoId: string) => {
-    const video = submission.videos.find((v) => v.id === videoId)
-    return video && submission.videos.length > 1
-      ? submissionVideoLabel(video, submission.videos)
-      : null
   }
 
   return (
@@ -133,7 +126,7 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
                           target={{
                             kind: 'video',
                             targetId: video.id,
-                            label: `${ordinalLabel(index)}・${label === '動画' ? label : `${label}の動画`}`,
+                            label: videoQuoteLabel(index, video, submission.videos),
                           }}
                         />
                       </div>
@@ -178,14 +171,14 @@ export const CoachThreadView = ({ thread, drills }: Props) => {
               </h2>
               <ReviewCardStrip
                 reply={submission.reply}
-                videoLabel={angleOf(submission)}
+                videoLabel={cardVideoLabelOf(submission.videos)}
                 onOpen={() => open(index)}
                 renderAction={(card) => (
                   <QuoteButton
                     target={{
                       kind: 'card',
                       targetId: card.id,
-                      label: `${ordinalLabel(index)}の添削・${KEY_POSITION_LABEL[card.position]}`,
+                      label: cardQuoteLabel(index, card.position),
                     }}
                   />
                 )}

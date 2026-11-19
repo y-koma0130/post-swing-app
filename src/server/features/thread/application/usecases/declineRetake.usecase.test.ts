@@ -12,11 +12,11 @@ const params = {
   now,
 }
 
-const setup = (requests = [openRetake()]) => {
+const setup = (requests = [openRetake()], thread = retakeThread()) => {
   const closeRetakeRequest = vi.fn<Deps['closeRetakeRequest']>(async () => undefined)
   const notifyRetakeDeclined = vi.fn<Deps['notifyRetakeDeclined']>(async () => undefined)
   const deps: Deps = {
-    findThread: async () => retakeThread(),
+    findThread: async () => thread,
     findRetakeRequests: async () => requests,
     closeRetakeRequest,
     notifyRetakeDeclined,
@@ -35,12 +35,40 @@ describe('declineRetake', () => {
     })
   })
 
-  it('本人の生徒だけ。終わったお願いには返せない', async () => {
-    const { deps } = setup()
+  it('本人の生徒でなければ not_found で、お願いを終えない', async () => {
+    const { deps, closeRetakeRequest, notifyRetakeDeclined } = setup()
     expect(
       await declineRetake({ ...params, actor: { userId: 'coach-1', name: '' } }, deps)
     ).toEqual({ ok: false, error: 'not_found' })
-    const closed = setup([openRetake({ closedAt: now, closeReason: 'resent' })])
-    expect(await declineRetake(params, closed.deps)).toEqual({ ok: false, error: 'no_retake' })
+    expect(closeRetakeRequest).not.toHaveBeenCalled()
+    expect(notifyRetakeDeclined).not.toHaveBeenCalled()
+  })
+
+  it('終わったお願いには返せない', async () => {
+    const { deps, closeRetakeRequest, notifyRetakeDeclined } = setup([
+      openRetake({ closedAt: now, closeReason: 'resent' }),
+    ])
+    expect(await declineRetake(params, deps)).toEqual({ ok: false, error: 'no_retake' })
+    expect(closeRetakeRequest).not.toHaveBeenCalled()
+    expect(notifyRetakeDeclined).not.toHaveBeenCalled()
+  })
+
+  it('ないお願いには返せない', async () => {
+    const { deps, closeRetakeRequest } = setup()
+    expect(await declineRetake({ ...params, requestId: 'unknown' }, deps)).toEqual({
+      ok: false,
+      error: 'no_retake',
+    })
+    expect(closeRetakeRequest).not.toHaveBeenCalled()
+  })
+
+  it('終わったレッスン・返金したレッスンのお願いには返せない', async () => {
+    const { deps, closeRetakeRequest, notifyRetakeDeclined } = setup(
+      [openRetake()],
+      retakeThread({ status: 'closed' })
+    )
+    expect(await declineRetake(params, deps)).toEqual({ ok: false, error: 'no_retake' })
+    expect(closeRetakeRequest).not.toHaveBeenCalled()
+    expect(notifyRetakeDeclined).not.toHaveBeenCalled()
   })
 })

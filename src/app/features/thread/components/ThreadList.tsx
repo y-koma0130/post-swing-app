@@ -1,9 +1,9 @@
 import { Badge, type BadgeTone } from '@/app/components/ui/Badge'
 import { CardLink } from '@/app/components/ui/CardLink'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
+import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import type { ThreadSummaryDto } from '@/server/features/thread/application/dto/ThreadSummary.dto'
 import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
-import { THREAD_STATUS_LABEL } from '../utils/threadText'
 
 /** 見ている人が動く番なら目立たせる（コーチは承認と返信、生徒は申し込みの続きと自分の番） */
 const STATUS_TONE = {

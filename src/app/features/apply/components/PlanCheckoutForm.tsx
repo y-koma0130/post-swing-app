@@ -5,10 +5,10 @@ import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { formatYen } from '@/app/utils/format'
+import { SYSTEM_FEE_NOTE, systemFeeFor } from '@/app/utils/systemFeeText'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
-import { SYSTEM_FEE_NOTE, systemFeeFor } from '../utils/systemFeeText'
 
 type Props = {
   coachSlug: string

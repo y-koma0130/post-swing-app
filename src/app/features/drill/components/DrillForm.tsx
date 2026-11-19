@@ -15,7 +15,7 @@ import {
   VideoSlot,
   type VideoSlotHandle,
   type VideoSlotStatus,
-} from '@/app/features/video-upload/components/VideoSlot'
+} from '@/app/components/video/VideoSlot'
 import { createDrillAction } from '@/server/features/drill/presentation/actions'
 import { VIDEO_RULES } from '@/server/features/thread/domain/rules'
 import { actionError, IDLE_ACTION_STATE } from '@/server/utils/actionState'

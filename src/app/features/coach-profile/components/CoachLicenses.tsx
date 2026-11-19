@@ -1,5 +1,5 @@
+import { licenseLabels } from '@/app/utils/licenseText'
 import type { CoachLicense } from '@/server/features/coach/domain/values/CoachLicense'
-import { licenseLabels } from '../utils/licenseText'
 
 type Props = {
   licenses: ReadonlyArray<CoachLicense>
