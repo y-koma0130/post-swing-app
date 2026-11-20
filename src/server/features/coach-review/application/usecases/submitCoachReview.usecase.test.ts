@@ -49,12 +49,16 @@ describe('submitCoachReview', () => {
 
 describe('replyToCoachReview', () => {
   type ReplyDeps = Parameters<typeof replyToCoachReview>[1]
-  const review = { id: 'r1', coachUserId: 'coach-1', replied: false }
+  const review = { id: 'r1', coachUserId: 'coach-1', studentUserId: 'student-1', replied: false }
   const reply = (actorId: string, found = review) => {
     const saveReviewReply = vi.fn<ReplyDeps['saveReviewReply']>(async () => undefined)
     const result = replyToCoachReview(
       { actor: { userId: actorId, name: '' }, threadId: 't1', reply: 'ありがとうございます', now },
-      { findReviewByThread: async () => found, saveReviewReply }
+      {
+        findReviewByThread: async () => found,
+        saveReviewReply,
+        notifyReviewReplied: async () => undefined,
+      }
     )
     return { result, saveReviewReply }
   }

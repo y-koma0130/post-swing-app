@@ -68,7 +68,7 @@ const CoachHomePage = async () => {
           }
         />
       ) : (
-        <CoachThreadSections threads={threads} />
+        <CoachThreadSections threads={threads} now={new Date()} />
       )}
     </Page>
   )

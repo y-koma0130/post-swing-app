@@ -203,6 +203,20 @@ export const markPurchaseVoided: MarkPurchaseVoided = async (purchaseId) => {
     .where(and(eq(purchase.id, purchaseId), inArray(purchase.status, ['pending', 'authorized'])))
 }
 
+export type ReleasePendingPurchase = (purchaseId: string) => Promise<boolean>
+/**
+ * カードを登録しないままの申し込みを取り消す（下書きを消した・プランを選び直した）。
+ * 申し込み途中のものだけ。取り消せたら true（カードの登録が先に済んでいたら false）
+ */
+export const releasePendingPurchase: ReleasePendingPurchase = async (purchaseId) => {
+  const result = await getDb()
+    .update(purchase)
+    .set({ status: 'voided', updatedAt: new Date() })
+    .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'pending')))
+    .run()
+  return result.meta.changes > 0
+}
+
 export type MarkSubscriptionCanceled = (stripeSubscriptionId: string) => Promise<void>
 export const markSubscriptionCanceled: MarkSubscriptionCanceled = async (stripeSubscriptionId) => {
   await getDb()

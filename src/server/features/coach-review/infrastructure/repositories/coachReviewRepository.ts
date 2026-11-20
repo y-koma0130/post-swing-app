@@ -42,12 +42,20 @@ export const findReviewByThread = async (threadId: string) => {
     .select({
       id: coachReview.id,
       coachUserId: coachReview.coachUserId,
+      studentUserId: coachReview.studentUserId,
       coachReply: coachReview.coachReply,
     })
     .from(coachReview)
     .where(eq(coachReview.threadId, threadId))
     .get()
-  return row ? { id: row.id, coachUserId: row.coachUserId, replied: row.coachReply !== null } : null
+  return row
+    ? {
+        id: row.id,
+        coachUserId: row.coachUserId,
+        studentUserId: row.studentUserId,
+        replied: row.coachReply !== null,
+      }
+    : null
 }
 
 export const saveReviewReply = async (reviewId: string, reply: string, at: Date) => {

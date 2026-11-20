@@ -35,6 +35,7 @@ const toStudent: NotificationMessage[] = [
   replySent,
   { kind: 'chat_message', threadId: t, to: 'student', recipientUserId: 'student-1' },
   { kind: 'thread_closed', threadId: t, studentUserId: 'student-1' },
+  { kind: 'review_replied', threadId: t, studentUserId: 'student-1' },
   threadExpiring,
   { kind: 'waitlist_opened', coachUserId: 'coach-1', studentUserId: 'student-1' },
   { kind: 'application_approved', threadId: t, studentUserId: 'student-1' },

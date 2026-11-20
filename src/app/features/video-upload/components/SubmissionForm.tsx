@@ -61,8 +61,8 @@ type Props = {
     | undefined
 }
 
-/** モニターの申し込みで「公開してよい」を付けていないとき */
-const MONITOR_CONSENT_TEXT = 'モニターで申し込むには、添削の公開を許可してください'
+/** モニターの申し込みで「紹介してもよい」を付けていないとき */
+const MONITOR_CONSENT_TEXT = 'モニターで申し込むには、SNS での紹介を許可してください'
 
 const IDLE_STATUS: VideoSlotStatus = { selected: false, ready: false, busy: false }
 

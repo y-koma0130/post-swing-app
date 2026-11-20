@@ -53,6 +53,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
   const saveDecline = vi.fn<Deps['saveDecline']>(async () => undefined)
   const notifyApplicationExpired = vi.fn<Deps['notifyApplicationExpired']>(async () => undefined)
   const deleteDraftThreads = vi.fn<Deps['deleteDraftThreads']>(async () => undefined)
+  const releasePendingPurchase = vi.fn<Deps['releasePendingPurchase']>(async () => true)
   const deps: Deps = {
     findAbsencesForCoaches: async () => new Map([['coach-1', absences]]),
     findExpiredOpenThreads: async () => [],
@@ -73,6 +74,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
     notifyApplicationExpired,
     findDraftThreadsToDelete: async () => [],
     deleteDraftThreads,
+    releasePendingPurchase,
     ...overrides,
   }
   return {
@@ -82,6 +84,7 @@ const setup = (overrides: Partial<Deps> = {}, absences: CoachAbsence[] = []) => 
     saveDecline,
     notifyApplicationExpired,
     deleteDraftThreads,
+    releasePendingPurchase,
     closeThreads,
     notifyThreadExpiring,
     notifyReplyOverdue,
@@ -320,17 +323,19 @@ describe('runThreadMaintenance', () => {
     error.mockRestore()
   })
 
-  it('カードを登録しないまま24時間たった下書きは、動画ごと消す', async () => {
-    const { deps, deleteMediaObject, deleteDraftThreads } = setup({
+  it('カードを登録しないまま24時間たった下書きは、動画ごと消し、申し込みも取り消す（モニターの人数に数えない）', async () => {
+    const { deps, deleteMediaObject, deleteDraftThreads, releasePendingPurchase } = setup({
       findDraftThreadsToDelete: async () => [
-        { threadId: 'd1', videoR2Keys: ['videos/d1/a', 'videos/d1/b'] },
-        { threadId: 'd2', videoR2Keys: [] },
+        { threadId: 'd1', purchaseId: 'p1', videoR2Keys: ['videos/d1/a', 'videos/d1/b'] },
+        { threadId: 'd2', purchaseId: 'p2', videoR2Keys: [] },
       ],
     })
     const result = await runThreadMaintenance({ now }, deps)
     expect(deleteMediaObject).toHaveBeenCalledWith('videos/d1/a')
     expect(deleteMediaObject).toHaveBeenCalledWith('videos/d1/b')
     expect(deleteDraftThreads).toHaveBeenCalledWith(['d1', 'd2'])
+    expect(releasePendingPurchase).toHaveBeenCalledWith('p1')
+    expect(releasePendingPurchase).toHaveBeenCalledWith('p2')
     expect(result.ok && result.value.deletedDraftThreads).toBe(2)
   })
 

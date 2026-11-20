@@ -7,7 +7,7 @@ import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { CoachLicenses } from '@/app/features/coach-profile/components/CoachLicenses'
 import { ShareConsentForm } from '@/app/features/share/components/ShareConsentForm'
-import { ThreadList } from '@/app/features/thread/components/ThreadList'
+import { StudentLessonSections } from '@/app/features/thread/components/StudentLessonSections'
 import { getActor } from '@/server/auth/getActor'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
@@ -62,14 +62,7 @@ const MyCoachPage = async ({ params }: Props) => {
         upcomingAbsence={coach.upcomingAbsence}
       />
 
-      <section className="space-y-3">
-        <h2 className="text-heading">添削のやりとり</h2>
-        {myThreads.length === 0 ? (
-          <p className="text-muted text-sm">レッスンの準備ができると、ここに表示されます。</p>
-        ) : (
-          <ThreadList threads={myThreads} viewer="student" showCounterpart={false} />
-        )}
-      </section>
+      <StudentLessonSections threads={myThreads} now={new Date()} showCounterpart={false} />
 
       {myPurchases.length > 0 && (
         <section className="space-y-3">
@@ -80,7 +73,7 @@ const MyCoachPage = async ({ params }: Props) => {
 
       {share && (
         <section className="space-y-3">
-          <h2 className="text-heading">添削の公開</h2>
+          <h2 className="text-heading">SNS での紹介</h2>
           <ShareConsentForm
             coachSlug={coach.slug}
             coachName={coach.name}
