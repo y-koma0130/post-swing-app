@@ -26,12 +26,12 @@ const DETAILS = [
   { name: 'showScore', label: '平均スコアを出してよい' },
 ] as const satisfies ReadonlyArray<{ name: keyof ShareConsentChoices; label: string }>
 
-const UNLOCK_MESSAGE = `モニターの条件のため、公開はやめられません。やめたいときは、運営（${CONTACT_EMAIL}）にメールでお問い合わせください。`
+const UNLOCK_MESSAGE = `モニターの条件のため、紹介の許可は取り消せません。やめたいときは、運営（${CONTACT_EMAIL}）にメールでお問い合わせください。`
 
 /**
- * 添削の公開の許可（フォームの中に置く。checkbox の名前で送る）
+ * 添削を SNS で紹介してよいかの許可（フォームの中に置く。checkbox の名前で送る）
  *
- * - 「公開してよい」だけは、本人が付ける（はじめは外しておく。モニターは必須）
+ * - 「紹介してもよい」だけは、本人が付ける（はじめは外しておく。モニターは必須）
  * - 公開してよいなら、細かい項目はすべて付いた状態から、嫌なものだけ外す
  * - 18歳未満は公開を許可できない
  * - モニターで申し込んだコーチには、公開をやめられない。外せないチェックに触れると（hover・タップ）、
@@ -52,12 +52,14 @@ export const ShareConsentFields = ({
 
   return (
     <fieldset className="border-line space-y-3 rounded-xl border p-4">
-      <legend className="px-1 text-sm font-bold">添削の公開</legend>
+      <legend className="px-1 text-sm font-bold">SNS での紹介</legend>
       <p className="text-caption text-muted">
-        {coachName}
-        さんが、あなたの添削（スイングの画像と線・コメント）をインスタなどで紹介することがあります。名前は出しません。
+        許可すると、{coachName}
+        さんが、あなたの添削（スイングの画像と線・コメント）をインスタなどの SNS
+        で紹介することがあります。必ず紹介されるわけではなく、紹介するかは
+        {coachName}さんが決めます。名前は出しません。
         {binding
-          ? 'モニターの条件のため、あとから公開をやめることはできません。顔をぼかすか、年代・平均スコアを出すかは、あとからマイページで変えられます。'
+          ? 'モニターの条件のため、あとから許可を取り消すことはできません。顔をぼかすか、年代・平均スコアを出すかは、あとからマイページで変えられます。'
           : 'あとからマイページでいつでも変えられます。'}
         （すでに投稿されたものは、コーチに削除を依頼してください）
       </p>
@@ -74,13 +76,13 @@ export const ShareConsentFields = ({
               className="accent-mint mt-1"
             />
             <span className="font-bold">
-              公開してよい
+              紹介してもよい
               <button
                 type="button"
-                aria-label="公開をやめたいとき"
+                aria-label="紹介の許可を取り消したいとき"
                 className="text-caption text-mint-text ml-2 font-normal underline underline-offset-2"
               >
-                やめたいとき
+                取り消したいとき
               </button>
             </span>
           </label>
@@ -93,7 +95,7 @@ export const ShareConsentFields = ({
             >
               {UNLOCK_MESSAGE}
               <a
-                href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('添削の公開をやめたい')}`}
+                href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('SNS での紹介の許可を取り消したい')}`}
                 className="mt-1 block font-bold underline underline-offset-2"
               >
                 メールで問い合わせる
@@ -113,7 +115,7 @@ export const ShareConsentFields = ({
             className="accent-mint mt-1"
           />
           <span className="font-bold">
-            公開してよい
+            紹介してもよい
             {required && (
               <span className="text-danger ml-1 font-normal">（モニターの条件です）</span>
             )}
@@ -121,7 +123,7 @@ export const ShareConsentFields = ({
         </label>
       )}
       {!canPublish && (
-        <p className="text-caption text-muted">18歳未満の方は、公開を許可できません。</p>
+        <p className="text-caption text-muted">18歳未満の方は、紹介を許可できません。</p>
       )}
       {allowed && (
         <div className="space-y-2 pl-6">

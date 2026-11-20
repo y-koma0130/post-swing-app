@@ -15,9 +15,9 @@ import { saveShareConsent } from '../infrastructure/repositories/shareConsentRep
 
 const CHANGE_ERROR = {
   not_found: 'コーチが見つかりません',
-  not_adult: '18歳未満の方は、公開を許可できません',
+  not_adult: '18歳未満の方は、紹介を許可できません',
   monitor_locked:
-    'モニターで申し込んだため、公開をやめることはできません。やめたいときは、運営にメールでお問い合わせください',
+    'モニターで申し込んだため、紹介の許可は取り消せません。取り消したいときは、運営にメールでお問い合わせください',
 } as const satisfies Record<ErrorOf<typeof changeShareConsent>, string>
 
 /** 生徒が、あるコーチへの公開の許可を変える（マイページから） */
@@ -46,6 +46,6 @@ export const changeShareConsentAction = async (
   if (!result.ok) return actionError(CHANGE_ERROR[result.error])
   revalidatePath('/me', 'layout')
   return actionSuccess(
-    result.value.allowPublish ? '公開の許可を保存しました' : '公開しない、に変えました'
+    result.value.allowPublish ? '紹介の許可を保存しました' : '紹介しない、に変えました'
   )
 }

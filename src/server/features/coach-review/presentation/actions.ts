@@ -3,6 +3,7 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
+import { notify } from '@/server/features/notification/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formString } from '@/server/utils/formData'
 import { replyToCoachReview } from '../application/usecases/replyToCoachReview.usecase'
@@ -57,7 +58,11 @@ export const replyToCoachReviewAction = async (
   }
   const result = await replyToCoachReview(
     { actor, threadId, reply: reply.data, now: new Date() },
-    { findReviewByThread, saveReviewReply }
+    {
+      findReviewByThread,
+      saveReviewReply,
+      notifyReviewReplied: (input) => notify({ kind: 'review_replied', ...input }),
+    }
   )
   if (!result.ok) {
     return actionError(
@@ -65,5 +70,6 @@ export const replyToCoachReviewAction = async (
     )
   }
   revalidatePath(`/coach/threads/${threadId}`)
-  return actionSuccess('返信しました')
+  revalidatePath(`/t/${threadId}`)
+  return actionSuccess('返信しました。生徒に LINE で知らせました')
 }

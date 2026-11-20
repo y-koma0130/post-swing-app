@@ -80,7 +80,7 @@ const MyCoachPage = async ({ params }: Props) => {
 
       {share && (
         <section className="space-y-3">
-          <h2 className="text-heading">添削の公開</h2>
+          <h2 className="text-heading">SNS での紹介</h2>
           <ShareConsentForm
             coachSlug={coach.slug}
             coachName={coach.name}

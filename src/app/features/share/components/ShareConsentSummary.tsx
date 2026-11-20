@@ -15,8 +15,8 @@ export const ShareConsentSummary = ({ consent, monitor }: Props) => (
     <p>
       {monitor && <span className="font-bold">モニター・</span>}
       {consent?.allowPublish
-        ? `公開の許可あり（顔：${consent.showFace ? 'そのまま可' : 'ぼかす'}・年代：${yesNo(consent.showAgeRange)}・平均スコア：${yesNo(consent.showScore)}）。名前は出しません`
-        : '生徒は添削の公開を許可していません'}
+        ? `SNS での紹介の許可あり（顔：${consent.showFace ? 'そのまま可' : 'ぼかす'}・年代：${yesNo(consent.showAgeRange)}・平均スコア：${yesNo(consent.showScore)}）。名前は出しません`
+        : '生徒は SNS での紹介を許可していません'}
     </p>
   </Notice>
 )
