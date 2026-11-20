@@ -7,44 +7,81 @@ import type { ThreadSummaryDto } from '../../application/dto/ThreadSummary.dto'
 import { THREAD_RULES } from '../../domain/rules'
 import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
+import { calcReplyDueAt, replyClockStart } from '../../domain/services/calcReplyDueAt.service'
 import { isUnread } from '../../domain/services/isUnread.service'
-import type { ThreadStatus } from '../../domain/values/ThreadStatus'
 import { countSubmissionsByThread } from '../repositories/threadRepository'
 import { findLatestActivityByThread, findReadTimes } from './threadActivity'
+import {
+  findPendingReplyFacts,
+  findReviewedThreadIds,
+  type PendingReplyFacts,
+} from './threadListFacts'
 
-type SummaryRow = Omit<
+type SummaryRow = Pick<
   ThreadSummaryDto,
-  'submissionCount' | 'maxSubmissions' | 'unread' | 'approvalDeadline' | 'free'
+  'id' | 'counterpartName' | 'coachSlug' | 'planKind' | 'theme' | 'status' | 'expiresAt'
 > & {
   priceYen: number
   startedAt: Date
   coachUserId: string
   requestedAt: Date | null
+  closedAt: Date | null
+  decidedAt: Date | null
 }
 
-/** 期限を、コーチの不在の分だけ延びた実際の期限にする */
-const withEffectiveExpiries = async (rows: SummaryRow[]): Promise<Date[]> => {
-  const facts = await findCoachAvailabilityFactsForCoaches(rows.map((r) => r.coachUserId))
-  return rows.map(
-    (row) => calcEffectiveExpiry(row, facts.get(row.coachUserId)?.absences ?? []).expiresAt
-  )
+/** 一覧の行をまとめて作る（期限・返事の目安はコーチの不在の分だけずらす） */
+const toSummaries = async (
+  rows: SummaryRow[],
+  viewer: { userId: string; side: 'coach' | 'student' }
+): Promise<ThreadSummaryDto[]> => {
+  const ids = rows.map((r) => r.id)
+  const [counts, facts, unread, pending, reviewed] = await Promise.all([
+    countSubmissionsByThread(ids),
+    findCoachAvailabilityFactsForCoaches(rows.map((r) => r.coachUserId)),
+    findUnread(ids, viewer),
+    findPendingReplyFacts(ids),
+    findReviewedThreadIds(ids),
+  ])
+  return rows.map((row) => {
+    const absences = facts.get(row.coachUserId)?.absences ?? []
+    const waiting = row.status === 'waiting_coach' ? pending.get(row.id) : undefined
+    return {
+      id: row.id,
+      counterpartName: row.counterpartName,
+      coachSlug: row.coachSlug,
+      planKind: row.planKind,
+      theme: row.theme,
+      status: row.status,
+      expiresAt: calcEffectiveExpiry(row, absences).expiresAt,
+      approvalDeadline:
+        row.status === 'requested' && row.requestedAt
+          ? calcApprovalDeadline(row.requestedAt)
+          : null,
+      free: row.priceYen === 0,
+      unread: unread.get(row.id) ?? false,
+      submissionCount: counts.get(row.id) ?? 0,
+      maxSubmissions: THREAD_RULES.maxSubmissionsByPlan[row.planKind],
+      replyDueAt: waiting ? replyDueOf(waiting, row.startedAt, absences) : null,
+      retakeOpen: waiting?.retakeOpen ?? false,
+      finishedAt:
+        row.status === 'closed' ? row.closedAt : row.status === 'declined' ? row.decidedAt : null,
+      needsReview: row.status === 'closed' && !reviewed.has(row.id),
+    }
+  })
 }
 
-const toSummary = (
-  { startedAt: _startedAt, coachUserId: _coachUserId, requestedAt, priceYen, ...row }: SummaryRow,
-  expiresAt: Date,
-  counts: Map<string, number>,
-  unread: boolean
-): ThreadSummaryDto => ({
-  ...row,
-  expiresAt,
-  approvalDeadline:
-    row.status === 'requested' && requestedAt ? calcApprovalDeadline(requestedAt) : null,
-  free: priceYen === 0,
-  unread,
-  submissionCount: counts.get(row.id) ?? 0,
-  maxSubmissions: THREAD_RULES.maxSubmissionsByPlan[row.planKind],
-})
+/** 添削の返事の目安。撮り直しを待っているあいだは止まっているので null */
+const replyDueOf = (
+  pending: PendingReplyFacts,
+  startedAt: Date,
+  absences: Parameters<typeof calcReplyDueAt>[1]
+): Date | null =>
+  pending.retakeOpen
+    ? null
+    : calcReplyDueAt(
+        replyClockStart(pending.oldestUnrepliedAt, startedAt, pending.lastRetakeClosedAt),
+        absences
+      )
 
 /** 一覧のスレッドごとに、見ている人に未読があるか（相手側の出来事と、最後に開いた時刻で決める） */
 const findUnread = async (
@@ -66,16 +103,7 @@ const findUnread = async (
   )
 }
 
-const STATUS_PRIORITY = {
-  requested: 0,
-  waiting_coach: 1,
-  waiting_student: 2,
-  closed: 3,
-  declined: 4,
-  draft: 5,
-} as const satisfies Record<ThreadStatus, number>
-
-/** コーチの一覧：承認待ちの申し込み → 添削待ち → 未読 → 期限が近い順。終わったものは最後 */
+/** コーチの一覧（並べ方と区分は画面で決める） */
 export type ListCoachThreadSummaries = (coachUserId: string) => Promise<ThreadSummaryDto[]>
 export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUserId) => {
   const rows = await getDb()
@@ -88,6 +116,8 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
       expiresAt: thread.expiresAt,
       startedAt: thread.startedAt,
       requestedAt: thread.requestedAt,
+      closedAt: thread.closedAt,
+      decidedAt: thread.decidedAt,
       coachUserId: thread.coachUserId,
       coachSlug: coachProfile.slug,
       priceYen: purchase.priceYen,
@@ -99,25 +129,10 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
     // 申し込みの下書き（カードを登録する前）は、コーチにはまだ見せない
     .where(and(eq(thread.coachUserId, coachUserId), ne(thread.status, 'draft')))
     .all()
-  const ids = rows.map((r) => r.id)
-  const [counts, effective, unread] = await Promise.all([
-    countSubmissionsByThread(ids),
-    withEffectiveExpiries(rows),
-    findUnread(ids, { userId: coachUserId, side: 'coach' }),
-  ])
-  return rows
-    .map((row, i) =>
-      toSummary(row, effective[i] ?? row.expiresAt, counts, unread.get(row.id) ?? false)
-    )
-    .toSorted(
-      (a, b) =>
-        STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status] ||
-        Number(b.unread) - Number(a.unread) ||
-        a.expiresAt.getTime() - b.expiresAt.getTime()
-    )
+  return toSummaries(rows, { userId: coachUserId, side: 'coach' })
 }
 
-/** 生徒の一覧：新しい順 */
+/** 生徒の一覧（始めた新しい順。区分は画面で決める） */
 export type ListStudentThreadSummaries = (studentUserId: string) => Promise<ThreadSummaryDto[]>
 export const listStudentThreadSummaries: ListStudentThreadSummaries = async (studentUserId) => {
   const rows = await getDb()
@@ -130,6 +145,8 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
       expiresAt: thread.expiresAt,
       startedAt: thread.startedAt,
       requestedAt: thread.requestedAt,
+      closedAt: thread.closedAt,
+      decidedAt: thread.decidedAt,
       coachUserId: thread.coachUserId,
       coachSlug: coachProfile.slug,
       priceYen: purchase.priceYen,
@@ -140,13 +157,5 @@ export const listStudentThreadSummaries: ListStudentThreadSummaries = async (stu
     .where(eq(thread.studentUserId, studentUserId))
     .orderBy(desc(thread.startedAt))
     .all()
-  const ids = rows.map((r) => r.id)
-  const [counts, effective, unread] = await Promise.all([
-    countSubmissionsByThread(ids),
-    withEffectiveExpiries(rows),
-    findUnread(ids, { userId: studentUserId, side: 'student' }),
-  ])
-  return rows.map((row, i) =>
-    toSummary(row, effective[i] ?? row.expiresAt, counts, unread.get(row.id) ?? false)
-  )
+  return toSummaries(rows, { userId: studentUserId, side: 'student' })
 }
