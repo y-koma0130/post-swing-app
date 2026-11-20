@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
+import { AdminStats } from '@/app/features/admin/components/AdminStats'
 import { CoachSuspendButton } from '@/app/features/admin/components/CoachSuspendButton'
 import { DemoCoachesCard } from '@/app/features/admin/components/DemoCoachesCard'
 import { InviteCoachForm } from '@/app/features/admin/components/InviteCoachForm'
@@ -15,10 +16,16 @@ import {
   getGrantableCampaigns,
   getGrantsForAdmin,
 } from '@/server/features/campaign/presentation/queries'
-import { getCoachesForAdmin } from '@/server/features/coach/presentation/queries'
+import {
+  getCoachesForAdmin,
+  getCoachStatsForAdmin,
+} from '@/server/features/coach/presentation/queries'
 import { getDemoCoachesForAdmin } from '@/server/features/demo/presentation/queries'
 import type { AdminThreadRowDto } from '@/server/features/thread/application/dto/AdminThreadRow.dto'
-import { getThreadsForAdmin } from '@/server/features/thread/presentation/queries'
+import {
+  getLessonStatsForAdmin,
+  getThreadsForAdmin,
+} from '@/server/features/thread/presentation/queries'
 
 export const metadata: Metadata = { title: '管理画面' }
 
@@ -32,14 +39,16 @@ const waitingDays = (row: AdminThreadRowDto, now: Date): number | null =>
 
 /** 管理画面。本番は Cloudflare Access の奥に置く */
 const AdminPage = async () => {
-  const [coaches, threads, campaigns, demos] = await Promise.all([
+  const [coaches, threads, campaigns, demos, coachStats, lessonStats] = await Promise.all([
     getCoachesForAdmin(),
     getThreadsForAdmin(),
     getGrantableCampaigns(),
     getDemoCoachesForAdmin(),
+    getCoachStatsForAdmin(),
+    getLessonStatsForAdmin(),
   ])
   // 管理者でなければ、画面があること自体を知らせない
-  if (!coaches || !threads || !campaigns || !demos) notFound()
+  if (!coaches || !threads || !campaigns || !demos || !coachStats || !lessonStats) notFound()
   const grants =
     (await getGrantsForAdmin(coaches.map((coach) => coach.userId))) ??
     new Map<string, CoachFeeGrantSummaryDto[]>()
@@ -48,6 +57,8 @@ const AdminPage = async () => {
   return (
     <main className="mx-auto max-w-6xl space-y-8 px-6 py-10">
       <h1 className="text-title">管理画面</h1>
+
+      <AdminStats coaches={coachStats} lessons={lessonStats} />
 
       <Card className="space-y-4">
         <h2 className="text-heading">コーチを招待</h2>

@@ -5,6 +5,7 @@ import {
   localDateSchema,
   overlapDays,
   startOfLocalDate,
+  startOfLocalMonth,
   toLocalDate,
 } from './localDate'
 
@@ -45,5 +46,19 @@ describe('localDate', () => {
         { start: d('2026-11-22'), end: d('2026-11-30') }
       )
     ).toBe(0)
+  })
+})
+
+describe('startOfLocalMonth', () => {
+  it('日本時間の月の1日0時にする（UTC では前日の15時）', () => {
+    expect(startOfLocalMonth(new Date('2026-11-20T03:00:00Z')).toISOString()).toBe(
+      '2026-10-31T15:00:00.000Z'
+    )
+  })
+
+  it('月末の夜（日本時間ではもう翌月）は、翌月の1日', () => {
+    expect(startOfLocalMonth(new Date('2026-11-30T16:00:00Z')).toISOString()).toBe(
+      '2026-11-30T15:00:00.000Z'
+    )
   })
 })

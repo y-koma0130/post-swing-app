@@ -1,7 +1,9 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { startOfLocalMonth } from '@/server/utils/localDate'
 import { viewThread } from '../application/usecases/viewThread.usecase'
+import { countLessonsForAdmin } from '../infrastructure/query-services/countLessonsForAdmin'
 import { findThreadDetail } from '../infrastructure/query-services/findThreadDetail'
 import {
   listCoachThreadSummaries,
@@ -39,4 +41,10 @@ export const getMyThreadSummaries = async () => {
 export const getThreadsForAdmin = async () => {
   if (!(await isAdminRequest())) return null
   return listThreadsForAdmin()
+}
+
+/** 管理画面のレッスンと生徒の数（今月は日本時間の月）。管理者でなければ null */
+export const getLessonStatsForAdmin = async () => {
+  if (!(await isAdminRequest())) return null
+  return countLessonsForAdmin(startOfLocalMonth(new Date()))
 }

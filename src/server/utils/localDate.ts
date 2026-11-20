@@ -32,6 +32,10 @@ export const addDays = (date: LocalDate, days: number): LocalDate =>
     new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
   )
 
+/** その時刻の月の1日（日本時間0時）。今月の数を数えるのに使う */
+export const startOfLocalMonth = (instant: Date): Date =>
+  startOfLocalDate(localDateSchema.parse(`${toLocalDate(instant).slice(0, 8)}01`))
+
 /** その日の日本時間0時の時刻 */
 export const startOfLocalDate = (date: LocalDate): Date =>
   new Date(Date.parse(`${date}T00:00:00Z`) - JST_OFFSET_MS)
