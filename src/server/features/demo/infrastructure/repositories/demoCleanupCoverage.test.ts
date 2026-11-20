@@ -21,10 +21,7 @@ const OWNER_COLUMNS = [
 /** つながる列があっても、デモを消すときに消さなくてよい表（理由つき） */
 const NOT_DEMO_DATA: Record<string, string> = {}
 
-const source = readFileSync(
-  fileURLToPath(new URL('./demoRepository.ts', import.meta.url)),
-  'utf8'
-)
+const source = readFileSync(fileURLToPath(new URL('./demoRepository.ts', import.meta.url)), 'utf8')
 /** deleteDemoCoachData の中で消している表（db.delete(表) の表の名前） */
 const deleted = new Set(Array.from(source.matchAll(/db\s*\.delete\((\w+)\)/g), (m) => m[1]))
 
