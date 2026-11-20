@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { useLeavingPage } from '@/app/hooks/useLeavingPage'
 import { PRIVACY_POLICY_URL } from '@/app/utils/externalLinks'
 import { startApplicationCheckoutAction } from '@/server/features/purchase/presentation/actions'
@@ -30,11 +31,11 @@ export const ApplicationCheckoutForm = ({ threadId, devAuthorizeHref, free }: Pr
       <FormMessage state={state} />
       <p className="text-caption text-muted">
         「{label}」を押すと、
-        <Link href="/legal/terms" className="underline">
+        <Link href="/legal/terms" className={inlineLinkClass}>
           利用規約
         </Link>
         と
-        <a href={PRIVACY_POLICY_URL} className="underline">
+        <a href={PRIVACY_POLICY_URL} className={inlineLinkClass}>
           プライバシーポリシー
         </a>
         （送った動画やお名前などを担当のコーチに提供することを含みます）に同意したものとします。
@@ -48,7 +49,10 @@ export const ApplicationCheckoutForm = ({ threadId, devAuthorizeHref, free }: Pr
           : 'いまは請求されません。コーチが受け付けたときに請求されます'}
       </p>
       {devAuthorizeHref && !free && (
-        <a href={devAuthorizeHref} className="text-caption text-muted block text-center underline">
+        <a
+          href={devAuthorizeHref}
+          className={`text-caption text-muted block text-center ${inlineLinkClass}`}
+        >
           （開発用）Stripe を通さずに申し込む
         </a>
       )}

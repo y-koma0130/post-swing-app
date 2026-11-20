@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { Progress } from '@/app/components/video/Progress'
 import { useBackgroundSubmission } from '../hooks/useBackgroundSubmission'
 import { dismissBackgroundSubmission, type SubmissionStep } from '../utils/backgroundSubmission'
@@ -74,7 +75,7 @@ export const BackgroundSubmissionBar = () => {
         {!onThread && (
           <>
             {' '}
-            <Link href={threadPath} className="font-semibold underline">
+            <Link href={threadPath} className={`font-semibold ${inlineLinkClass}`}>
               レッスンを見る
             </Link>
           </>

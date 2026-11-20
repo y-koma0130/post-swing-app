@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import {
   COACH_TERMS_URL,
   CONTACT_EMAIL,
@@ -17,7 +18,7 @@ const TermsPage = () => (
     <p>
       この利用規約（以下「本規約」）は、{OPERATOR_NAME}
       （以下「運営者」）が提供するオンライン添削サービス「SwingPost」（以下「本サービス」）を、生徒として利用する方に適用される条件を定めるものです。コーチとして利用する方には、
-      <a href={COACH_TERMS_URL} className="underline">
+      <a href={COACH_TERMS_URL} className={inlineLinkClass}>
         コーチ向け利用規約
       </a>
       が適用されます。
@@ -161,7 +162,7 @@ const TermsPage = () => (
     <h2>12. 個人情報</h2>
     <p>
       個人情報は、
-      <a href={PRIVACY_POLICY_URL} className="underline">
+      <a href={PRIVACY_POLICY_URL} className={inlineLinkClass}>
         プライバシーポリシー
       </a>
       に従って取り扱います。

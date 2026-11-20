@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import type { CoachAvailabilityDto } from '@/server/features/coach/application/dto/CoachAvailability.dto'
 import { formatShortDate } from '../utils/availabilityText'
@@ -18,7 +19,7 @@ export const AvailabilityBanner = ({ availability }: Props) => {
             ? `${formatShortDate(availability.endDate)}まで不在モードです`
             : '「返信が遅れる場合があります」と表示しています'}
         </span>
-        <Link href="/coach/availability" className="underline">
+        <Link href="/coach/availability" className={inlineLinkClass}>
           設定を変える
         </Link>
       </div>

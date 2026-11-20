@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Button, textButtonClass } from '@/app/components/ui/Button'
 import { inputClass } from '@/app/components/ui/fieldStyles'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import type { ResolveMonitorCodeError } from '@/server/features/monitor/application/dto/MonitorCodeUse.dto'
 
 /** プロモーションコードが使えない理由の言い方 */
@@ -42,7 +43,7 @@ export const PromoCodeForm = ({ code, error, applied, basePath }: Props) => {
     return (
       <p className="text-caption text-muted">
         プロモーションコード {code} を使っています。
-        <a href={basePath} className="text-ink ml-1 underline">
+        <a href={basePath} className={`text-ink ml-1 ${inlineLinkClass}`}>
           使わずに申し込む
         </a>
       </p>

@@ -5,6 +5,7 @@ import { useActionState, useRef, useState } from 'react'
 import { Button, textButtonClass } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass } from '@/app/components/ui/fieldStyles'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { useConfirmedSubmit } from '@/app/hooks/useConfirmedSubmit'
 import { formatDateTime } from '@/app/utils/format'
 import type { StudentChartDto } from '@/server/features/student-chart/application/dto/StudentChart.dto'
@@ -67,7 +68,7 @@ export const ChartEntries = ({ studentUserId, entries, threadId = null, limit }:
                   {entry.thread && (
                     <>
                       {'・'}
-                      <Link href={`/coach/threads/${entry.thread.id}`} className="underline">
+                      <Link href={`/coach/threads/${entry.thread.id}`} className={inlineLinkClass}>
                         {entry.thread.theme || 'レッスン'}
                       </Link>
                     </>

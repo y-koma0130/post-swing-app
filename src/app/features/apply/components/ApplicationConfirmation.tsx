@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { formatYen } from '@/app/utils/format'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import { APPLICATION_RULES, THREAD_RULES } from '@/server/features/thread/domain/rules'
@@ -88,11 +89,11 @@ export const ApplicationConfirmation = ({
       </dl>
       <p className="text-caption text-muted">
         くわしくは
-        <Link href="/legal/terms" className="underline">
+        <Link href="/legal/terms" className={inlineLinkClass}>
           利用規約
         </Link>
         と
-        <Link href="/legal/commerce" className="underline">
+        <Link href="/legal/commerce" className={inlineLinkClass}>
           特定商取引法に基づく表記
         </Link>
         をご覧ください。

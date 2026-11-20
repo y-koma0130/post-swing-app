@@ -63,6 +63,7 @@
 | ページの見出し・戻り先・右上の操作 | `PageHeader` |
 | ボタン | `Button`・`ButtonLink`・`buttonClass`（variant：primary・secondary・ghost・danger。size：sm・md・lg） |
 | 文字だけの目立たない操作（消す・閉じる・終える） | `TextButton`・`textButtonClass`（取り消せないものは `danger`） |
+| 文字だけのリンク | `linkStyles` の `navLinkClass`（戻り先・ヘッダーのメニュー）・`inlineLinkClass`（文の中の下線のリンク）・`plainLinkClass`（色や太字で押せると分かる、下線なしのリンク）・`quietLinkClass`（フッター） |
 | 押せないカード | `Card` |
 | **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る） |
 | 画面の中のお知らせ・操作を促す枠 | `Notice`（tone：neutral・mint・warning・line。操作が要るときは `emphasis`） |
@@ -92,7 +93,7 @@
 スマホでは hover が効かないので、押したことが必ず分かるようにする。
 
 - **押せるものと押せないものを見分けられるようにする。** 枠のあるカードで押せるものは `CardLink` にする。押せないカードに hover の色を付けない
-- **押した瞬間の見た目を付ける。** ボタンは `active:scale-[0.97]`（`buttonClass` に入っている）、カードは背景を `surface` にする（`CardLink` に入っている）
+- **押した瞬間の見た目を付ける。** ボタンは `active:scale-[0.97]`（`buttonClass` に入っている）、カードは背景を `surface` にする（`CardLink` に入っている）。文字だけのボタン・リンクも、押した瞬間に背景を薄いミントにする（`textButtonClass`・`linkStyles` に入っている）。`className="underline"` だけのリンクを作らない
 - **キーボードで選んだときはミントの枠を出す。** `focus-visible:ring-mint`。共通の部品に入っているので、自分で作ったときだけ気をつける
 - **送っているあいだはボタンを押せなくして、文言を変える。** 「送る」→「送っています…」のように「〜しています…」にする。`pending` で `aria-busy` を付ける。薄くはしない（使えないように見えるため）
 - 押せない状態（`disabled`）だけを薄くする（`opacity-40`）

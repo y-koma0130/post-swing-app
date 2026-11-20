@@ -32,7 +32,7 @@ export const PageLinkCard = ({ url, path }: Props) => {
       <div className="bg-mint-soft flex items-center gap-2 rounded-xl py-2 pr-2 pl-4">
         <Link
           href={path}
-          className="text-ink min-w-0 flex-1 font-bold break-all underline-offset-2 hover:underline"
+          className="text-ink focus-visible:ring-mint active:bg-mint-soft min-w-0 flex-1 rounded-sm font-bold break-all underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:outline-none"
         >
           {url}
         </Link>

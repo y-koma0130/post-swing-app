@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { plainLinkClass } from '@/app/components/ui/linkStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import { ApplicationCheckoutForm } from '@/app/features/apply/components/ApplicationCheckoutForm'
 import { ApplicationConfirmation } from '@/app/features/apply/components/ApplicationConfirmation'
@@ -116,7 +117,10 @@ export const ApplicationStatus = ({ thread, justApplied }: Props) => {
         {!thread.application.free && (
           <p className="text-muted">カードの仮押さえは取り消しました。請求はされていません。</p>
         )}
-        <Link href={`/c/${thread.coachSlug}`} className="text-mint-text inline-block font-bold">
+        <Link
+          href={`/c/${thread.coachSlug}`}
+          className={`text-mint-text inline-block font-bold ${plainLinkClass}`}
+        >
           {thread.coachName}さんのページへ
         </Link>
       </Notice>
