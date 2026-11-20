@@ -64,7 +64,7 @@
 | ボタン | `Button`・`ButtonLink`・`buttonClass`（variant：primary・secondary・ghost・danger。size：sm・md・lg） |
 | 文字だけの目立たない操作（消す・閉じる・終える） | `TextButton`・`textButtonClass`（取り消せないものは `danger`） |
 | 押せないカード | `Card` |
-| **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る） |
+| **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る。たくさん並ぶ一覧では `compact` で詰める） |
 | 画面の中のお知らせ・操作を促す枠 | `Notice`（tone：neutral・mint・warning・line。操作が要るときは `emphasis`） |
 | 状態・残り枠などの小さな札 | `Badge`（tone：mint・neutral・warning・danger） |
 | 中身がまだないとき | `EmptyState`（「ない」だけでなく、次にすることを書く） |
@@ -86,6 +86,7 @@
 
 - 角丸：カードとダイアログは `rounded-card`（20px）、入力欄は `rounded-xl`、ボタン・札・切り替えは `rounded-full`。これ以外の角丸を作らない
 - カードは白地に `line-soft` の枠と `shadow-sm`（`Card` のまま）。カードの中にカードを入れない
+- たくさん並ぶ一覧（レッスンの一覧など）のカードは、`CardLink` の `compact`（余白を小さく、影なし）にして2行に収める。増え続ける履歴は、カードにせず区切り線の行にする
 
 ## 押したときの反応
 
