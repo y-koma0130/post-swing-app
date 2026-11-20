@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { CONTACT_EMAIL } from '@/app/utils/externalLinks'
 import type { ShareConsentChoices } from '@/server/features/share/domain/values/ShareConsent'
 
@@ -96,7 +97,7 @@ export const ShareConsentFields = ({
               {UNLOCK_MESSAGE}
               <a
                 href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('SNS での紹介の許可を取り消したい')}`}
-                className="mt-1 block font-bold underline underline-offset-2"
+                className={`mt-1 block font-bold ${inlineLinkClass}`}
               >
                 メールで問い合わせる
               </a>

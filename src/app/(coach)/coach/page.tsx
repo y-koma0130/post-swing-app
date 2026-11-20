@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { EmptyState } from '@/app/components/ui/EmptyState'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
@@ -42,7 +43,7 @@ const CoachHomePage = async () => {
         <Notice tone="warning" emphasis title="まだ申し込みを受け付けていません">
           <p>
             売上を受け取る口座を設定すると、受付ページから申し込めるようになります。
-            <Link href="/coach/settings" className="ml-1 underline">
+            <Link href="/coach/settings" className={`ml-1 ${inlineLinkClass}`}>
               設定へ
             </Link>
           </p>

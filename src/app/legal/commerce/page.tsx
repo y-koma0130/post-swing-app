@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { COACH_LP_URL, CONTACT_EMAIL, OPERATOR_NAME } from '@/app/utils/externalLinks'
 import { SYSTEM_FEE_RULE_TEXT } from '@/app/utils/systemFeeText'
 
@@ -49,7 +50,7 @@ const CommercePage = () => (
     <h1>特定商取引法に基づく表記</h1>
     <p>
       生徒向けにご提供する「SwingPost」の申し込み（添削とシステム利用料）に関する表記です。添削は各コーチが提供し（添削の契約はコーチと生徒の間で成立します）、システム利用料と代金の受け取りは運営者が行います。コーチ向けの表記は
-      <a href={`${COACH_LP_URL}/tokushoho/`} className="underline">
+      <a href={`${COACH_LP_URL}/tokushoho/`} className={inlineLinkClass}>
         こちら
       </a>
       。

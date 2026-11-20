@@ -23,4 +23,5 @@ export const DisclosureToggle = ({ closedLabel = '表示する', openLabel = '�
 
 /** summary に付けるクラス（行全体を押せるようにし、ブラウザの三角を消す） */
 export const summaryClass =
-  'flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden'
+  // 押した瞬間は背景を薄いミントにする（スマホでは hover が効かないため）
+  'flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg transition-colors active:bg-mint-soft [&::-webkit-details-marker]:hidden'

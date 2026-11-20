@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { CoachAvatar } from '@/app/components/CoachAvatar'
 import { Badge } from '@/app/components/ui/Badge'
 import { ButtonLink } from '@/app/components/ui/Button'
+import { inlineLinkClass, plainLinkClass } from '@/app/components/ui/linkStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page } from '@/app/components/ui/Page'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
@@ -72,10 +73,10 @@ const CoachLandingPage = async ({ params }: Props) => {
         <Notice tone="mint" title="あなたの受付ページです">
           <p>生徒にはこのように見えます。プロフィールやプランは設定から変えられます。</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link href="/coach" className="text-ink font-bold">
+            <Link href="/coach" className={`text-ink font-bold ${plainLinkClass}`}>
               ← コーチ画面に戻る
             </Link>
-            <Link href="/coach/settings" className="text-ink underline">
+            <Link href="/coach/settings" className={`text-ink ${inlineLinkClass}`}>
               設定を開く
             </Link>
           </div>

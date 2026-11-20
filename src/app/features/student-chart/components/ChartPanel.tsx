@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { DisclosureToggle, summaryClass } from '@/app/components/ui/DisclosureToggle'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import type { StudentChartDto } from '@/server/features/student-chart/application/dto/StudentChart.dto'
 import { ChartEntries } from './ChartEntries'
 import { ChartMemo } from './ChartMemo'
@@ -38,7 +39,10 @@ export const ChartPanel = ({ chart, threadId }: Props) => (
           limit={3}
         />
       </div>
-      <Link href={`/coach/students/${chart.studentUserId}`} className="text-sm underline">
+      <Link
+        href={`/coach/students/${chart.studentUserId}`}
+        className={`text-sm ${inlineLinkClass}`}
+      >
         カルテを開く（これまでのレッスン・送ったドリル）
       </Link>
     </div>
