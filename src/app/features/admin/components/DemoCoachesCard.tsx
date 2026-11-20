@@ -8,6 +8,7 @@ import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
 import { useConfirmedSubmit } from '@/app/hooks/useConfirmedSubmit'
 import { formatDateTime } from '@/app/utils/format'
+import type { AdminDemoCoachesDto } from '@/server/features/demo/application/dto/AdminDemoCoaches.dto'
 import { DEMO_RULES } from '@/server/features/demo/domain/rules'
 import {
   createDemoCoachAction,
@@ -18,7 +19,7 @@ import type { DemoActionState } from '@/server/features/demo/presentation/demoAc
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 type Props = {
-  coaches: ReadonlyArray<{ userId: string; name: string; expiresAt: Date }>
+  coaches: AdminDemoCoachesDto['coaches']
 }
 
 /** 作った・作り直したときは、デモ用のリンクとコピーのボタンを出す。それ以外は FormMessage */
