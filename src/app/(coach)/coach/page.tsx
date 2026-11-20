@@ -8,6 +8,7 @@ import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
 import { CoachThreadSections } from '@/app/features/thread/components/CoachThreadSections'
+import { parseShownCount, showMoreHref } from '@/app/utils/listPaging'
 import {
   getCurrentCoach,
   getCurrentCoachAvailabilitySettings,
@@ -16,7 +17,11 @@ import { getCurrentDemoExpiry } from '@/server/features/demo/presentation/querie
 import { getCoachThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 /** コーチのホーム */
-const CoachHomePage = async () => {
+type Props = {
+  searchParams: Promise<{ finished?: string }>
+}
+
+const CoachHomePage = async ({ searchParams }: Props) => {
   const current = await getCurrentCoach()
   if (current.kind === 'signed_out') redirect('/coach/login')
   if (current.kind === 'not_coach') {
@@ -32,8 +37,9 @@ const CoachHomePage = async () => {
     )
   }
   const { settings, actor } = current
-  const [threads, availability, demoExpiry] = await Promise.all([
-    getCoachThreadSummaries(actor.userId),
+  const finishedShown = parseShownCount((await searchParams).finished)
+  const [lessons, availability, demoExpiry] = await Promise.all([
+    getCoachThreadSummaries(actor.userId, finishedShown),
     getCurrentCoachAvailabilitySettings(),
     getCurrentDemoExpiry(),
   ])
@@ -60,7 +66,7 @@ const CoachHomePage = async () => {
           </ButtonLink>
         }
       />
-      {threads.length === 0 ? (
+      {lessons.active.length === 0 && lessons.finishedTotal === 0 ? (
         <EmptyState
           title="まだレッスンはありません"
           description="受付ページのリンクを、インスタのプロフィールやストーリーで生徒に案内しましょう。申し込みがあると、ここに並びます。"
@@ -71,7 +77,11 @@ const CoachHomePage = async () => {
           }
         />
       ) : (
-        <CoachThreadSections threads={threads} now={new Date()} />
+        <CoachThreadSections
+          lessons={lessons}
+          now={new Date()}
+          moreHref={showMoreHref('/coach', finishedShown)}
+        />
       )}
     </Page>
   )

@@ -8,6 +8,7 @@ import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLin
 import { uniqueCoaches } from '@/app/features/coach-profile/utils/uniqueCoaches'
 import { LineFriendPrompt } from '@/app/features/notification/components/LineFriendPrompt'
 import { StudentLessonSections } from '@/app/features/thread/components/StudentLessonSections'
+import { parseShownCount, showMoreHref } from '@/app/utils/listPaging'
 import { getLineFriendPrompt } from '@/server/features/notification/presentation/queries'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
 import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
@@ -15,18 +16,19 @@ import { getMyThreadSummaries } from '@/server/features/thread/presentation/quer
 export const metadata: Metadata = { title: 'マイページ' }
 
 type Props = {
-  searchParams: Promise<{ checkout?: string }>
+  searchParams: Promise<{ checkout?: string; finished?: string }>
 }
 
 /** 生徒のマイページ */
 const MyPage = async ({ searchParams }: Props) => {
-  const [purchases, threads, linePrompt] = await Promise.all([
+  const { checkout, finished } = await searchParams
+  const finishedShown = parseShownCount(finished)
+  const [purchases, lessons, linePrompt] = await Promise.all([
     getMyPurchases(),
-    getMyThreadSummaries(),
+    getMyThreadSummaries({ finishedLimit: finishedShown }),
     getLineFriendPrompt(),
   ])
-  if (!purchases || !threads) redirect('/login?next=/me')
-  const { checkout } = await searchParams
+  if (!purchases || !lessons) redirect('/login?next=/me')
 
   return (
     <Page layout="student">
@@ -37,13 +39,17 @@ const MyPage = async ({ searchParams }: Props) => {
           <p>お支払いが完了しました。準備ができたら、ここから動画を送れます。</p>
         </Notice>
       )}
-      {purchases.length === 0 && threads.length === 0 ? (
+      {purchases.length === 0 && lessons.active.length === 0 && lessons.finishedTotal === 0 ? (
         <EmptyState
           title="まだ申し込みはありません"
           description="コーチの受付ページ（インスタのプロフィールなどにあるリンク）から申し込むと、ここに添削のレッスンが表示されます。"
         />
       ) : (
-        <StudentLessonSections threads={threads} now={new Date()} />
+        <StudentLessonSections
+          lessons={lessons}
+          now={new Date()}
+          moreHref={showMoreHref('/me', finishedShown)}
+        />
       )}
       {purchases.length > 0 && (
         <section className="space-y-3">
