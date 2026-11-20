@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { grantCampaignToCoach } from '@/server/features/campaign/public'
+import { isDemoCoach } from '@/server/features/demo/public'
 import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
@@ -242,6 +243,10 @@ export const startPayoutOnboardingAction = async (
   const actor = await getActor()
   if (!actor) {
     redirect('/coach/login')
+  }
+  // デモでは Stripe に口座を作らない（試すだけのアカウントなので）
+  if (await isDemoCoach(actor.userId)) {
+    return actionError('デモでは口座を登録できません。正式に登録したあとに設定できます')
   }
   let result: Awaited<ReturnType<typeof startPayoutOnboarding>>
   try {

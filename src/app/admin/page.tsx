@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Card } from '@/app/components/ui/Card'
 import { CoachSuspendButton } from '@/app/features/admin/components/CoachSuspendButton'
+import { DemoCoachesCard } from '@/app/features/admin/components/DemoCoachesCard'
 import { InviteCoachForm } from '@/app/features/admin/components/InviteCoachForm'
 import { RefundThreadButton } from '@/app/features/admin/components/RefundThreadButton'
 import { RevokeGrantButton } from '@/app/features/admin/components/RevokeGrantButton'
@@ -15,6 +16,7 @@ import {
   getGrantsForAdmin,
 } from '@/server/features/campaign/presentation/queries'
 import { getCoachesForAdmin } from '@/server/features/coach/presentation/queries'
+import { getDemoCoachesForAdmin } from '@/server/features/demo/presentation/queries'
 import type { AdminThreadRowDto } from '@/server/features/thread/application/dto/AdminThreadRow.dto'
 import { getThreadsForAdmin } from '@/server/features/thread/presentation/queries'
 
@@ -30,13 +32,14 @@ const waitingDays = (row: AdminThreadRowDto, now: Date): number | null =>
 
 /** 管理画面。本番は Cloudflare Access の奥に置く */
 const AdminPage = async () => {
-  const [coaches, threads, campaigns] = await Promise.all([
+  const [coaches, threads, campaigns, demos] = await Promise.all([
     getCoachesForAdmin(),
     getThreadsForAdmin(),
     getGrantableCampaigns(),
+    getDemoCoachesForAdmin(),
   ])
   // 管理者でなければ、画面があること自体を知らせない
-  if (!coaches || !threads || !campaigns) notFound()
+  if (!coaches || !threads || !campaigns || !demos) notFound()
   const grants =
     (await getGrantsForAdmin(coaches.map((coach) => coach.userId))) ??
     new Map<string, CoachFeeGrantSummaryDto[]>()
@@ -50,6 +53,8 @@ const AdminPage = async () => {
         <h2 className="text-heading">コーチを招待</h2>
         <InviteCoachForm campaigns={campaigns} />
       </Card>
+
+      {demos.enabled && <DemoCoachesCard coaches={demos.coaches} />}
 
       <Card>
         <h2 className="text-heading">コーチ（{coaches.length}人）</h2>
