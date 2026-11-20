@@ -165,6 +165,7 @@ src/
 | server | `coach-review` | コーチへのレビュー |
 | server | `notification` | 通知（キュー・LINE・メール） |
 | server | `monitor` | モニター募集のプロモーションコード（コーチが発行。1レッスンをモニター価格で。0円なら無料） |
+| server | `demo` | デモのコーチ（staging だけ）。管理画面から作り、架空の生徒・レッスンを入れる。デモ用のリンク（`/api/auth/demo-login`）でログインし、7日で消す。デモのあいだは通知を送らず、Stripe も呼ばない |
 | server | `share` | 添削の公開の許可（コーチと生徒の組ごと。申し込みのときに聞き、マイページで変えられる。履歴を残す） |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |

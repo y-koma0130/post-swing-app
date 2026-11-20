@@ -1,11 +1,15 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
-import { betterAuth } from 'better-auth'
+import { type BetterAuthPlugin, betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { createAuthEndpoint } from 'better-auth/api'
+import { setSessionCookie } from 'better-auth/cookies'
 import { captcha } from 'better-auth/plugins/captcha'
 import { emailOTP } from 'better-auth/plugins/email-otp'
+import { z } from 'zod'
 import { getDb } from '@/server/db/client'
 import * as schema from '@/server/db/schema'
+import { resolveDemoLoginToken } from '@/server/features/demo/public'
 import {
   getTurnstileSecretKey,
   TURNSTILE_ACTIONS,
@@ -19,6 +23,31 @@ const lineUserEmail = (lineUserId: string): string => `line_${lineUserId}@users.
 
 /** ログイン時に公式アカウントの友だち追加を促す（友だちでないと通知を送れない） */
 const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize?bot_prompt=aggressive'
+
+/**
+ * デモ用のリンク（/api/auth/demo-login?token=…）。開くと、そのデモのコーチとしてログインし、ホームを開く。
+ * 入れるのは staging・開発中の、期限内のデモのコーチだけ（決め方は demo の resolveDemoLogin）。
+ * 入れなければ、コーチのログイン画面に理由を付けて戻す
+ */
+const demoLogin = () =>
+  ({
+    id: 'demo-login',
+    endpoints: {
+      demoLogin: createAuthEndpoint(
+        '/demo-login',
+        { method: 'GET', query: z.object({ token: z.string() }) },
+        async (ctx) => {
+          const resolved = await resolveDemoLoginToken(ctx.query.token)
+          if (!resolved.ok) throw ctx.redirect(`/coach/login?demo=${resolved.error}`)
+          const user = await ctx.context.internalAdapter.findUserById(resolved.value.userId)
+          if (!user) throw ctx.redirect('/coach/login?demo=not_found')
+          const session = await ctx.context.internalAdapter.createSession(user.id)
+          await setSessionCookie(ctx, { session, user })
+          throw ctx.redirect('/coach')
+        }
+      ),
+    },
+  }) satisfies BetterAuthPlugin
 
 const createAuth = () =>
   betterAuth({
@@ -57,6 +86,7 @@ const createAuth = () =>
           }
         : {},
     plugins: [
+      demoLogin(),
       // ログインコードの送信はボットに叩かれやすい（メールの送信枠と、送信元の評判を守る）
       captcha({
         provider: 'cloudflare-turnstile',

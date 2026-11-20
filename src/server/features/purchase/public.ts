@@ -4,6 +4,7 @@ import {
   resolveFeeOnApproval,
   startGrantsOnApproval,
 } from '@/server/features/campaign/public'
+import { isDemoCoach } from '@/server/features/demo/public'
 import { err, type Result } from '@/server/utils/result'
 import { capturePurchase } from './application/usecases/capturePurchase.usecase'
 import { lowerMonthlyPrices as lowerMonthlyPricesUsecase } from './application/usecases/lowerMonthlyPrices.usecase'
@@ -30,8 +31,15 @@ export { releasePendingPurchase } from './infrastructure/repositories/purchaseRe
  * purchase がほかの feature に公開する関数（ほかの feature は、purchase の domain と、このファイルだけを使う）
  */
 
-/** 開発中だけ、Stripe を通っていない申し込み（開発用ルートで作ったもの）も承認・お断りできる */
-const allowWithoutStripe = import.meta.env.DEV
+/**
+ * Stripe を通っていない申し込みも承認・お断りできるか。
+ * 開発中（開発用ルートで作ったもの）と、デモのコーチ（staging でコーチ候補が試すもの）だけ
+ */
+const allowWithoutStripeFor = async (purchaseId: string): Promise<boolean> => {
+  if (import.meta.env.DEV) return true
+  const purchase = await findPurchase(purchaseId)
+  return purchase ? isDemoCoach(purchase.coachUserId) : false
+}
 
 /** Stripe との通信の失敗は、ほかの失敗と同じく値で返す（呼ぶ側で「もう一度」を出す・翌日に回す） */
 const guard = async <T, E extends string>(
@@ -48,7 +56,7 @@ const guard = async <T, E extends string>(
 
 /** コーチが承認した申し込みの、仮押さえした支払いを確定する（月額はサブスクリプションも始める） */
 export const capturePayment = (purchaseId: string) =>
-  guard('支払いの確定', () =>
+  guard('支払いの確定', async () =>
     capturePurchase(
       { purchaseId, now: new Date() },
       {
@@ -59,17 +67,22 @@ export const capturePayment = (purchaseId: string) =>
         startSubscription,
         savePayment,
         markPurchaseCaptured,
-        allowWithoutStripe,
+        allowWithoutStripe: await allowWithoutStripeFor(purchaseId),
       }
     )
   )
 
 /** 断った・期限切れの申し込みの、カードの仮押さえを外す */
 export const voidPayment = (purchaseId: string) =>
-  guard('仮押さえの取り消し', () =>
+  guard('仮押さえの取り消し', async () =>
     voidPurchase(
       { purchaseId },
-      { findPurchase, cancelPaymentIntent, markPurchaseVoided, allowWithoutStripe }
+      {
+        findPurchase,
+        cancelPaymentIntent,
+        markPurchaseVoided,
+        allowWithoutStripe: await allowWithoutStripeFor(purchaseId),
+      }
     )
   )
 

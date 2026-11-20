@@ -20,6 +20,8 @@ export type SkipReason =
   | 'no_line_account'
   | 'not_line_friend'
   | 'no_email'
+  /** デモのコーチ（staging でコーチ候補が試すもの）のやりとりは送らない */
+  | 'demo_coach'
   | ActivitySkipReason
 
 type Dependencies = Readonly<{
@@ -34,6 +36,8 @@ type Dependencies = Readonly<{
   findEmail: (userId: string) => Promise<string | null>
   sendLinePush: (lineUserId: string, text: string) => Promise<void>
   sendEmail: (input: { to: string; subject: string; text: string }) => Promise<void>
+  /** デモのコーチか（demo が持つ） */
+  isDemoCoach: (coachUserId: string) => Promise<boolean>
   appUrl: string
 }>
 
@@ -52,6 +56,9 @@ export const deliverNotification: DeliverNotification = async (message, deps) =>
   const ctx = await deps.findContext(message)
   if (!ctx) {
     return ok({ sent: false, reason: 'context_not_found' })
+  }
+  if (await deps.isDemoCoach(ctx.coachUserId)) {
+    return ok({ sent: false, reason: 'demo_coach' })
   }
   // やりとりの通知は、もう見た・あとの通知がある なら送らず、まだ見ていないものをまとめて知らせる
   let unseen: ActivityFacts['unseen'] | null = null

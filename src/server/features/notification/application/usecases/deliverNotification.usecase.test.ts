@@ -20,6 +20,7 @@ const setup = (overrides: Partial<Omit<Deps, 'sendLinePush' | 'sendEmail'>> = {}
     findActivityFacts: async () => null,
     findLineRecipient: async () => ({ lineUserId: 'U123', isFriend: true }),
     findEmail: async () => 'coach@example.com',
+    isDemoCoach: async () => false,
     appUrl: 'https://swingpost.example',
     ...overrides,
     sendLinePush,
@@ -29,6 +30,17 @@ const setup = (overrides: Partial<Omit<Deps, 'sendLinePush' | 'sendEmail'>> = {}
 }
 
 describe('deliverNotification', () => {
+  it('デモのコーチのやりとりは送らない', async () => {
+    const { deps, sendLinePush, sendEmail } = setup({ isDemoCoach: async () => true })
+    const result = await deliverNotification(
+      { kind: 'reply_sent', threadId: 't1', studentUserId: 'student-1' },
+      deps
+    )
+    expect(result).toEqual({ ok: true, value: { sent: false, reason: 'demo_coach' } })
+    expect(sendLinePush).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
   it('添削が届いたら、生徒に LINE で閲覧ページの URL を送る', async () => {
     const { deps, sendLinePush } = setup()
     const result = await deliverNotification(

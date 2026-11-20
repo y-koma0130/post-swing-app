@@ -2,9 +2,12 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Logo } from '@/app/components/Logo'
 import { StagingBadge } from '@/app/components/StagingBadge'
+import { Badge } from '@/app/components/ui/Badge'
 import { SignOutButton } from '@/app/features/auth/components/SignOutButton'
 import { CoachNav } from '@/app/features/coach-nav/components/CoachNav'
+import { formatDateTime } from '@/app/utils/format'
 import { getActor } from '@/server/auth/getActor'
+import { getCurrentDemoExpiry } from '@/server/features/demo/presentation/queries'
 
 type Props = {
   children: ReactNode
@@ -12,7 +15,7 @@ type Props = {
 
 // コーチ向け：タブレット・PC前提
 const CoachLayout = async ({ children }: Props) => {
-  const actor = await getActor()
+  const [actor, demoExpiry] = await Promise.all([getActor(), getCurrentDemoExpiry()])
 
   return (
     <div className="bg-surface min-h-dvh">
@@ -22,7 +25,8 @@ const CoachLayout = async ({ children }: Props) => {
             <Link href="/coach">
               <Logo height={36} />
             </Link>
-            <StagingBadge />
+            {/* デモのコーチには、stg環境ではなくデモ環境と出す（コーチ候補に見せる画面なので） */}
+            {demoExpiry ? <Badge tone="warning">デモ環境</Badge> : <StagingBadge />}
           </div>
           {actor && (
             <>
@@ -32,6 +36,15 @@ const CoachLayout = async ({ children }: Props) => {
           )}
         </div>
       </header>
+      {demoExpiry && (
+        // デモのコーチ（staging でコーチ候補が試すもの）。実際には送られない・届かないことを伝える
+        <div className="bg-mint-soft border-line-soft border-b">
+          <p className="text-body mx-auto max-w-6xl px-6 py-2 text-sm">
+            これはデモです。生徒・レッスンは架空で、通知やお支払いは実際には行われません。
+            {formatDateTime(demoExpiry)}にデータごと消えます。
+          </p>
+        </div>
+      )}
       <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
     </div>
   )

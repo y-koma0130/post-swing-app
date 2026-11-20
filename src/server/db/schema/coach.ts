@@ -31,6 +31,13 @@ export const coachProfile = sqliteTable('coach_profile', {
   avatarR2Key: text('avatar_r2_key'),
   /** 返信遅れフラグを立てた日時（7日で自動で外れる。判定は domain の isDelayFlagActive） */
   delayFlagSetAt: integer({ mode: 'timestamp_ms' }),
+  /**
+   * デモのコーチ（staging で、コーチ候補に操作を試してもらう）の期限。デモでなければ null。
+   * 期限を過ぎたら、毎日の処理でデータごと消す
+   */
+  demoExpiresAt: integer({ mode: 'timestamp_ms' }),
+  /** デモ用のログインのリンクに入れるトークンのハッシュ（SHA-256）。デモでなければ null */
+  demoTokenHash: text().unique(),
   ...timestamps,
 })
 
