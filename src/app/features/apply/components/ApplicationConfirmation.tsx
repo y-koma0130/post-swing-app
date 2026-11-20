@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { formatYen } from '@/app/utils/format'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
 import { APPLICATION_RULES, THREAD_RULES } from '@/server/features/thread/domain/rules'
@@ -11,6 +12,8 @@ type Props = {
   priceYen: number
   systemFeeYen: number
   maxSubmissions: number
+  /** モニターのプロモーションコードでの申し込み（0円なら無料） */
+  monitor: boolean
 }
 
 /**
@@ -23,15 +26,27 @@ export const ApplicationConfirmation = ({
   priceYen,
   systemFeeYen,
   maxSubmissions,
+  monitor,
 }: Props) => {
   const monthly = planKind === 'monthly'
+  const free = priceYen === 0
   const perMonth = monthly ? '／月' : ''
   const rows: ReadonlyArray<readonly [string, string]> = [
-    ['プラン', `${coachName}さんの${PLAN_LABEL[planKind]}`],
+    ['プラン', `${coachName}さんの${PLAN_LABEL[planKind]}${monitor ? '（モニター）' : ''}`],
     [
       'お支払い金額',
-      `${formatYen(priceYen + systemFeeYen)}${perMonth}（税込。価格 ${formatYen(priceYen)}＋システム利用料 ${formatYen(systemFeeYen)}）`,
+      free
+        ? '無料（モニター）'
+        : `${formatYen(priceYen + systemFeeYen)}${perMonth}（税込。価格 ${formatYen(priceYen)}＋システム利用料 ${formatYen(systemFeeYen)}）`,
     ],
+    ...(monitor
+      ? [
+          [
+            'モニターの条件',
+            '添削を SNS で紹介することへの許可が条件です。紹介するかはコーチが決めるので、必ず紹介されるわけではありません（紹介するときは選んだ範囲で。名前は出しません）。あとから許可を取り消すことはできません（顔をぼかすか、年代・平均スコアを出すかは、マイページで変えられます）',
+          ] as const,
+        ]
+      : []),
     [
       '内容',
       `1レッスン${THREAD_RULES.durationDays}日間、動画の提出${maxSubmissions}回まで（コーチの不在期間があるときは、その日数だけ延びます）`,
@@ -46,7 +61,9 @@ export const ApplicationConfirmation = ({
       : []),
     [
       'お支払い方法・時期',
-      `クレジットカード（Stripe）。いまはカードの利用枠を確保するだけで、コーチが受け付けた時点で請求します${monthly ? '。2か月目からは毎月の更新日に請求します' : ''}`,
+      free
+        ? 'お支払いはありません（カードの登録もいりません）'
+        : `クレジットカード（Stripe）。いまはカードの利用枠を確保するだけで、コーチが受け付けた時点で請求します${monthly ? '。2か月目からは毎月の更新日に請求します' : ''}`,
     ],
     [
       '開始の時期',
@@ -54,7 +71,9 @@ export const ApplicationConfirmation = ({
     ],
     [
       'キャンセル・返金',
-      `コーチがお受けできなかったときは請求されません。受け付けたあとは、原則として返金しません${monthly ? '（すでに始まった月の分も同じです）' : ''}`,
+      free
+        ? '無料のため、お支払い・返金はありません'
+        : `コーチがお受けできなかったときは請求されません。受け付けたあとは、原則として返金しません${monthly ? '（すでに始まった月の分も同じです）' : ''}`,
     ],
   ]
   return (
@@ -70,11 +89,11 @@ export const ApplicationConfirmation = ({
       </dl>
       <p className="text-caption text-muted">
         くわしくは
-        <Link href="/legal/terms" className="underline">
+        <Link href="/legal/terms" className={inlineLinkClass}>
           利用規約
         </Link>
         と
-        <Link href="/legal/commerce" className="underline">
+        <Link href="/legal/commerce" className={inlineLinkClass}>
           特定商取引法に基づく表記
         </Link>
         をご覧ください。

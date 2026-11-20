@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/app/components/ui/Button'
+import { PRESSED_CLASS } from '@/app/components/ui/pressStyles'
 import { usePlayerShortcuts } from '../hooks/usePlayerShortcuts'
 import { useVideoPlayer } from '../hooks/useVideoPlayer'
 import { formatTimecode, frameStyle, type PlaybackRate, stepFrameTime } from '../utils/frame'
@@ -207,7 +208,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
               pauseBoth()
               player.stepFrames(-1)
             }}
-            className="text-body hover:bg-surface active:bg-surface rounded-full px-2 py-1 text-sm disabled:opacity-40"
+            className={`text-body hover:bg-surface ${PRESSED_CLASS} rounded-full px-2 py-1 text-sm disabled:opacity-40`}
           >
             ◀︎
           </button>
@@ -233,7 +234,7 @@ export const ComparePlayer = ({ left, right, activePane, onActivatePane }: Props
               pauseBoth()
               player.stepFrames(1)
             }}
-            className="text-body hover:bg-surface active:bg-surface rounded-full px-2 py-1 text-sm disabled:opacity-40"
+            className={`text-body hover:bg-surface ${PRESSED_CLASS} rounded-full px-2 py-1 text-sm disabled:opacity-40`}
           >
             ▶︎
           </button>

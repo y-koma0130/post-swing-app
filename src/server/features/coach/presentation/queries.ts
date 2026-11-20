@@ -16,6 +16,7 @@ import {
   findCoachAvailabilityFacts,
   toAvailabilityDto,
 } from '../infrastructure/query-services/coachAvailability'
+import { countCoachesForAdmin } from '../infrastructure/query-services/countCoachesForAdmin'
 import { findCoachProfileBySlug } from '../infrastructure/query-services/findCoachProfileBySlug'
 import { findCoachSettings } from '../infrastructure/query-services/findCoachSettings'
 import { listCoachesForAdmin } from '../infrastructure/query-services/listCoachesForAdmin'
@@ -107,4 +108,10 @@ export const getCoachAvatarImage = async (
   const data = key ? await getAvatarBytes(key) : null
   if (!key || !data) return null
   return { data, contentType: key.endsWith('.png') ? 'image/png' : 'image/jpeg' }
+}
+
+/** 管理画面のコーチの数。管理者でなければ null */
+export const getCoachStatsForAdmin = async () => {
+  if (!(await isAdminRequest())) return null
+  return countCoachesForAdmin()
 }

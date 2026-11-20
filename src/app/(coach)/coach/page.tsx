@@ -3,18 +3,25 @@ import { redirect } from 'next/navigation'
 import { ButtonLink } from '@/app/components/ui/Button'
 import { Card } from '@/app/components/ui/Card'
 import { EmptyState } from '@/app/components/ui/EmptyState'
+import { inlineLinkClass } from '@/app/components/ui/linkStyles'
 import { Notice } from '@/app/components/ui/Notice'
 import { Page, PageHeader } from '@/app/components/ui/Page'
 import { AvailabilityBanner } from '@/app/features/coach-availability/components/AvailabilityBanner'
 import { CoachThreadSections } from '@/app/features/thread/components/CoachThreadSections'
+import { parseShownCount, showMoreHref } from '@/app/utils/listPaging'
 import {
   getCurrentCoach,
   getCurrentCoachAvailabilitySettings,
 } from '@/server/features/coach/presentation/queries'
+import { getCurrentDemoExpiry } from '@/server/features/demo/presentation/queries'
 import { getCoachThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 /** コーチのホーム */
-const CoachHomePage = async () => {
+type Props = {
+  searchParams: Promise<{ finished?: string }>
+}
+
+const CoachHomePage = async ({ searchParams }: Props) => {
   const current = await getCurrentCoach()
   if (current.kind === 'signed_out') redirect('/coach/login')
   if (current.kind === 'not_coach') {
@@ -30,19 +37,22 @@ const CoachHomePage = async () => {
     )
   }
   const { settings, actor } = current
-  const [threads, availability] = await Promise.all([
-    getCoachThreadSummaries(actor.userId),
+  const finishedShown = parseShownCount((await searchParams).finished)
+  const [lessons, availability, demoExpiry] = await Promise.all([
+    getCoachThreadSummaries(actor.userId, finishedShown),
     getCurrentCoachAvailabilitySettings(),
+    getCurrentDemoExpiry(),
   ])
 
   return (
     <Page layout="list">
       {availability && <AvailabilityBanner availability={availability.availability} />}
-      {!settings.chargesEnabled && (
+      {/* デモは口座を登録できない（お支払いも行わない）ので、口座の案内は出さない */}
+      {!settings.chargesEnabled && demoExpiry === null && (
         <Notice tone="warning" emphasis title="まだ申し込みを受け付けていません">
           <p>
             売上を受け取る口座を設定すると、受付ページから申し込めるようになります。
-            <Link href="/coach/settings" className="ml-1 underline">
+            <Link href="/coach/settings" className={`ml-1 ${inlineLinkClass}`}>
               設定へ
             </Link>
           </p>
@@ -56,7 +66,7 @@ const CoachHomePage = async () => {
           </ButtonLink>
         }
       />
-      {threads.length === 0 ? (
+      {lessons.active.length === 0 && lessons.finishedTotal === 0 ? (
         <EmptyState
           title="まだレッスンはありません"
           description="受付ページのリンクを、インスタのプロフィールやストーリーで生徒に案内しましょう。申し込みがあると、ここに並びます。"
@@ -67,7 +77,11 @@ const CoachHomePage = async () => {
           }
         />
       ) : (
-        <CoachThreadSections threads={threads} />
+        <CoachThreadSections
+          lessons={lessons}
+          now={new Date()}
+          moreHref={showMoreHref('/coach', finishedShown)}
+        />
       )}
     </Page>
   )

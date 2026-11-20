@@ -1,7 +1,9 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { startOfLocalMonth } from '@/server/utils/localDate'
 import { viewThread } from '../application/usecases/viewThread.usecase'
+import { countLessonsForAdmin } from '../infrastructure/query-services/countLessonsForAdmin'
 import { findThreadDetail } from '../infrastructure/query-services/findThreadDetail'
 import {
   listCoachThreadSummaries,
@@ -25,18 +27,32 @@ export const getCoachThread = async (threadId: string) => {
   return result.ok ? result.value : null
 }
 
-/** コーチのホームの一覧（コーチであることは呼び出し側で確かめる） */
-export const getCoachThreadSummaries = (coachUserId: string) =>
-  listCoachThreadSummaries(coachUserId)
+/**
+ * コーチのホームの一覧（コーチであることは呼び出し側で確かめる）。
+ * 終わったレッスンは finishedLimit 件まで（「もっと見る」で増やす）
+ */
+export const getCoachThreadSummaries = (coachUserId: string, finishedLimit: number) =>
+  listCoachThreadSummaries(coachUserId, finishedLimit)
 
-/** 生徒のマイページの一覧。ログインしていなければ null */
-export const getMyThreadSummaries = async () => {
+/**
+ * 生徒のマイページの一覧。ログインしていなければ null。
+ * coachSlug を渡すと、そのコーチとのレッスンだけ（コーチ詳細ページ）
+ */
+export const getMyThreadSummaries = async (
+  options: Readonly<{ finishedLimit: number; coachSlug?: string | undefined }>
+) => {
   const actor = await getActor()
-  return actor ? listStudentThreadSummaries(actor.userId) : null
+  return actor ? listStudentThreadSummaries(actor.userId, options) : null
 }
 
 /** 管理画面のスレッド一覧。管理者でなければ null */
 export const getThreadsForAdmin = async () => {
   if (!(await isAdminRequest())) return null
   return listThreadsForAdmin()
+}
+
+/** 管理画面のレッスンと生徒の数（今月は日本時間の月）。管理者でなければ null */
+export const getLessonStatsForAdmin = async () => {
+  if (!(await isAdminRequest())) return null
+  return countLessonsForAdmin(startOfLocalMonth(new Date()))
 }

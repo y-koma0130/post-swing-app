@@ -7,6 +7,8 @@ import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
 import { findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { capturePayment, voidPayment } from '@/server/features/purchase/public'
+import { parseShareConsentForm } from '@/server/features/share/domain/values/ShareConsent'
+import { isShareConsentLocked, recordShareConsent } from '@/server/features/share/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
 import {
@@ -22,10 +24,7 @@ import {
   type SendChatMessageError,
   sendChatMessage,
 } from '../application/usecases/sendChatMessage.usecase'
-import {
-  type SubmitSubmissionError,
-  submitSubmission,
-} from '../application/usecases/submitSubmission.usecase'
+import { submitSubmission } from '../application/usecases/submitSubmission.usecase'
 import type { ChatAttachmentRequest } from '../domain/services/checkChatAttachment.service'
 import type { QuoteRequest } from '../domain/services/checkQuoteTarget.service'
 import { quoteKindSchema } from '../domain/values/ChatMessage'
@@ -44,6 +43,7 @@ import {
   saveSubmission,
   saveThreadNotice,
 } from '../infrastructure/repositories/threadRepository'
+import { SUBMIT_ERROR_TEXT } from './submitErrorText'
 
 const CHAT_ERROR = {
   not_found: '送れませんでした',
@@ -118,20 +118,6 @@ export const sendChatMessageAction = async (
   return actionSuccess('送りました')
 }
 
-const SUBMIT_ERROR = {
-  not_found: '提出できませんでした',
-  closed: 'このレッスンは終了しています',
-  expired: 'このレッスンは期限が切れています',
-  awaiting_reply: 'コーチの添削が届いてから、次を提出できます',
-  submission_limit: 'このレッスンで提出できる回数に達しています',
-  no_videos: '動画を選んでください',
-  too_many_videos: '1回に送れる動画は2本までです',
-  invalid_video: '動画をもう一度選び直してください',
-  theme_required: '直したいところを書いてください',
-  note_too_long: 'メモは1000文字までです',
-  invalid_golf_profile: '平均スコアは50〜200の数字で入れてください',
-} as const satisfies Record<SubmitSubmissionError, string>
-
 /**
  * 提出を確定する（上げておいた動画1〜2本とテーマ・メモをまとめる）。
  * 動画は先に /api/threads/[threadId]/videos へ1本ずつ上げておく
@@ -153,10 +139,17 @@ export const submitSubmissionAction = async (
       theme: formString(formData, 'theme'),
       note: formString(formData, 'note'),
       golfProfile: {
+        ageRange: formString(formData, 'ageRange'),
         roundFrequency: formString(formData, 'roundFrequency'),
         averageScore: formString(formData, 'averageScore'),
       },
       videoIds: formData.getAll('videoId').filter((v): v is string => typeof v === 'string'),
+      shareConsent: parseShareConsentForm({
+        allowPublish: formString(formData, 'allowPublish'),
+        showFace: formString(formData, 'showFace'),
+        showAgeRange: formString(formData, 'showAgeRange'),
+        showScore: formString(formData, 'showScore'),
+      }),
       now,
     },
     {
@@ -167,11 +160,13 @@ export const submitSubmissionAction = async (
       saveThreadNotice,
       notifySubmitted: (input) =>
         notify({ kind: 'video_submitted', ...input, occurredAt: now.toISOString() }),
+      recordShareConsent,
+      isShareConsentLocked,
       generateId: () => crypto.randomUUID(),
     }
   )
   if (!result.ok) {
-    return actionError(SUBMIT_ERROR[result.error])
+    return actionError(SUBMIT_ERROR_TEXT[result.error])
   }
   revalidatePath(`/t/${threadId}`)
   revalidatePath(`/coach/threads/${threadId}`)

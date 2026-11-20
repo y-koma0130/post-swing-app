@@ -1,5 +1,6 @@
 import vinext from 'vinext/server/fetch-handler'
 import { applyDevMigrations } from './server/db/applyDevMigrations'
+import { runDailyDemoCleanup } from './server/features/demo/presentation/scheduled'
 import { runDailyDrillVideoCleanup } from './server/features/drill/presentation/scheduled'
 import { handleNotificationBatch } from './server/features/notification/presentation/handleNotificationBatch'
 import {
@@ -50,5 +51,6 @@ export default {
     await runJob('キャンセル待ち', () => runDailyWaitlistNotification(now))
     await runJob('手数料の差額', () => runDailyFeeAdjustmentSummary(now))
     await runJob('ドリルの動画', () => runDailyDrillVideoCleanup(now))
+    await runJob('デモ', () => runDailyDemoCleanup(now))
   },
 } satisfies ExportedHandler<Env>

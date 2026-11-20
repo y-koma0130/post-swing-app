@@ -29,25 +29,25 @@ const StudentsPage = async () => {
           description="申し込みがあると、ここに生徒が並びます。"
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {students.map((student) => (
+            // 1行目：名前とレッスン中の札、2行目：タグ（長ければ省略）と、レッスンの件数・最後のやりとり
             <li key={student.studentUserId}>
-              <CardLink
-                href={`/coach/students/${student.studentUserId}`}
-                className="flex items-center justify-between gap-4"
-              >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="truncate font-bold">{student.name || '（名前なし）'}</p>
-                  {student.tags.length > 0 && (
-                    <p className="text-caption text-muted truncate">{student.tags.join('・')}</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  {student.inLesson && <Badge tone="mint">レッスン中</Badge>}
-                  <p className="text-caption text-muted">
-                    レッスン {student.threadCount}件・{formatMonthDay(student.lastActivityAt)}
+              <CardLink compact href={`/coach/students/${student.studentUserId}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="min-w-0 flex-1 truncate font-bold">
+                    {student.name || '（名前なし）'}
                   </p>
+                  {student.inLesson && <Badge tone="mint">レッスン中</Badge>}
                 </div>
+                <p className="text-caption text-muted mt-0.5 flex gap-2">
+                  {student.tags.length > 0 && (
+                    <span className="min-w-0 truncate">{student.tags.join('・')}</span>
+                  )}
+                  <span className="ml-auto shrink-0">
+                    レッスン {student.threadCount}件・{formatMonthDay(student.lastActivityAt)}
+                  </span>
+                </p>
               </CardLink>
             </li>
           ))}

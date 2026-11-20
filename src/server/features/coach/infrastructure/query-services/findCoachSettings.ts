@@ -30,7 +30,6 @@ export const findCoachSettings: FindCoachSettings = async (userId) => {
         name: plan.name,
         priceYen: plan.price,
         minPriceYen: PLAN_MIN_PRICE_YEN[plan.kind],
-        description: plan.description,
         active: plan.active,
       })),
   }

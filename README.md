@@ -66,13 +66,21 @@ pnpm dev
 5. コーチのホームの「申し込み（承認待ち）」から受ける（お断りもできる）。受けたら、コーチの添削画面でカードを作って返す
 6. 毎日の処理を手で動かす：`curl "http://localhost:5173/cdn-cgi/local/scheduled?cron=0+19+*+*+*"`
 
+### デモのコーチ（staging）
+
+管理画面の「デモ」から、コーチ候補ごとにデモのコーチを作れる（staging と開発中だけ）。作ると出るリンクを渡すと、メールのコードなしでログインして試せる。7日で、データごと消える。
+
+添削のお手本の動画は、R2 の `demo/samples/front.mp4`・`demo/samples/back.mp4` に手で置く（置いていなければ、動画が再生できないだけで、ほかは試せる）。
+
 ### Stripe を試す
 
 テストモードのキーを `.dev.vars` の `STRIPE_SECRET_KEY` に入れる。Webhook は Stripe CLI で手元に転送し、表示された `whsec_…` を `STRIPE_WEBHOOK_SECRET` に入れる。
 
 ```bash
-stripe listen --forward-to localhost:5173/api/webhooks/stripe --forward-connect-to localhost:5173/api/webhooks/stripe
+stripe listen --events checkout.session.completed,invoice.created,invoice.paid,customer.subscription.deleted,account.updated --forward-to localhost:5173/api/webhooks/stripe --forward-connect-to localhost:5173/api/webhooks/stripe
 ```
+
+`--events` は必須（受け取るイベントを渡さないと、Stripe CLI がエラーで止まる）。受け取るイベントは本番の Webhook と同じ。
 
 ### コマンド
 

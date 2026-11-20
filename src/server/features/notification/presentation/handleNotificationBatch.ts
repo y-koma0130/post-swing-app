@@ -1,5 +1,6 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
+import { isDemoCoach } from '@/server/features/demo/public'
 import { findThreadActivityFacts } from '@/server/features/thread/public'
 import { deliverNotification } from '../application/usecases/deliverNotification.usecase'
 import { notificationMessageSchema } from '../domain/values/NotificationMessage'
@@ -32,6 +33,7 @@ export const handleNotificationBatch = async (batch: MessageBatch): Promise<void
         findEmail: findDeliverableEmail,
         sendLinePush,
         sendEmail,
+        isDemoCoach,
         appUrl: env.APP_URL,
       })
       if (result.ok && !result.value.sent) {

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { quietLinkClass } from '@/app/components/ui/linkStyles'
 import { COACH_TERMS_URL, PRIVACY_POLICY_URL } from '@/app/utils/externalLinks'
 
 /**
@@ -7,9 +8,17 @@ import { COACH_TERMS_URL, PRIVACY_POLICY_URL } from '@/app/utils/externalLinks'
  */
 export const SiteFooter = () => (
   <footer className="text-caption text-muted flex flex-wrap justify-center gap-x-4 gap-y-2 px-6 py-10 whitespace-nowrap">
-    <Link href="/legal/terms">利用規約</Link>
-    <a href={PRIVACY_POLICY_URL}>プライバシーポリシー</a>
-    <Link href="/legal/commerce">特定商取引法に基づく表記</Link>
-    <a href={COACH_TERMS_URL}>コーチ向け利用規約</a>
+    <Link href="/legal/terms" className={quietLinkClass}>
+      利用規約
+    </Link>
+    <a href={PRIVACY_POLICY_URL} className={quietLinkClass}>
+      プライバシーポリシー
+    </a>
+    <Link href="/legal/commerce" className={quietLinkClass}>
+      特定商取引法に基づく表記
+    </Link>
+    <a href={COACH_TERMS_URL} className={quietLinkClass}>
+      コーチ向け利用規約
+    </a>
   </footer>
 )

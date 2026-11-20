@@ -35,6 +35,7 @@ const toStudent: NotificationMessage[] = [
   replySent,
   { kind: 'chat_message', threadId: t, to: 'student', recipientUserId: 'student-1' },
   { kind: 'thread_closed', threadId: t, studentUserId: 'student-1' },
+  { kind: 'review_replied', threadId: t, studentUserId: 'student-1' },
   threadExpiring,
   { kind: 'waitlist_opened', coachUserId: 'coach-1', studentUserId: 'student-1' },
   { kind: 'application_approved', threadId: t, studentUserId: 'student-1' },
@@ -101,5 +102,37 @@ describe('composeNotification', () => {
 
   it('期限の通知には日付を入れる（日本時間）', () => {
     expect(composeNotification(threadExpiring, ctx).text).toContain('12/19')
+  })
+
+  describe('申し込みの通知は、無料（0円）なら請求の話をしない', () => {
+    const received: NotificationMessage = {
+      kind: 'application_received',
+      threadId: t,
+      coachUserId: 'coach-1',
+    }
+    const declined: NotificationMessage = {
+      kind: 'application_declined',
+      threadId: t,
+      studentUserId: 'student-1',
+    }
+    const expired: NotificationMessage = {
+      kind: 'application_expired',
+      threadId: t,
+      studentUserId: 'student-1',
+    }
+
+    it('有料なら、請求のことを書く', () => {
+      expect(composeNotification(received, ctx).text).toContain('生徒への請求が確定')
+      expect(composeNotification(declined, ctx).text).toContain('請求はされません')
+      expect(composeNotification(expired, ctx).text).toContain('請求はされません')
+    })
+
+    it('無料なら、請求のことを書かない', () => {
+      const free = { ...ctx, free: true }
+      expect(composeNotification(received, free).text).toContain('無料のモニターの申し込み')
+      for (const message of [received, declined, expired]) {
+        expect(composeNotification(message, free).text).not.toContain('請求')
+      }
+    })
   })
 })

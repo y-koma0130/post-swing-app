@@ -11,6 +11,7 @@ export type SubmissionContentsBlocker =
   | 'theme_required'
   | 'note_too_long'
   | 'invalid_golf_profile'
+  | 'age_required'
 
 export type AcceptedSubmission = Readonly<{
   videos: Submission['videos']
@@ -32,7 +33,7 @@ export type CheckSubmissionContents = (
     theme: string
     note: string
     /** フォームのまま（空なら書かなかった）。2回目以降の提出では見ない */
-    golfProfile: Readonly<{ roundFrequency: string; averageScore: string }>
+    golfProfile: Readonly<{ ageRange: string; roundFrequency: string; averageScore: string }>
   }>
 ) => Result<AcceptedSubmission, SubmissionContentsBlocker>
 
@@ -43,21 +44,51 @@ export type CheckSubmissionContents = (
  * - 動画は1〜2本
  * - 使えるのは、このスレッドに本人が上げて、まだ提出に使っていない動画だけ
  * - 最初の提出ではテーマ（直したいところ）を書く。2回目以降はテーマを変えない
- * - 最初の提出では、ラウンドの回数と平均スコアも書ける（任意）
+ * - 最初の提出では、年代を必ず聞く（公開の許可に使う）。ラウンドの回数と平均スコアは任意
  * - メモは1000文字まで
  */
 export const checkSubmissionContents: CheckSubmissionContents = (input) => {
   const accepted = acceptDraftVideos(input)
   if (!accepted.ok) return err(accepted.error)
-  const videos = accepted.value
+  const fields = checkSubmissionFields({
+    isFirst: input.thread.submissions.length === 0,
+    theme: input.theme,
+    note: input.note,
+    golfProfile: input.golfProfile,
+  })
+  if (!fields.ok) return err(fields.error)
+  return ok({ videos: accepted.value, ...fields.value })
+}
+
+export type SubmissionFieldsBlocker =
+  | 'theme_required'
+  | 'note_too_long'
+  | 'invalid_golf_profile'
+  | 'age_required'
+
+export type CheckSubmissionFields = (
+  input: Readonly<{
+    /** 最初の提出か（テーマ・年代などを聞くのは最初だけ） */
+    isFirst: boolean
+    theme: string
+    note: string
+    golfProfile: Readonly<{ ageRange: string; roundFrequency: string; averageScore: string }>
+  }>
+) => Result<Omit<AcceptedSubmission, 'videos'>, SubmissionFieldsBlocker>
+
+/**
+ * 提出の動画以外の入力（checkSubmissionContents のうち、テーマ・メモ・ゴルフの情報）。
+ * 生徒の画面でも、動画を上げる前に同じ確認をする
+ */
+export const checkSubmissionFields: CheckSubmissionFields = (input) => {
   const note = input.note.trim()
   if (note.length > THREAD_RULES.maxSubmissionNoteLength) return err('note_too_long')
-  const isFirst = input.thread.submissions.length === 0
-  const theme = isFirst ? threadThemeSchema.safeParse(input.theme) : null
+  const theme = input.isFirst ? threadThemeSchema.safeParse(input.theme) : null
   if (theme && !theme.success) return err('theme_required')
-  const golfProfile = isFirst ? parseGolfProfile(input.golfProfile) : null
-  if (isFirst && golfProfile === null) return err('invalid_golf_profile')
-  return ok({ videos, note, theme: theme?.success ? theme.data : null, golfProfile })
+  const golfProfile = input.isFirst ? parseGolfProfile(input.golfProfile) : null
+  if (input.isFirst && golfProfile === null) return err('invalid_golf_profile')
+  if (input.isFirst && golfProfile?.ageRange === null) return err('age_required')
+  return ok({ note, theme: theme?.success ? theme.data : null, golfProfile })
 }
 
 export type DraftVideosBlocker = 'no_videos' | 'too_many_videos' | 'invalid_video'

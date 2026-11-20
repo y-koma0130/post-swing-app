@@ -7,10 +7,11 @@ import { z } from 'zod'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
 import { grantCampaignToCoach } from '@/server/features/campaign/public'
+import { isDemoCoach } from '@/server/features/demo/public'
 import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
-import { formChecked, formString } from '@/server/utils/formData'
+import { formChecked, formNumber, formString } from '@/server/utils/formData'
 import type { ErrorOf } from '@/server/utils/result'
 import { deleteAbsence } from '../application/usecases/deleteAbsence.usecase'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
@@ -152,7 +153,7 @@ export const updateCoachProfileAction = async (
     instagram: formString(formData, 'instagram'),
     licenses: formData.getAll('licenses').filter((v): v is string => typeof v === 'string'),
     licenseOther: formString(formData, 'licenseOther'),
-    monthlyCapacity: Number(formString(formData, 'monthlyCapacity')),
+    monthlyCapacity: formNumber(formData, 'monthlyCapacity'),
   })
   if (!input.success) {
     return actionError(firstIssue(input.error))
@@ -203,8 +204,7 @@ export const updatePlansAction = async (
     planKindSchema.options.map((kind) => ({
       kind,
       name: formString(formData, `${kind}.name`),
-      price: Number(formString(formData, `${kind}.price`)),
-      description: formString(formData, `${kind}.description`),
+      price: formNumber(formData, `${kind}.price`),
       active: formChecked(formData, `${kind}.active`),
     }))
   )
@@ -248,7 +248,13 @@ export const startPayoutOnboardingAction = async (
   try {
     result = await startPayoutOnboarding(
       { actor },
-      { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
+      {
+        findPayoutAccount,
+        createConnectAccount,
+        saveStripeAccountId,
+        createOnboardingLink,
+        isDemoCoach,
+      }
     )
   } catch (error) {
     // Stripe の設定不足（本番の有効化前など）もここに来る。中身はログで確かめる
@@ -256,6 +262,9 @@ export const startPayoutOnboardingAction = async (
     return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
   }
   if (!result.ok) {
+    if (result.error === 'demo_coach') {
+      return actionError('デモでは口座を登録できません。正式に登録したあとに設定できます')
+    }
     redirect('/coach')
   }
   redirect(result.value.url)

@@ -18,12 +18,14 @@ type Props = {
   studentName: string
   /** 返事の期限 */
   deadline: Date | null
+  /** 0円の申し込み（無料のモニター）。請求の話をしない */
+  free: boolean
 }
 
 /**
  * 承認待ちの申し込みに、受けるか断るかを決める（悩みと動画は下の時系列で見る）
  */
-export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) => {
+export const ApplicationDecision = ({ threadId, studentName, deadline, free }: Props) => {
   const [approveState, approve, approving] = useActionState(
     approveApplicationAction,
     IDLE_ACTION_STATE
@@ -46,7 +48,10 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
         <p>
           下の悩みと動画を見て、受けるか決めてください
           {deadline ? `（${formatDateTime(deadline)}まで）` : ''}
-          。受けると生徒への請求が確定し、添削を始められます。期限までに決めないと、自動でお断りします。
+          {free
+            ? '。無料のモニターの申し込みです。受けると添削を始められます。'
+            : '。受けると生徒への請求が確定し、添削を始められます。'}
+          期限までに決めないと、自動でお断りします。
         </p>
       </div>
       <FormMessage state={approveState} />
@@ -92,7 +97,11 @@ export const ApplicationDecision = ({ threadId, studentName, deadline }: Props) 
           <FormMessage state={declineState} />
           <div className="flex flex-wrap gap-2">
             <Button type="submit" variant="danger" pending={declining} disabled={approving}>
-              {declining ? 'お断りしています…' : 'お断りする（請求されません）'}
+              {declining
+                ? 'お断りしています…'
+                : free
+                  ? 'お断りする'
+                  : 'お断りする（請求されません）'}
             </Button>
             <Button variant="ghost" onClick={() => setDeclineOpen(false)} disabled={pending}>
               やめる

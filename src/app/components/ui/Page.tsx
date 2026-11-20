@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { navLinkClass } from '@/app/components/ui/linkStyles'
 
 /**
  * ページの幅と余白（画面ごとに決めず、用途で選ぶ）
@@ -42,9 +43,11 @@ type PageHeaderProps = {
 export const PageHeader = ({ title, eyebrow, description, back, actions }: PageHeaderProps) => (
   <header className="space-y-2">
     {back && (
-      <Link href={back.href} className="text-caption text-muted hover:text-ink inline-block">
-        ← {back.label}
-      </Link>
+      <div>
+        <Link href={back.href} className={`text-caption ${navLinkClass}`}>
+          ← {back.label}
+        </Link>
+      </div>
     )}
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="space-y-1">

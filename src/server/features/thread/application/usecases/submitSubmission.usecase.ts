@@ -1,5 +1,10 @@
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
+import {
+  checkShareConsent,
+  type ShareConsentBlocker,
+} from '@/server/features/share/domain/services/checkShareConsent.service'
+import type { ShareConsentChoices } from '@/server/features/share/domain/values/ShareConsent'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import { absenceAtSend } from '../../domain/services/absenceAtSend.service'
@@ -40,9 +45,11 @@ export type SubmitSubmissionParams = Readonly<{
   theme: string
   note: string
   /** ラウンドの回数と平均スコア（フォームのまま。最初の提出だけ使う） */
-  golfProfile: Readonly<{ roundFrequency: string; averageScore: string }>
+  golfProfile: Readonly<{ ageRange: string; roundFrequency: string; averageScore: string }>
   /** 上げておいた動画（1〜2本） */
   videoIds: ReadonlyArray<string>
+  /** 公開の許可（申し込みの最初の提出のときだけ使う。選ばなければ「公開しない」） */
+  shareConsent: ShareConsentChoices
   now: Date
 }>
 
@@ -60,10 +67,23 @@ type Dependencies = Readonly<{
   saveThreadNotice: (notice: NewThreadNotice) => Promise<void>
   /** コーチに「動画が届きました」と知らせる（キューに積むだけ） */
   notifySubmitted: (input: { threadId: string; coachUserId: string }) => Promise<void>
+  /** 申し込みのときに選んだ公開の許可を保存する（share が持つ） */
+  recordShareConsent: (input: {
+    coachUserId: string
+    studentUserId: string
+    choices: ShareConsentChoices
+    now: Date
+  }) => Promise<void>
+  /** モニターで申し込んだことのあるコーチか（公開をやめられない。share が持つ） */
+  isShareConsentLocked: (studentUserId: string, coachUserId: string) => Promise<boolean>
   generateId: () => string
 }>
 
-export type SubmitSubmissionError = 'not_found' | SubmissionBlocker | SubmissionContentsBlocker
+export type SubmitSubmissionError =
+  | 'not_found'
+  | SubmissionBlocker
+  | SubmissionContentsBlocker
+  | ShareConsentBlocker
 
 export type SubmitSubmission = (
   params: SubmitSubmissionParams,
@@ -73,7 +93,8 @@ export type SubmitSubmission = (
 /**
  * 生徒が提出する（上げておいた動画1〜2本とメモをまとめる）。
  * いま提出できるかは checkSubmission、中身は checkSubmissionContents で決める。
- * 申し込みの下書きでの提出（悩みと動画）は、カードを登録して承認待ちになるまでコーチに知らせない
+ * 申し込みの下書きでの提出（悩みと動画）は、カードを登録して承認待ちになるまでコーチに知らせない。
+ * 申し込みの最初の提出では、公開の許可も保存する（18歳未満は許可できない。checkShareConsent）
  */
 export const submitSubmission: SubmitSubmission = async (params, deps) => {
   const thread = await deps.findThread(params.threadId)
@@ -97,6 +118,19 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
   if (!contents.ok) {
     return err(contents.error)
   }
+  // 申し込み（下書き）の最初の提出でだけ、公開の許可を聞く
+  // モニターで申し込んだことのあるコーチには、あとの申し込みでも公開をやめられない
+  const consent =
+    thread.status === 'draft' && contents.value.golfProfile !== null
+      ? checkShareConsent({
+          choices: params.shareConsent,
+          ageRange: contents.value.golfProfile.ageRange,
+          locked: await deps.isShareConsentLocked(thread.studentUserId, thread.coachUserId),
+        })
+      : null
+  if (consent && !consent.ok) {
+    return err(consent.error)
+  }
 
   // 申し込みの下書きでは、コーチにはまだ見えない（不在のお知らせも通知も、承認待ちになってから）
   const draft = thread.status === 'draft'
@@ -113,6 +147,14 @@ export const submitSubmission: SubmitSubmission = async (params, deps) => {
     nextStatus: nextStatusAfter(thread, 'student_submitted'),
     sentDuringAbsenceId: absence?.absenceId ?? null,
   })
+  if (consent?.ok) {
+    await deps.recordShareConsent({
+      coachUserId: thread.coachUserId,
+      studentUserId: thread.studentUserId,
+      choices: consent.value,
+      now: params.now,
+    })
+  }
   if (absence) {
     await deps.saveThreadNotice({
       ...absence,

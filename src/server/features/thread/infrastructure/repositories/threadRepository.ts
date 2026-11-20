@@ -447,26 +447,6 @@ export const saveThreadRead: SaveThreadRead = async ({ threadId, userId, at }) =
 /** 申し込み（下書き・承認待ち）の状態 */
 const APPLICATION_STATUSES = ['draft', 'requested'] as const
 
-export type FindOpenApplication = (
-  studentUserId: string,
-  coachUserId: string
-) => Promise<{ threadId: string } | null>
-/** このコーチへの、まだ決まっていない申し込み（下書き・承認待ち）。1人1件まで */
-export const findOpenApplication: FindOpenApplication = async (studentUserId, coachUserId) => {
-  const row = await getDb()
-    .select({ threadId: thread.id })
-    .from(thread)
-    .where(
-      and(
-        eq(thread.studentUserId, studentUserId),
-        eq(thread.coachUserId, coachUserId),
-        inArray(thread.status, [...APPLICATION_STATUSES])
-      )
-    )
-    .get()
-  return row ?? null
-}
-
 export type ApplicationThread = Readonly<{
   id: string
   purchaseId: string
@@ -476,7 +456,7 @@ export type ApplicationThread = Readonly<{
   submissionCount: number
 }>
 
-const findApplicationBy = async (where: SQL): Promise<ApplicationThread | null> => {
+const findApplicationBy = async (where: SQL | undefined): Promise<ApplicationThread | null> => {
   const row = await getDb()
     .select({
       id: thread.id,
@@ -493,6 +473,20 @@ const findApplicationBy = async (where: SQL): Promise<ApplicationThread | null> 
     .get()
   return row ?? null
 }
+
+export type FindOpenApplication = (
+  studentUserId: string,
+  coachUserId: string
+) => Promise<ApplicationThread | null>
+/** このコーチへの、まだ決まっていない申し込み（下書き・承認待ち）。1人1件まで */
+export const findOpenApplication: FindOpenApplication = (studentUserId, coachUserId) =>
+  findApplicationBy(
+    and(
+      eq(thread.studentUserId, studentUserId),
+      eq(thread.coachUserId, coachUserId),
+      inArray(thread.status, [...APPLICATION_STATUSES])
+    )
+  )
 
 export type FindApplicationThread = (threadId: string) => Promise<ApplicationThread | null>
 /** 申し込みのスレッドと、送った提出の数（カードの登録へ進めるかを決める） */

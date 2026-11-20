@@ -1,13 +1,16 @@
 import { err, ok, type Result } from '@/server/utils/result'
-import type { Purchase } from '../../domain/values/Purchase'
+import { needsPayment, type Purchase } from '../../domain/values/Purchase'
 
 type Dependencies = Readonly<{
   findPurchase: (purchaseId: string) => Promise<Purchase | null>
   /** カードの仮押さえを外す（Stripe）。外せなければ false（すでに外れていれば true） */
   cancelPaymentIntent: (paymentIntentId: string) => Promise<boolean>
   markPurchaseVoided: (purchaseId: string) => Promise<void>
-  /** Stripe を通っていない申し込み（開発用）でも進めてよいか。本番では false */
-  allowWithoutStripe: boolean
+  /**
+   * Stripe を通っていない申し込みでも進めてよいか（開発中の申し込みと、デモのコーチの申し込み）。
+   * 本物の申し込みでは false
+   */
+  allowWithoutStripe: (purchase: Pick<Purchase, 'coachUserId'>) => Promise<boolean>
 }>
 
 export type VoidPurchaseError = 'not_found' | 'not_authorized' | 'void_failed'
@@ -23,6 +26,7 @@ export type VoidPurchase = (
  * ドメインルール:
  * - 仮押さえした申し込みだけ。取り消し済みなら何もしない
  * - 生徒には請求しない
+ * - 無料のモニター（0円）は、Stripe を呼ばずに取り消す
  */
 export const voidPurchase: VoidPurchase = async ({ purchaseId }, deps) => {
   const purchase = await deps.findPurchase(purchaseId)
@@ -39,7 +43,7 @@ export const voidPurchase: VoidPurchase = async ({ purchaseId }, deps) => {
     if (!(await deps.cancelPaymentIntent(purchase.stripePaymentIntentId))) {
       return err('void_failed')
     }
-  } else if (!deps.allowWithoutStripe) {
+  } else if (needsPayment(purchase) && !(await deps.allowWithoutStripe(purchase))) {
     return err('void_failed')
   }
   await deps.markPurchaseVoided(purchase.id)

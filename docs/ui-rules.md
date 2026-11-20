@@ -63,12 +63,15 @@
 | ページの見出し・戻り先・右上の操作 | `PageHeader` |
 | ボタン | `Button`・`ButtonLink`・`buttonClass`（variant：primary・secondary・ghost・danger。size：sm・md・lg） |
 | 文字だけの目立たない操作（消す・閉じる・終える） | `TextButton`・`textButtonClass`（取り消せないものは `danger`） |
+| 押した瞬間の見た目（自分で作るとき） | `pressStyles` の `PRESSED_CLASS`（薄いミント）。カード・行・文字のリンク・文字のボタンで同じものを使う |
+| 文字だけのリンク | `linkStyles` の `navLinkClass`（戻り先・ヘッダーのメニュー）・`inlineLinkClass`（文の中の下線のリンク）・`plainLinkClass`（色や太字で押せると分かる、下線なしのリンク）・`quietLinkClass`（フッター） |
 | 押せないカード | `Card` |
-| **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る） |
+| **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る。たくさん並ぶ一覧では `compact` で詰める） |
 | 画面の中のお知らせ・操作を促す枠 | `Notice`（tone：neutral・mint・warning・line。操作が要るときは `emphasis`） |
 | 状態・残り枠などの小さな札 | `Badge`（tone：mint・neutral・warning・danger） |
 | 中身がまだないとき | `EmptyState`（「ない」だけでなく、次にすることを書く） |
 | 送る前の確認 | `useConfirmedSubmit`（フォーム）か `ConfirmDialog`。ブラウザの `confirm()` は使わない |
+| Server Action で送るフォーム | `useActionForm`（`form` に `noValidate` と `onSubmit`） |
 | Server Action の結果をフォームの下に出す | `FormMessage` |
 | 開け閉めできる区分 | `details` に `summaryClass` と `DisclosureToggle` |
 | 1つを選ぶ切り替え（道具・速度・タブ） | `segmentGroupClass` で囲んで `segmentClass` |
@@ -85,13 +88,14 @@
 
 - 角丸：カードとダイアログは `rounded-card`（20px）、入力欄は `rounded-xl`、ボタン・札・切り替えは `rounded-full`。これ以外の角丸を作らない
 - カードは白地に `line-soft` の枠と `shadow-sm`（`Card` のまま）。カードの中にカードを入れない
+- たくさん並ぶ一覧（レッスンの一覧など）のカードは、`CardLink` の `compact`（余白を小さく、影なし）にして2行に収める。増え続ける履歴は、カードにせず区切り線の行にする
 
 ## 押したときの反応
 
 スマホでは hover が効かないので、押したことが必ず分かるようにする。
 
 - **押せるものと押せないものを見分けられるようにする。** 枠のあるカードで押せるものは `CardLink` にする。押せないカードに hover の色を付けない
-- **押した瞬間の見た目を付ける。** ボタンは `active:scale-[0.97]`（`buttonClass` に入っている）、カードは背景を `surface` にする（`CardLink` に入っている）
+- **押した瞬間の見た目を付ける。** ボタンは `active:scale-[0.97]`（`buttonClass` に入っている）、カードは背景を `surface` にする（`CardLink` に入っている）。文字だけのボタン・リンクも、押した瞬間に背景を薄いミントにする（`textButtonClass`・`linkStyles` に入っている）。`className="underline"` だけのリンクを作らない
 - **キーボードで選んだときはミントの枠を出す。** `focus-visible:ring-mint`。共通の部品に入っているので、自分で作ったときだけ気をつける
 - **送っているあいだはボタンを押せなくして、文言を変える。** 「送る」→「送っています…」のように「〜しています…」にする。`pending` で `aria-busy` を付ける。薄くはしない（使えないように見えるため）
 - 押せない状態（`disabled`）だけを薄くする（`opacity-40`）
@@ -107,6 +111,7 @@
   - 資格：`COACH_LICENSE_LABEL`
 - 確認ダイアログは、何が起きるか・取り消せるかを書く。確定のボタンは動詞にする（「消す」「終える」「送る」）。「OK」「はい」にしない
 - エラーは、何が起きたかと、次にどうすればいいかを書く
+- 入力のエラーは、ブラウザの吹き出し（`required`・`min`・`max` の標準の表示）に任せない。`form` に `noValidate` を付け、サーバーの確認の結果を `FormMessage` で出す。Server Action で送るフォームは `useActionForm`（エラーのときも入力が消えない）。動画を上げてから送るフォームは、上げる前にサーバーと同じ確認（domain のサービス）を画面で行う
 
 ## アクセシビリティ
 

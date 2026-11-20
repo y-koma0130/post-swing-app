@@ -20,7 +20,6 @@ export type CoachSettingsDto = {
     priceYen: number
     /** この種類の最低価格 */
     minPriceYen: number
-    description: string
     active: boolean
   }>
 }

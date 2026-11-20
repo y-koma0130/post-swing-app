@@ -1,7 +1,8 @@
 import 'server-only'
-import { and, asc, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, plan, purchase, thread, waitlistEntry } from '@/server/db/schema'
+import { MONITOR_COUNTED_PURCHASE_STATUSES } from '@/server/features/monitor/domain/rules'
 import { CAPACITY_COUNTED_STATUSES } from '@/server/features/thread/domain/rules'
 import type { ActiveSubscription } from '../../application/usecases/lowerMonthlyPrices.usecase'
 import type { CheckoutCoach } from '../../application/usecases/startApplication.usecase'
@@ -102,20 +103,35 @@ export type HasActiveSubscription = (studentUserId: string, coachUserId: string)
 export const hasActiveSubscription: HasActiveSubscription = (studentUserId, coachUserId) =>
   hasPaidPurchase(studentUserId, coachUserId, 'monthly', ['paid'])
 
-export type SavePendingPurchase = (p: Purchase) => Promise<void>
-export const savePendingPurchase: SavePendingPurchase = async (p) => {
-  const now = new Date()
-  await getDb().insert(purchase).values({
-    id: p.id,
-    studentUserId: p.studentUserId,
-    coachUserId: p.coachUserId,
-    planKind: p.planKind,
-    priceYen: p.priceYen,
-    systemFeeYen: p.systemFeeYen,
-    status: p.status,
-    createdAt: now,
-    updatedAt: now,
-  })
+export type SavePendingPurchase = (
+  p: Purchase,
+  monitorLimit: Readonly<{ codeId: string; maxUses: number }> | null
+) => Promise<boolean>
+/**
+ * 申し込み途中の申し込みを作る。モニターなら、そのコードの申し込みが先着の人数に満たないときだけ作る
+ * （同時に申し込まれても超えないよう、数える条件を INSERT の中に入れた1つの文にする。D1 は書き込みを1つずつ処理する）
+ */
+export const savePendingPurchase: SavePendingPurchase = async (p, monitorLimit) => {
+  const now = Date.now()
+  const counted = sql.join(
+    MONITOR_COUNTED_PURCHASE_STATUSES.map((status) => sql`${status}`),
+    sql`, `
+  )
+  const result = await getDb().run(sql`
+    INSERT INTO purchase
+      (id, student_user_id, coach_user_id, plan_kind, price_yen, system_fee_yen, status,
+       monitor_code_id, created_at, updated_at)
+    SELECT ${p.id}, ${p.studentUserId}, ${p.coachUserId}, ${p.planKind}, ${p.priceYen},
+      ${p.systemFeeYen}, ${p.status}, ${p.monitorCodeId}, ${now}, ${now}
+    WHERE ${
+      monitorLimit === null
+        ? sql`1`
+        : sql`(SELECT count(*) FROM purchase u
+      WHERE u.monitor_code_id = ${monitorLimit.codeId} AND u.status IN (${counted}))
+      < ${monitorLimit.maxUses}`
+    }
+  `)
+  return result.meta.changes > 0
 }
 
 export type AttachCheckoutSession = (purchaseId: string, sessionId: string) => Promise<void>
@@ -185,6 +201,20 @@ export const markPurchaseVoided: MarkPurchaseVoided = async (purchaseId) => {
     .update(purchase)
     .set({ status: 'voided', updatedAt: new Date() })
     .where(and(eq(purchase.id, purchaseId), inArray(purchase.status, ['pending', 'authorized'])))
+}
+
+export type ReleasePendingPurchase = (purchaseId: string) => Promise<boolean>
+/**
+ * カードを登録しないままの申し込みを取り消す（下書きを消した・プランを選び直した）。
+ * 申し込み途中のものだけ。取り消せたら true（カードの登録が先に済んでいたら false）
+ */
+export const releasePendingPurchase: ReleasePendingPurchase = async (purchaseId) => {
+  const result = await getDb()
+    .update(purchase)
+    .set({ status: 'voided', updatedAt: new Date() })
+    .where(and(eq(purchase.id, purchaseId), eq(purchase.status, 'pending')))
+    .run()
+  return result.meta.changes > 0
 }
 
 export type MarkSubscriptionCanceled = (stripeSubscriptionId: string) => Promise<void>

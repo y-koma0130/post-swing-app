@@ -1,6 +1,11 @@
 import 'server-only'
 import { notify } from '@/server/features/notification/public'
+import { deleteMediaObject } from '@/server/utils/mediaStorage'
 import { requestApproval } from './application/usecases/requestApproval.usecase'
+import {
+  deleteDraftThreads,
+  findDraftThreadToDelete,
+} from './infrastructure/repositories/maintenanceRepository'
 import {
   findThreadByPurchase,
   markThreadRequested,
@@ -29,3 +34,20 @@ export const requestThreadApproval = (input: { purchaseId: string; now: Date }) 
     markThreadRequested,
     notifyApplicationReceived: (i) => notify({ kind: 'application_received', ...i }),
   })
+
+/**
+ * 申し込みの下書きを、提出・動画ごと消す（purchase から。生徒がプランを選び直したとき）。
+ * 下書きでなければ（カードの登録が済んでいたら）何もしない。消せなかった動画のファイルは残る
+ */
+export const discardDraftThread = async (threadId: string): Promise<void> => {
+  const draft = await findDraftThreadToDelete(threadId)
+  if (!draft) return
+  for (const key of draft.videoR2Keys) {
+    try {
+      await deleteMediaObject(key)
+    } catch (error) {
+      console.error('[thread] 下書きの動画を消せませんでした', key, error)
+    }
+  }
+  await deleteDraftThreads([draft.threadId])
+}

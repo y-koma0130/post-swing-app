@@ -34,6 +34,8 @@ export const listThreadsForAdmin: ListThreadsForAdmin = async () => {
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
     .innerJoin(student, eq(student.id, thread.studentUserId))
     .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
+    // デモのコーチのレッスン（架空の生徒）は出さない
+    .where(isNull(coachProfile.demoExpiresAt))
     .orderBy(desc(thread.updatedAt))
     .limit(LIMIT)
     .all()

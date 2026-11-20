@@ -4,7 +4,9 @@ import { useActionState, useState } from 'react'
 import { TurnstileWidget } from '@/app/components/TurnstileWidget'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
+import { Notice } from '@/app/components/ui/Notice'
 import { formatYen } from '@/app/utils/format'
+import { planTermsText } from '@/app/utils/planText'
 import { SYSTEM_FEE_NOTE, systemFeeFor } from '@/app/utils/systemFeeText'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
@@ -18,6 +20,8 @@ type Props = {
   turnstileSiteKey: string
   /** コーチが不在・返信遅れのとき、了承チェックの文言。了承が要らなければ null */
   delayAckLabel: string | null
+  /** 使えるプロモーションコードを入れたとき、モニターの1レッスン。なければ null（ふだんのプランを出す） */
+  monitor?: Readonly<{ code: string; priceYen: number }> | null | undefined
 }
 
 /** プランを選んで申し込む（悩みと動画を送る画面へ。請求はコーチが受け付けたとき） */
@@ -27,6 +31,7 @@ export const PlanCheckoutForm = ({
   student,
   turnstileSiteKey,
   delayAckLabel,
+  monitor = null,
 }: Props) => {
   const [state, action, pending] = useActionState(startApplicationAction, IDLE_ACTION_STATE)
   const [acknowledged, setAcknowledged] = useState(false)
@@ -37,14 +42,26 @@ export const PlanCheckoutForm = ({
     if (kind === 'monthly' && student?.subscribed) return '申し込み済み'
     return null
   }
-  const firstAvailable = plans.find((plan) => unavailableReason(plan.kind) === null)
+  const single = plans.find((plan) => plan.kind === 'single')
+  // モニターは1レッスンだけ（コーチが1レッスンを止めていても申し込める）
+  const shownPlans = monitor
+    ? [
+        {
+          kind: 'single' as const,
+          name: `${single?.name ?? '1レッスン'}（モニター）`,
+          priceYen: monitor.priceYen,
+        },
+      ]
+    : plans
+  const firstAvailable = shownPlans.find((plan) => unavailableReason(plan.kind) === null)
 
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="coachSlug" value={coachSlug} />
+      {monitor && <input type="hidden" name="monitorCode" value={monitor.code} />}
       <fieldset className="space-y-3">
         <legend className="sr-only">プラン</legend>
-        {plans.map((plan) => {
+        {shownPlans.map((plan) => {
           const reason = unavailableReason(plan.kind)
           return (
             <label
@@ -65,16 +82,24 @@ export const PlanCheckoutForm = ({
                 <span className="flex items-baseline justify-between">
                   <span className="font-bold">{plan.name}</span>
                   <span className="font-bold">
-                    {formatYen(plan.priceYen)}
+                    {plan.priceYen === 0 ? '無料' : formatYen(plan.priceYen)}
                     {plan.kind === 'monthly' && <span className="text-sm font-normal">/月</span>}
                   </span>
                 </span>
-                <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
+                <span className="text-muted mt-1 block text-sm">
+                  {reason ?? planTermsText(plan.kind)}
+                </span>
                 <span className="text-caption text-muted mt-1 block">
-                  ＋システム利用料{formatYen(systemFeeFor(plan.priceYen))}
-                  {plan.kind === 'monthly' ? '／月' : ''}（お支払い{' '}
-                  {formatYen(plan.priceYen + systemFeeFor(plan.priceYen))}
-                  {plan.kind === 'monthly' ? '／月' : ''}）
+                  {plan.priceYen === 0 ? (
+                    'システム利用料もかかりません。カードの登録は不要です'
+                  ) : (
+                    <>
+                      ＋システム利用料{formatYen(systemFeeFor(plan.priceYen))}
+                      {plan.kind === 'monthly' ? '／月' : ''}（お支払い{' '}
+                      {formatYen(plan.priceYen + systemFeeFor(plan.priceYen))}
+                      {plan.kind === 'monthly' ? '／月' : ''}）
+                    </>
+                  )}
                 </span>
               </span>
             </label>
@@ -101,6 +126,14 @@ export const PlanCheckoutForm = ({
           {delayAckLabel}
         </label>
       )}
+      {monitor && (
+        <Notice tone="mint" title="モニターの条件">
+          <p>
+            添削の内容を、コーチが SNS
+            で紹介することがあります。名前は出しません。顔を出すか、年代・スコアを出すかは、悩みと動画を送るときに選べます（18歳以上の方に限ります）。
+          </p>
+        </Notice>
+      )}
       <FormMessage state={state} />
       <Button
         type="submit"
@@ -111,10 +144,16 @@ export const PlanCheckoutForm = ({
       >
         {pending ? '準備しています…' : student ? '申し込みへ進む' : 'ログインして申し込む'}
       </Button>
-      <p className="text-caption text-muted">
-        悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。
-        {SYSTEM_FEE_NOTE}お支払いは Stripe の画面で行い、カード番号は SwingPost に保存されません。
-      </p>
+      {monitor?.priceYen === 0 ? (
+        <p className="text-caption text-muted">
+          悩みと動画を送ると申し込めます。コーチが内容を見て受け付けたら、添削が始まります。
+        </p>
+      ) : (
+        <p className="text-caption text-muted">
+          悩みと動画を送ってカードを登録すると申し込めます。請求されるのは、コーチが内容を見て受け付けたときです（月額は、そこから毎月自動で請求されます）。
+          {SYSTEM_FEE_NOTE}お支払いは Stripe の画面で行い、カード番号は SwingPost に保存されません。
+        </p>
+      )}
     </form>
   )
 }

@@ -164,12 +164,17 @@ src/
 | server | `drill` | ドリル |
 | server | `coach-review` | コーチへのレビュー |
 | server | `notification` | 通知（キュー・LINE・メール） |
+| server | `monitor` | モニター募集のプロモーションコード（コーチが発行。1レッスンをモニター価格で。0円なら無料） |
+| server | `demo` | デモのコーチ（staging だけ）。管理画面から作り、架空の生徒・レッスンを入れる。デモ用のリンク（`/api/auth/demo-login`）でログインし、7日で消す。デモのあいだは通知を送らず、Stripe も呼ばない |
+| server | `share` | 添削の公開の許可（コーチと生徒の組ごと。申し込みのときに聞き、マイページで変えられる。履歴を残す） |
 | app | `coach-profile` | 受付ページの部品 |
 | app | `coach-settings`・`admin` | 設定画面・管理画面のフォーム |
 | app | `apply` | プランの選択・キャンセル待ち |
 | app | `thread`・`video-upload` | レッスン一覧・時系列・提出（動画の変換と送信） |
 | app | `video-player`・`annotation`・`review-card`・`chat` | 添削の道具（再生・線引き・カード・チャット） |
 | app | `drill`・`coach-review`・`notification`・`auth` | ドリル・レビュー・LINE の友だち追加の案内・ログイン |
+| app | `monitor`・`share` | プロモーションコードの設定・公開の許可（変更のフォームと、コーチへの表示） |
+| app | `share-image` | シェア画像の作成（ブラウザだけで組み立て・顔のぼかし。顔の検出は MediaPipe を作る画面でだけ CDN から読み込む）。いまは `SHARE_IMAGE_ENABLED` で画面に出していない |
 
 ### 依存の向き
 

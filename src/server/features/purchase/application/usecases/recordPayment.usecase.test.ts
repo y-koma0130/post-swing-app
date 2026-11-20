@@ -14,6 +14,7 @@ const purchase: Purchase = {
   status: 'pending',
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,
+  monitorCodeId: null,
 }
 
 const paidAt = new Date('2026-11-14T00:00:00Z')

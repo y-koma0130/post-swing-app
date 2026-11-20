@@ -13,25 +13,47 @@ const params = {
 
 const setup = (review: Awaited<ReturnType<Deps['findReviewByThread']>>) => {
   const saveReviewReply = vi.fn<Deps['saveReviewReply']>(async () => undefined)
-  const deps: Deps = { findReviewByThread: async () => review, saveReviewReply }
-  return { deps, saveReviewReply }
+  const notifyReviewReplied = vi.fn<Deps['notifyReviewReplied']>(async () => undefined)
+  const deps: Deps = {
+    findReviewByThread: async () => review,
+    saveReviewReply,
+    notifyReviewReplied,
+  }
+  return { deps, saveReviewReply, notifyReviewReplied }
 }
 
 describe('replyToCoachReview', () => {
-  it('担当のコーチは返信できる', async () => {
-    const { deps, saveReviewReply } = setup({ id: 'r1', coachUserId: 'coach-1', replied: false })
+  it('担当のコーチは返信でき、生徒に知らせる', async () => {
+    const { deps, saveReviewReply, notifyReviewReplied } = setup({
+      id: 'r1',
+      coachUserId: 'coach-1',
+      studentUserId: 'student-1',
+      replied: false,
+    })
     expect(await replyToCoachReview(params, deps)).toEqual({ ok: true, value: undefined })
     expect(saveReviewReply).toHaveBeenCalledWith('r1', 'ありがとうございます', now)
+    expect(notifyReviewReplied).toHaveBeenCalledWith({ threadId: 't1', studentUserId: 'student-1' })
   })
 
   it('ほかのコーチへのレビューには返信できない', async () => {
-    const { deps, saveReviewReply } = setup({ id: 'r1', coachUserId: 'coach-2', replied: false })
+    const { deps, saveReviewReply } = setup({
+      id: 'r1',
+      coachUserId: 'coach-2',
+      studentUserId: 'student-1',
+      replied: false,
+    })
     expect(await replyToCoachReview(params, deps)).toEqual({ ok: false, error: 'not_found' })
     expect(saveReviewReply).not.toHaveBeenCalled()
+    expect(deps.notifyReviewReplied).not.toHaveBeenCalled()
   })
 
   it('返信は1回だけ', async () => {
-    const { deps, saveReviewReply } = setup({ id: 'r1', coachUserId: 'coach-1', replied: true })
+    const { deps, saveReviewReply } = setup({
+      id: 'r1',
+      coachUserId: 'coach-1',
+      studentUserId: 'student-1',
+      replied: true,
+    })
     expect(await replyToCoachReview(params, deps)).toEqual({
       ok: false,
       error: 'already_replied',

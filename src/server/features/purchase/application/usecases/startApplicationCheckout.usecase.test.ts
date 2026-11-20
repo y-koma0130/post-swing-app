@@ -28,6 +28,7 @@ const purchase: Purchase = {
   status: 'pending',
   stripeSubscriptionId: null,
   stripePaymentIntentId: null,
+  monitorCodeId: null,
 }
 const draft = {
   id: 'thread-1',
@@ -44,6 +45,10 @@ const setup = (overrides: Partial<Deps> = {}) => {
     url: 'https://checkout.stripe.com/c/cs_1',
   }))
   const attachCheckoutSession = vi.fn<Deps['attachCheckoutSession']>(async () => undefined)
+  const markPurchaseAuthorizedWithoutPayment = vi.fn<Deps['markPurchaseAuthorizedWithoutPayment']>(
+    async () => undefined
+  )
+  const requestApproval = vi.fn<Deps['requestApproval']>(async () => ({ ok: true, value: null }))
   const deps: Deps = {
     findApplicationThread: async () => draft,
     findPurchase: async () => purchase,
@@ -54,9 +59,18 @@ const setup = (overrides: Partial<Deps> = {}) => {
     findCoachAvailability: async () => ({ kind: 'available', replyTargetHours: 48 }),
     createCheckoutSession,
     attachCheckoutSession,
+    findShareConsent: async () => null,
+    markPurchaseAuthorizedWithoutPayment,
+    requestApproval,
     ...overrides,
   }
-  return { deps, createCheckoutSession, attachCheckoutSession }
+  return {
+    deps,
+    createCheckoutSession,
+    attachCheckoutSession,
+    markPurchaseAuthorizedWithoutPayment,
+    requestApproval,
+  }
 }
 
 describe('startApplicationCheckout', () => {
@@ -64,7 +78,7 @@ describe('startApplicationCheckout', () => {
     const { deps, createCheckoutSession, attachCheckoutSession } = setup()
     expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
       ok: true,
-      value: { url: 'https://checkout.stripe.com/c/cs_1' },
+      value: { kind: 'card', url: 'https://checkout.stripe.com/c/cs_1' },
     })
     expect(createCheckoutSession.mock.calls[0]?.[0]).toMatchObject({
       purchaseId: 'purchase-1',
@@ -160,6 +174,48 @@ describe('startApplicationCheckout', () => {
       productName: '山田：月額（初月）',
       priceYen: 3980,
       saveCardForRenewal: true,
+    })
+  })
+
+  describe('モニター', () => {
+    const monitor = { ...purchase, priceYen: 0, systemFeeYen: 0, monitorCodeId: 'code-1' }
+    const consent = async () => ({ allowPublish: true })
+
+    it('無料なら、カードを登録せずにそのまま承認待ちにする', async () => {
+      const { deps, createCheckoutSession, markPurchaseAuthorizedWithoutPayment, requestApproval } =
+        setup({ findPurchase: async () => monitor, findShareConsent: consent })
+      expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+        ok: true,
+        value: { kind: 'free' },
+      })
+      expect(createCheckoutSession).not.toHaveBeenCalled()
+      expect(markPurchaseAuthorizedWithoutPayment).toHaveBeenCalledWith('purchase-1')
+      expect(requestApproval).toHaveBeenCalledWith({ purchaseId: 'purchase-1', now })
+    })
+
+    it('割引なら、モニター価格でカードを仮押さえする', async () => {
+      const { deps, createCheckoutSession } = setup({
+        findPurchase: async () => ({ ...monitor, priceYen: 1000, systemFeeYen: 200 }),
+        findShareConsent: consent,
+      })
+      const result = await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)
+      expect(result.ok && result.value.kind).toBe('card')
+      expect(createCheckoutSession.mock.calls[0]?.[0]).toMatchObject({ priceYen: 1000 })
+    })
+
+    it('公開を許可していなければ申し込めない（承認待ちにも、支払い画面にも進まない）', async () => {
+      for (const findShareConsent of [async () => null, async () => ({ allowPublish: false })]) {
+        const { deps, createCheckoutSession, requestApproval } = setup({
+          findPurchase: async () => monitor,
+          findShareConsent,
+        })
+        expect(await startApplicationCheckout({ actor, threadId: 'thread-1', now }, deps)).toEqual({
+          ok: false,
+          error: 'consent_required',
+        })
+        expect(createCheckoutSession).not.toHaveBeenCalled()
+        expect(requestApproval).not.toHaveBeenCalled()
+      }
     })
   })
 })

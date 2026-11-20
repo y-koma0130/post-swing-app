@@ -6,37 +6,44 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { CoachAvailabilityNotice } from '@/app/features/coach-availability/components/CoachAvailabilityNotice'
 import { CoachLicenses } from '@/app/features/coach-profile/components/CoachLicenses'
-import { ThreadList } from '@/app/features/thread/components/ThreadList'
+import { ShareConsentForm } from '@/app/features/share/components/ShareConsentForm'
+import { StudentLessonSections } from '@/app/features/thread/components/StudentLessonSections'
+import { parseShownCount, showMoreHref } from '@/app/utils/listPaging'
 import { getActor } from '@/server/auth/getActor'
 import { getCoachProfile } from '@/server/features/coach/presentation/queries'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
+import { getMyShareConsent } from '@/server/features/share/presentation/queries'
 import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 export const metadata: Metadata = { title: 'コーチ' }
 
 type Props = {
   params: Promise<{ coachSlug: string }>
+  searchParams: Promise<{ finished?: string }>
 }
 
 /**
  * 生徒から見たコーチの詳細（マイページの「あなたのコーチ」から開く）。
  * このコーチとのスレッドと申し込み、もう一度申し込むための受付ページへの入口
  */
-const MyCoachPage = async ({ params }: Props) => {
+const MyCoachPage = async ({ params, searchParams }: Props) => {
   const { coachSlug } = await params
+  const finishedShown = parseShownCount((await searchParams).finished)
   if (!(await getActor())) {
     redirect(`/login?next=${encodeURIComponent(`/me/coaches/${coachSlug}`)}`)
   }
-  const [coach, purchases, threads] = await Promise.all([
+  const [coach, purchases, lessons, share] = await Promise.all([
     getCoachProfile(coachSlug),
     getMyPurchases(),
-    getMyThreadSummaries(),
+    getMyThreadSummaries({ finishedLimit: finishedShown, coachSlug }),
+    getMyShareConsent(coachSlug),
   ])
-  if (!coach || !purchases || !threads) notFound()
+  if (!coach || !purchases || !lessons) notFound()
   const myPurchases = purchases.filter((p) => p.coachSlug === coach.slug)
-  const myThreads = threads.filter((t) => t.coachSlug === coach.slug)
   // 申し込んだことのないコーチは、受付ページで見てもらう
-  if (myPurchases.length === 0 && myThreads.length === 0) redirect(`/c/${coach.slug}`)
+  if (myPurchases.length === 0 && lessons.active.length === 0 && lessons.finishedTotal === 0) {
+    redirect(`/c/${coach.slug}`)
+  }
 
   return (
     <Page layout="student">
@@ -59,19 +66,30 @@ const MyCoachPage = async ({ params }: Props) => {
         upcomingAbsence={coach.upcomingAbsence}
       />
 
-      <section className="space-y-3">
-        <h2 className="text-heading">添削のやりとり</h2>
-        {myThreads.length === 0 ? (
-          <p className="text-muted text-sm">レッスンの準備ができると、ここに表示されます。</p>
-        ) : (
-          <ThreadList threads={myThreads} viewer="student" showCounterpart={false} />
-        )}
-      </section>
+      <StudentLessonSections
+        lessons={lessons}
+        now={new Date()}
+        moreHref={showMoreHref(`/me/coaches/${coach.slug}`, finishedShown)}
+        showCounterpart={false}
+      />
 
       {myPurchases.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-heading">購入したプラン</h2>
           <MyPurchaseList purchases={myPurchases} showCoach={false} />
+        </section>
+      )}
+
+      {share && (
+        <section className="space-y-3">
+          <h2 className="text-heading">SNS での紹介</h2>
+          <ShareConsentForm
+            coachSlug={coach.slug}
+            coachName={coach.name}
+            consent={share.consent}
+            canPublish={share.canPublish}
+            locked={share.locked}
+          />
         </section>
       )}
 

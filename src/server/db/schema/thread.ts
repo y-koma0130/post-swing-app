@@ -33,6 +33,8 @@ export const thread = sqliteTable(
     planKind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     /** 生徒が最初の動画を送るときに書く */
     theme: text().notNull().default(''),
+    /** 年代（最初の提出のときに聞く。domain の ageRangeSchema。この機能より前の申し込みは null） */
+    ageRange: text({ enum: ['under_18', '18_29', '30s', '40s', '50s', '60s', '70_plus'] }),
     /** ふだんのラウンドの回数（最初の提出のときに任意で書く。domain の roundFrequencySchema） */
     roundFrequency: text({
       enum: ['not_yet', 'few_per_year', 'monthly', 'two_to_three_per_month', 'weekly'],

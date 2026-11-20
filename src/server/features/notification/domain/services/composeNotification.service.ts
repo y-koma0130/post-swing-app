@@ -8,6 +8,8 @@ export type NotificationContext = Readonly<{
   studentName: string
   studentUserId: string
   expiresAt: Date | null
+  /** 0円の申し込み（無料のモニター）か。請求の話をしない。レッスンにかかわらない通知ではない（undefined） */
+  free?: boolean | undefined
   /** やりとりの通知で、受け取る人がまだ見ていない出来事の数（まとめて知らせる）。なければ null */
   unseen?: Readonly<{ submissions: number; replies: number; messages: number }> | null | undefined
 }>
@@ -109,6 +111,13 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         subject: 'レッスンが終わりました',
         text: `${ctx.coachName}さんとのレッスンが終わりました。おつかれさまでした。よければ、${ctx.coachName}さんのレビューを書いてください（ほかの生徒がコーチを選ぶ参考になります）。\n${studentThreadUrl(message.threadId)}`,
       }
+    case 'review_replied':
+      return {
+        channel: 'line',
+        recipientUserId: ctx.studentUserId,
+        subject: 'レビューに返信が届きました',
+        text: `${ctx.coachName}さんから、レビューへの返信が届きました。\n${studentThreadUrl(message.threadId)}`,
+      }
     case 'waitlist_opened':
       return {
         channel: 'line',
@@ -121,7 +130,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'email',
         recipientUserId: ctx.coachUserId,
         subject: `${ctx.studentName}さんから申し込みがありました`,
-        text: `${ctx.studentName}さんから申し込みがありました。悩みと動画を見て、48時間以内に受けるか決めてください。受けると生徒への請求が確定し、添削を始められます。\n\n${coachThreadUrl(message.threadId)}`,
+        text: `${ctx.studentName}さんから申し込みがありました。悩みと動画を見て、48時間以内に受けるか決めてください。${ctx.free ? '無料のモニターの申し込みです。受けると添削を始められます。' : '受けると生徒への請求が確定し、添削を始められます。'}\n\n${coachThreadUrl(message.threadId)}`,
       }
     case 'application_approved':
       return {
@@ -135,7 +144,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
         subject: '申し込みをお受けできませんでした',
-        text: `${ctx.coachName}さんは、今回の申し込みをお受けできませんでした。請求はされません。\n${studentThreadUrl(message.threadId)}`,
+        text: `${ctx.coachName}さんは、今回の申し込みをお受けできませんでした。${ctx.free ? '' : '請求はされません。'}\n${studentThreadUrl(message.threadId)}`,
       }
     case 'retake_requested':
       return {
@@ -163,7 +172,7 @@ export const composeNotification: ComposeNotification = (message, rawCtx) => {
         channel: 'line',
         recipientUserId: ctx.studentUserId,
         subject: '申し込みが取り消されました',
-        text: `${ctx.coachName}さんから期限までにお返事がなかったため、申し込みを取り消しました。請求はされません。\n${studentThreadUrl(message.threadId)}`,
+        text: `${ctx.coachName}さんから期限までにお返事がなかったため、申し込みを取り消しました。${ctx.free ? '' : '請求はされません。'}\n${studentThreadUrl(message.threadId)}`,
       }
     case 'thread_started':
       return {

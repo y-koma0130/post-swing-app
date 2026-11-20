@@ -16,6 +16,7 @@ import {
   sendConfirmMessage,
 } from '@/app/features/coach-availability/utils/availabilityText'
 import { CoachReviewForm } from '@/app/features/coach-review/components/CoachReviewForm'
+import { MyReviewCard } from '@/app/features/coach-review/components/MyReviewCard'
 import { ReviewView } from '@/app/features/review-card/components/ReviewView'
 import { CloseThreadButton } from '@/app/features/thread/components/CloseThreadButton'
 import { MarkThreadRead } from '@/app/features/thread/components/MarkThreadRead'
@@ -159,6 +160,8 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
             maxSeconds={limits.maxVideoSeconds}
           />
         )}
+        {/* 終わったレッスンに書いたレビューと、コーチからの返信 */}
+        {thread.review && <MyReviewCard coachName={thread.coachName} review={thread.review} />}
         {thread.studentCloseBlocker === null && (
           <CloseThreadButton threadId={thread.id} coachName={thread.coachName} />
         )}
@@ -251,6 +254,16 @@ const ThreadViewPage = async ({ params, searchParams }: Props) => {
                       : null
                   }
                   prominent
+                  shareConsent={
+                    thread.status === 'draft'
+                      ? {
+                          coachName: thread.coachName,
+                          required: thread.application.monitor,
+                          locked: thread.shareConsentLocked,
+                          current: thread.shareConsentLocked ? thread.shareConsent : null,
+                        }
+                      : null
+                  }
                 />
                 {/* 撮る前に見られるよう、最初の提出の前はここにも置く */}
                 <div className="text-center">

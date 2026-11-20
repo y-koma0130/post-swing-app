@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Logo } from '@/app/components/Logo'
 import { SiteFooter } from '@/app/components/SiteFooter'
+import { navLinkClass } from '@/app/components/ui/linkStyles'
 import { BackgroundSubmissionBar } from '@/app/features/video-upload/components/BackgroundSubmissionBar'
 import { getCurrentCoach } from '@/server/features/coach/presentation/queries'
 
@@ -30,7 +31,7 @@ const StudentLayout = async ({ children }: Props) => {
         <Link href={nav.home} aria-label="SwingPost">
           <Logo height={36} />
         </Link>
-        <Link href={nav.href} className="text-muted hover:text-ink text-sm">
+        <Link href={nav.href} className={`text-sm ${navLinkClass}`}>
           {nav.label}
         </Link>
       </header>

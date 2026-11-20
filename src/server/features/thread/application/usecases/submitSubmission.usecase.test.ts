@@ -36,7 +36,8 @@ const params = {
   threadId: 'thread-1',
   theme: 'トップで右ひざが流れる',
   note: 'ドライバーです',
-  golfProfile: { roundFrequency: 'monthly', averageScore: '98' },
+  golfProfile: { ageRange: '40s', roundFrequency: 'monthly', averageScore: '98' },
+  shareConsent: { allowPublish: true, showFace: false, showAgeRange: true, showScore: true },
   videoIds: ['front-1', 'back-1'],
   now,
 }
@@ -60,11 +61,13 @@ const setup = (
   facts: Awaited<ReturnType<Deps['findCoachAvailabilityFacts']>> = {
     absences: [],
     delayFlagSetAt: null,
-  }
+  },
+  consentLocked = false
 ) => {
   const saveSubmission = vi.fn<Deps['saveSubmission']>(async () => undefined)
   const saveThreadNotice = vi.fn<Deps['saveThreadNotice']>(async () => undefined)
   const notifySubmitted = vi.fn<Deps['notifySubmitted']>(async () => undefined)
+  const recordShareConsent = vi.fn<Deps['recordShareConsent']>(async () => undefined)
   let n = 0
   const deps: Deps = {
     findThread: async () => t,
@@ -73,9 +76,11 @@ const setup = (
     saveSubmission,
     saveThreadNotice,
     notifySubmitted,
+    recordShareConsent,
+    isShareConsentLocked: async () => consentLocked,
     generateId: () => `id-${++n}`,
   }
-  return { deps, saveSubmission, saveThreadNotice, notifySubmitted }
+  return { deps, saveSubmission, saveThreadNotice, notifySubmitted, recordShareConsent }
 }
 
 describe('submitSubmission', () => {
@@ -91,7 +96,7 @@ describe('submitSubmission', () => {
       videoIds: ['front-1', 'back-1'],
       note: 'ドライバーです',
       theme: 'トップで右ひざが流れる',
-      golfProfile: { roundFrequency: 'monthly', averageScore: 98 },
+      golfProfile: { ageRange: '40s', roundFrequency: 'monthly', averageScore: 98 },
       nextStatus: 'waiting_coach',
       sentDuringAbsenceId: null,
     })
@@ -160,5 +165,51 @@ describe('submitSubmission', () => {
     })
     expect(notifySubmitted).not.toHaveBeenCalled()
     expect(saveThreadNotice).not.toHaveBeenCalled()
+  })
+
+  it('申し込み（下書き）の最初の提出では、選んだ公開の許可を保存する', async () => {
+    const { deps, recordShareConsent } = setup({ ...thread, status: 'draft' })
+    expect((await submitSubmission({ ...params, now }, deps)).ok).toBe(true)
+    expect(recordShareConsent).toHaveBeenCalledWith({
+      coachUserId: 'coach-1',
+      studentUserId: 'student-1',
+      choices: params.shareConsent,
+      now,
+    })
+  })
+
+  it('18歳未満が公開を許可しようとしたら、提出も保存もしない', async () => {
+    const { deps, saveSubmission, recordShareConsent } = setup({ ...thread, status: 'draft' })
+    expect(
+      await submitSubmission(
+        { ...params, now, golfProfile: { ...params.golfProfile, ageRange: 'under_18' } },
+        deps
+      )
+    ).toEqual({ ok: false, error: 'not_adult' })
+    expect(saveSubmission).not.toHaveBeenCalled()
+    expect(recordShareConsent).not.toHaveBeenCalled()
+  })
+
+  it('モニターで申し込んだことのあるコーチには、次の申し込みでも公開をやめられない', async () => {
+    const draft: Thread = { ...thread, status: 'draft' }
+    const { deps, saveSubmission, recordShareConsent } = setup(
+      draft,
+      { absences: [], delayFlagSetAt: null },
+      true
+    )
+    expect(
+      await submitSubmission(
+        { ...params, now, shareConsent: { ...params.shareConsent, allowPublish: false } },
+        deps
+      )
+    ).toEqual({ ok: false, error: 'monitor_locked' })
+    expect(saveSubmission).not.toHaveBeenCalled()
+    expect(recordShareConsent).not.toHaveBeenCalled()
+  })
+
+  it('レッスン中の提出（月額の2か月目など）では、公開の許可を聞き直さない', async () => {
+    const { deps, recordShareConsent } = setup()
+    expect((await submitSubmission({ ...params, now }, deps)).ok).toBe(true)
+    expect(recordShareConsent).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ComponentProps } from 'react'
+import { PRESSED_CLASS } from './pressStyles'
 
 /**
  * ボタンの見た目（画面ごとに作らず、ここの組み合わせだけを使う）
@@ -99,7 +100,8 @@ export const textButtonClass = ({
   danger?: boolean | undefined
 } = {}): string =>
   [
-    'inline-flex items-center gap-1 rounded text-caption underline underline-offset-2 transition-colors',
+    // 押した瞬間は背景を薄いミントにする（余白の分だけ外に広げて、文字の位置は変えない）
+    `-mx-1 inline-flex items-center gap-1 rounded px-1 text-caption underline underline-offset-2 transition-colors ${PRESSED_CLASS}`,
     danger ? 'text-danger hover:opacity-80' : 'text-muted hover:text-ink active:text-ink',
     'focus-visible:ring-mint focus-visible:ring-2 focus-visible:outline-none',
     'disabled:cursor-wait disabled:opacity-60',

@@ -12,13 +12,17 @@ import { planSchema } from './Plan'
  */
 export const coachProfileSchema = z.object({
   slug: coachSlugSchema,
-  name: z.string().trim().min(1, '名前を入れてください').max(50),
-  title: z.string().trim().max(50),
-  bio: z.string().trim().max(1000),
-  instagram: z.string().trim().max(50),
+  name: z.string().trim().min(1, '名前を入れてください').max(50, '名前は50文字までです'),
+  title: z.string().trim().max(50, '肩書は50文字までです'),
+  bio: z.string().trim().max(1000, '紹介文は1000文字までです'),
+  instagram: z.string().trim().max(50, 'インスタグラムは50文字までです'),
   licenses: coachLicensesSchema,
   licenseOther: licenseOtherSchema,
-  monthlyCapacity: z.number().int().min(1, '受付枠は1以上です').max(100, '受付枠は100までです'),
+  monthlyCapacity: z
+    .number({ error: '受付枠を数字で入れてください' })
+    .int('受付枠は整数です')
+    .min(1, '受付枠は1以上です')
+    .max(100, '受付枠は100までです'),
 })
 
 export type CoachProfile = z.infer<typeof coachProfileSchema>

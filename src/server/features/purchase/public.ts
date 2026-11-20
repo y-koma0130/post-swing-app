@@ -4,10 +4,12 @@ import {
   resolveFeeOnApproval,
   startGrantsOnApproval,
 } from '@/server/features/campaign/public'
+import { isDemoCoach } from '@/server/features/demo/public'
 import { err, type Result } from '@/server/utils/result'
 import { capturePurchase } from './application/usecases/capturePurchase.usecase'
 import { lowerMonthlyPrices as lowerMonthlyPricesUsecase } from './application/usecases/lowerMonthlyPrices.usecase'
 import { voidPurchase } from './application/usecases/voidPurchase.usecase'
+import type { Purchase } from './domain/values/Purchase'
 import {
   cancelPaymentIntent,
   capturePaymentIntent,
@@ -23,12 +25,19 @@ import {
   savePurchasePrice,
 } from './infrastructure/repositories/purchaseRepository'
 
+/** カードを登録しないままの申し込みを取り消す（thread が下書きを消すときに呼ぶ） */
+export { releasePendingPurchase } from './infrastructure/repositories/purchaseRepository'
+
 /**
  * purchase がほかの feature に公開する関数（ほかの feature は、purchase の domain と、このファイルだけを使う）
  */
 
-/** 開発中だけ、Stripe を通っていない申し込み（開発用ルートで作ったもの）も承認・お断りできる */
-const allowWithoutStripe = import.meta.env.DEV
+/**
+ * Stripe を通っていない申し込みも承認・お断りできるか。
+ * 開発中（開発用ルートで作ったもの）と、デモのコーチ（staging でコーチ候補が試すもの）だけ
+ */
+const allowWithoutStripe = async (purchase: Pick<Purchase, 'coachUserId'>): Promise<boolean> =>
+  import.meta.env.DEV || isDemoCoach(purchase.coachUserId)
 
 /** Stripe との通信の失敗は、ほかの失敗と同じく値で返す（呼ぶ側で「もう一度」を出す・翌日に回す） */
 const guard = async <T, E extends string>(
@@ -66,7 +75,12 @@ export const voidPayment = (purchaseId: string) =>
   guard('仮押さえの取り消し', () =>
     voidPurchase(
       { purchaseId },
-      { findPurchase, cancelPaymentIntent, markPurchaseVoided, allowWithoutStripe }
+      {
+        findPurchase,
+        cancelPaymentIntent,
+        markPurchaseVoided,
+        allowWithoutStripe,
+      }
     )
   )
 

@@ -1,14 +1,14 @@
 'use client'
 
-import { type FormEvent, useActionState, useRef, useState } from 'react'
+import { type FormEvent, useRef, useState } from 'react'
 import { ConfirmDialog } from '@/app/components/ConfirmDialog'
 import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { useActionForm } from '@/app/hooks/useActionForm'
 import { COACH_LICENSE_LABEL, COACH_LICENSES } from '@/app/utils/licenseText'
 import type { CoachSettingsDto } from '@/server/features/coach/application/dto/CoachSettings.dto'
 import { updateCoachProfileAction } from '@/server/features/coach/presentation/actions'
-import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 type Props = {
   settings: CoachSettingsDto
@@ -17,29 +17,25 @@ type Props = {
 }
 
 export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
-  const [state, action, pending] = useActionState(updateCoachProfileAction, IDLE_ACTION_STATE)
+  const { state, pending, submit } = useActionForm(updateCoachProfileAction)
   const [slug, setSlug] = useState(settings.slug)
   const [confirmingSlug, setConfirmingSlug] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
-  /** 確認ダイアログで「変える」を押したあとの送信（もう一度は聞かない） */
-  const slugConfirmed = useRef(false)
 
   // URL を変えると今の URL が使えなくなるので、保存の前に確かめる
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    if (slugConfirmed.current) {
-      slugConfirmed.current = false
+    event.preventDefault()
+    if (slug.trim() !== settings.slug) {
+      setConfirmingSlug(true)
       return
     }
-    if (slug.trim() !== settings.slug) {
-      event.preventDefault()
-      setConfirmingSlug(true)
-    }
+    submit(event.currentTarget)
   }
 
   const newSlugText = slug.trim() === '' ? '（ランダムな文字列）' : slug.trim()
 
   return (
-    <form ref={formRef} action={action} onSubmit={onSubmit} className="space-y-4">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
       <label className="block space-y-1">
         <span className={labelTextClass}>名前</span>
         <input name="name" defaultValue={settings.name} required className={inputClass} />
@@ -143,8 +139,7 @@ export const CoachProfileForm = ({ settings, siteUrl }: Props) => {
         onCancel={() => setConfirmingSlug(false)}
         onConfirm={() => {
           setConfirmingSlug(false)
-          slugConfirmed.current = true
-          formRef.current?.requestSubmit()
+          if (formRef.current) submit(formRef.current)
         }}
       />
     </form>

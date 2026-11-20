@@ -76,7 +76,6 @@ export const findCoachProfileBySlug: FindCoachProfileBySlug = async (slug) => {
         kind: plan.kind,
         name: plan.name,
         priceYen: plan.price,
-        description: plan.description,
       })),
   }
 }

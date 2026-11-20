@@ -1,10 +1,9 @@
 import 'server-only'
-import { and, eq, gt, inArray, isNull, lt, lte } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, lt, lte, type SQL } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import {
   chatMessage,
   reply,
-  retakeRequest,
   submission,
   thread,
   threadNotice,
@@ -13,6 +12,10 @@ import {
 } from '@/server/db/schema'
 import { IN_LESSON_STATUSES } from '../../domain/rules'
 import type { Thread } from '../../domain/values/Thread'
+import {
+  findUnrepliedSubmissions,
+  type UnrepliedSubmission,
+} from '../query-services/unrepliedSubmissions'
 import { findThread } from './threadRepository'
 
 /**
@@ -61,62 +64,13 @@ export const findOpenThreadsExpiringBy: FindOpenThreadsExpiringBy = async (to) =
     .where(and(inArray(thread.status, [...IN_LESSON_STATUSES]), lte(thread.expiresAt, to)))
     .all()
 
-export type UnrepliedSubmission = {
-  threadId: string
-  coachUserId: string
-  submittedAt: Date
-  threadStartedAt: Date
-  /** 撮り直しをお願いしていて、まだ返事がない */
-  retakeOpen: boolean
-  /** いちばん最後に撮り直しのお願いが終わった日時（なければ null） */
-  lastRetakeClosedAt: Date | null
-}
+export type { UnrepliedSubmission }
 export type FindUnrepliedSubmissionsSince = (since: Date) => Promise<UnrepliedSubmission[]>
 /** since より後に届き、まだ添削していない提出（レッスン中のスレッド）と、その撮り直しのお願いの様子 */
-export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = async (since) => {
-  const db = getDb()
-  const rows = await db
-    .select({
-      id: submission.id,
-      threadId: submission.threadId,
-      coachUserId: thread.coachUserId,
-      submittedAt: submission.submittedAt,
-      threadStartedAt: thread.startedAt,
-    })
-    .from(submission)
-    .innerJoin(thread, eq(thread.id, submission.threadId))
-    .leftJoin(reply, eq(reply.submissionId, submission.id))
-    .where(
-      and(
-        inArray(thread.status, [...IN_LESSON_STATUSES]),
-        isNull(reply.id),
-        gt(submission.submittedAt, since)
-      )
-    )
-    .all()
-  const requests =
-    rows.length === 0
-      ? []
-      : await db
-          .select({ submissionId: retakeRequest.submissionId, closedAt: retakeRequest.closedAt })
-          .from(retakeRequest)
-          .where(
-            inArray(
-              retakeRequest.submissionId,
-              rows.map((r) => r.id)
-            )
-          )
-          .all()
-  return rows.map(({ id, ...row }) => {
-    const mine = requests.filter((r) => r.submissionId === id)
-    const closedTimes = mine.flatMap((r) => (r.closedAt ? [r.closedAt.getTime()] : []))
-    return {
-      ...row,
-      retakeOpen: mine.some((r) => r.closedAt === null),
-      lastRetakeClosedAt: closedTimes.length > 0 ? new Date(Math.max(...closedTimes)) : null,
-    }
-  })
-}
+export const findUnrepliedSubmissionsSince: FindUnrepliedSubmissionsSince = (since) =>
+  findUnrepliedSubmissions(
+    and(inArray(thread.status, [...IN_LESSON_STATUSES]), gt(submission.submittedAt, since))
+  )
 
 export type FindVideosToDelete = (
   closedBefore: Date
@@ -211,34 +165,55 @@ export const findExpiredApplications: FindExpiredApplications = async (requested
     .where(and(eq(thread.status, 'requested'), lt(thread.requestedAt, requestedBefore)))
     .all()
 
-export type FindDraftThreadsToDelete = (
-  createdBefore: Date
-) => Promise<Array<{ threadId: string; videoR2Keys: string[] }>>
-/** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
-export const findDraftThreadsToDelete: FindDraftThreadsToDelete = async (createdBefore) => {
+/** 消す下書きのスレッドと、その申し込み・動画の場所 */
+export type DraftThreadToDelete = Readonly<{
+  threadId: string
+  purchaseId: string
+  videoR2Keys: string[]
+}>
+
+const findDraftThreadsBy = async (where: SQL | undefined): Promise<DraftThreadToDelete[]> => {
   const db = getDb()
   const threads = await db
-    .select({ id: thread.id })
+    .select({ id: thread.id, purchaseId: thread.purchaseId })
     .from(thread)
-    .where(and(eq(thread.status, 'draft'), lt(thread.createdAt, createdBefore)))
+    .where(and(eq(thread.status, 'draft'), where))
     .all()
   if (threads.length === 0) return []
-  const ids = threads.map((t) => t.id)
   const videos = await db
     .select({ threadId: video.threadId, r2Key: video.r2Key })
     .from(video)
-    .where(and(inArray(video.threadId, ids), isNull(video.deletedAt)))
+    .where(
+      and(
+        inArray(
+          video.threadId,
+          threads.map((t) => t.id)
+        ),
+        isNull(video.deletedAt)
+      )
+    )
     .all()
-  return ids.map((id) => ({
-    threadId: id,
-    videoR2Keys: videos.filter((v) => v.threadId === id).map((v) => v.r2Key),
+  return threads.map((t) => ({
+    threadId: t.id,
+    purchaseId: t.purchaseId,
+    videoR2Keys: videos.filter((v) => v.threadId === t.id).map((v) => v.r2Key),
   }))
 }
+
+export type FindDraftThreadsToDelete = (createdBefore: Date) => Promise<DraftThreadToDelete[]>
+/** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
+export const findDraftThreadsToDelete: FindDraftThreadsToDelete = (createdBefore) =>
+  findDraftThreadsBy(lt(thread.createdAt, createdBefore))
+
+export type FindDraftThreadToDelete = (threadId: string) => Promise<DraftThreadToDelete | null>
+/** 下書きのスレッド1つと、その動画の場所（下書きでなければ null） */
+export const findDraftThreadToDelete: FindDraftThreadToDelete = async (threadId) =>
+  (await findDraftThreadsBy(eq(thread.id, threadId)))[0] ?? null
 
 export type DeleteDraftThreads = (threadIds: string[]) => Promise<void>
 /**
  * 下書きのスレッドを、提出・動画・既読の記録ごと消す（コーチには見えていないので、残す理由がない）。
- * 申し込み（purchase）は支払いが済んでいない記録として残る
+ * 申し込み（purchase）は、呼ぶ側が purchase の releasePendingPurchase で取り消す
  */
 export const deleteDraftThreads: DeleteDraftThreads = async (threadIds) => {
   const db = getDb()

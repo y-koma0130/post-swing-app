@@ -1,8 +1,13 @@
 import { decideSignupGuard } from '@/server/features/coach/domain/services/decideSignupGuard.service'
 import type { CoachAvailability } from '@/server/features/coach/domain/values/CoachAvailability'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
+import type {
+  MonitorCodeUse,
+  ResolveMonitorCodeError,
+} from '@/server/features/monitor/application/dto/MonitorCodeUse.dto'
 import { startDraftThread } from '@/server/features/thread/domain/services/startDraftThread.service'
 import type { NewThread } from '@/server/features/thread/domain/values/Thread'
+import type { ThreadStatus } from '@/server/features/thread/domain/values/ThreadStatus'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import { calcSystemFee } from '../../domain/services/calcSystemFee.service'
@@ -29,6 +34,8 @@ export type StartApplicationParams = Readonly<{
   planKind: PlanKind
   /** 返信が遅れがちなとき、遅れることを了承したか */
   acknowledgedDelay: boolean
+  /** モニターのプロモーションコード（入れていなければ null）。1レッスンだけに使える */
+  monitorCode: string | null
   now: Date
 }>
 
@@ -38,18 +45,41 @@ type Dependencies = Readonly<{
   hasPaidTrial: (studentUserId: string, coachUserId: string) => Promise<boolean>
   hasActiveSubscription: (studentUserId: string, coachUserId: string) => Promise<boolean>
   findCoachAvailability: (coachUserId: string, now: Date) => Promise<CoachAvailability>
-  /** このコーチへの、まだ決まっていない申し込み（thread が持つ） */
+  /** このコーチへの、まだ決まっていない申し込み（下書き・承認待ち。thread が持つ） */
   findOpenApplication: (
     studentUserId: string,
     coachUserId: string
-  ) => Promise<{ threadId: string } | null>
-  savePendingPurchase: (purchase: Purchase) => Promise<void>
+  ) => Promise<{ id: string; purchaseId: string; status: ThreadStatus } | null>
+  findPurchase: (purchaseId: string) => Promise<Purchase | null>
+  /** カードを登録しないままの申し込みを取り消す。取り消せたら true（カードの登録が先に済んでいたら false） */
+  releasePendingPurchase: (purchaseId: string) => Promise<boolean>
+  /** 申し込みの下書きを、提出・動画ごと消す（thread が持つ） */
+  discardDraftThread: (threadId: string) => Promise<void>
+  /** 生徒が入れたプロモーションコードを、使えるモニター価格に変える（monitor が持つ） */
+  resolveMonitorCode: (input: {
+    coachUserId: string
+    studentUserId: string
+    code: string
+    now: Date
+  }) => Promise<Result<MonitorCodeUse, ResolveMonitorCodeError>>
+  /**
+   * 申し込み途中の申し込みを作る。モニターなら、先着の人数を超えないときだけ作る
+   * （同時に申し込まれても超えないように、書くときに数える）。作れなければ false
+   */
+  savePendingPurchase: (
+    purchase: Purchase,
+    monitorLimit: Readonly<{ codeId: string; maxUses: number }> | null
+  ) => Promise<boolean>
   /** 下書きのスレッドを作る（thread が持つ） */
   createThread: (thread: NewThread) => Promise<void>
   generateId: () => string
 }>
 
-export type StartApplicationError = 'not_found' | PurchaseBlocker
+export type StartApplicationError =
+  | 'not_found'
+  | 'monitor_single_only'
+  | PurchaseBlocker
+  | ResolveMonitorCodeError
 
 export type StartApplication = (
   params: StartApplicationParams,
@@ -57,13 +87,27 @@ export type StartApplication = (
 ) => Promise<Result<{ threadId: string }, StartApplicationError>>
 
 /**
+ * 下書きの申し込みと、いま選んだものが違うか（プランか、モニターかどうか）。
+ * モニターどうしは同じとみなす（モニターはコーチごとに1回までなので、別のコードには変えられない）
+ */
+const isDifferentChoice = (
+  draft: Pick<Purchase, 'planKind' | 'monitorCodeId'>,
+  choice: Readonly<{ planKind: PlanKind; monitorCode: string | null }>
+): boolean =>
+  draft.planKind !== choice.planKind ||
+  (draft.monitorCodeId !== null) !== (choice.monitorCode !== null)
+
+/**
  * 生徒がプランを選んで申し込みを始める（悩みと動画を送る下書きを作る。支払いはまだ）
  *
  * - 申し込めるかは checkPurchaseEligibility で決める
- * - このコーチへのまだ決まっていない申し込みがあれば、新しく作らずにそれを返す（1人1件）
+ * - このコーチへのまだ決まっていない申し込みがあれば、新しく作らずにそれを返す（1人1件）。
+ *   ただし下書きで、選んだもの（プラン・モニターかどうか）が違えば、新しく作って前の下書きを消す（選び直し）
+ * - プロモーションコードがあれば、1レッスンをモニター価格で申し込む（使えるかは monitor の resolveMonitorCode）。
+ *   先着の人数は、申し込みを作るときにもう一度数える
  */
 export const startApplication: StartApplication = async (
-  { actor, coachSlug, planKind, acknowledgedDelay, now },
+  { actor, coachSlug, planKind, acknowledgedDelay, monitorCode, now },
   deps
 ) => {
   const coach = await deps.findCoachForCheckout(coachSlug)
@@ -71,8 +115,9 @@ export const startApplication: StartApplication = async (
     return err('not_found')
   }
   const open = await deps.findOpenApplication(actor.userId, coach.userId)
-  if (open) {
-    return ok({ threadId: open.threadId })
+  const replacing = open?.status === 'draft' ? await deps.findPurchase(open.purchaseId) : null
+  if (open && !(replacing && isDifferentChoice(replacing, { planKind, monitorCode }))) {
+    return ok({ threadId: open.id })
   }
   const [activeThreadCount, hasPaidTrial, hasActiveSubscription, availability] = await Promise.all([
     deps.countActiveThreads(coach.userId),
@@ -80,6 +125,9 @@ export const startApplication: StartApplication = async (
     deps.hasActiveSubscription(actor.userId, coach.userId),
     deps.findCoachAvailability(coach.userId, now),
   ])
+  if (monitorCode !== null && planKind !== 'single') {
+    return err('monitor_single_only')
+  }
   const eligibility = checkPurchaseEligibility({
     coach,
     planKind,
@@ -87,23 +135,52 @@ export const startApplication: StartApplication = async (
     facts: { activeThreadCount, hasPaidTrial, hasActiveSubscription },
     signupGuard: decideSignupGuard(availability),
     acknowledgedDelay,
+    monitor: monitorCode !== null,
   })
   if (!eligibility.ok) {
     return err(eligibility.error)
   }
+  const monitor =
+    monitorCode === null
+      ? null
+      : await deps.resolveMonitorCode({
+          coachUserId: coach.userId,
+          studentUserId: actor.userId,
+          code: monitorCode,
+          now,
+        })
+  if (monitor && !monitor.ok) {
+    return err(monitor.error)
+  }
+  const priceYen = monitor?.ok ? monitor.value.priceYen : eligibility.value.plan.priceYen
 
   const purchaseId = deps.generateId()
-  await deps.savePendingPurchase({
-    id: purchaseId,
-    studentUserId: actor.userId,
-    coachUserId: coach.userId,
-    planKind,
-    priceYen: eligibility.value.plan.priceYen,
-    systemFeeYen: calcSystemFee(eligibility.value.plan.priceYen),
-    status: 'pending',
-    stripeSubscriptionId: null,
-    stripePaymentIntentId: null,
-  })
+  const saved = await deps.savePendingPurchase(
+    {
+      id: purchaseId,
+      studentUserId: actor.userId,
+      coachUserId: coach.userId,
+      planKind,
+      priceYen,
+      systemFeeYen: calcSystemFee(priceYen),
+      status: 'pending',
+      stripeSubscriptionId: null,
+      stripePaymentIntentId: null,
+      monitorCodeId: monitor?.ok ? monitor.value.codeId : null,
+    },
+    monitor?.ok ? { codeId: monitor.value.codeId, maxUses: monitor.value.maxUses } : null
+  )
+  if (!saved) {
+    return err('code_full')
+  }
+  if (open) {
+    // 前の下書きは、カードの登録が先に済んでいたら残す（そちらが承認待ちになる）
+    if (!(await deps.releasePendingPurchase(open.purchaseId))) {
+      await deps.releasePendingPurchase(purchaseId)
+      return ok({ threadId: open.id })
+    }
+    await deps.discardDraftThread(open.id)
+  }
   const thread = startDraftThread({
     id: deps.generateId(),
     purchaseId,
