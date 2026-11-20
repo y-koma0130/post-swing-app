@@ -50,22 +50,19 @@ const StudentChartPage = async ({ params }: Props) => {
       </div>
       <section className="space-y-3">
         <h2 className="text-heading">これまでのレッスン</h2>
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {chart.threads.map((thread) => (
             <li key={thread.id}>
-              <CardLink
-                href={`/coach/threads/${thread.id}`}
-                className="flex items-center justify-between gap-4"
-              >
-                <p className="min-w-0 flex-1 truncate font-bold">
-                  {thread.theme || '（動画待ち）'}
-                </p>
-                <span className="flex shrink-0 flex-col items-end gap-1">
+              <CardLink compact href={`/coach/threads/${thread.id}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="min-w-0 flex-1 truncate font-bold">
+                    {thread.theme || '（動画待ち）'}
+                  </p>
                   <Badge tone="neutral">{THREAD_STATUS_LABEL.coach[thread.status]}</Badge>
-                  <span className="text-caption text-muted">
-                    {formatMonthDay(thread.startedAt)}から
-                  </span>
-                </span>
+                </div>
+                <p className="text-caption text-muted mt-0.5">
+                  {formatMonthDay(thread.startedAt)}から
+                </p>
               </CardLink>
             </li>
           ))}
