@@ -1,8 +1,8 @@
 import 'server-only'
 import { getActor } from '@/server/auth/getActor'
 import { isAdminRequest } from '@/server/auth/isAdminRequest'
+import { isDemoEnabled } from '../infrastructure/external-services/demoEnv'
 import { findDemoExpiry, listDemoCoaches } from '../infrastructure/repositories/demoRepository'
-import { isDemoEnabled } from './demoEnv'
 
 /** 管理画面のデモの一覧。管理者でなければ null。デモを使えない環境（本番）では空 */
 export const getDemoCoachesForAdmin = async () => {

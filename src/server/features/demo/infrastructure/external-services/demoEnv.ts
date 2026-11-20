@@ -1,4 +1,5 @@
 import 'server-only'
+
 import {
   generateCoachSlug,
   RANDOM_SLUG_LENGTH,
@@ -6,7 +7,9 @@ import {
 import { MONITOR_RULES } from '@/server/features/monitor/domain/rules'
 import { generateMonitorCode } from '@/server/features/monitor/domain/services/generateMonitorCode.service'
 import { isStaging } from '@/server/utils/siteUrl'
-import { DEMO_RULES } from '../domain/rules'
+import { DEMO_RULES } from '../../domain/rules'
+
+// デモの環境と、乱数・ハッシュ（環境変数と crypto に触れるので infrastructure に置く）
 
 /** デモを使える環境か（staging と開発中だけ。本番では作れず、リンクでも入れない） */
 export const isDemoEnabled = (): boolean => import.meta.env.DEV || isStaging()

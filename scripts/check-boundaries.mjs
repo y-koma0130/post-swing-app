@@ -4,6 +4,8 @@
 // - app/components・hooks・utils から app/features を import しない
 // - server/features/<a> から server/features/<b> を使うときは domain/・application/dto/・public だけ
 //   （docs/coding-rules.md の「feature の境界」）
+// - server の共有の場所（auth・utils・db）から feature を使うときは public だけ
+//   （feature の中身に頼らない。utils・db は feature に依存しないのが基本）
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
@@ -34,6 +36,14 @@ for (const file of walk(src)) {
         problems.push(`${rel}: ほかの feature（${target}）を import しています → ${spec}`)
       } else if (group !== 'features' && ['components', 'hooks', 'utils'].includes(group)) {
         problems.push(`${rel}: 共有の場所から feature を import しています → ${spec}`)
+      }
+    }
+    if (area === 'server' && ['auth', 'utils', 'db'].includes(group)) {
+      const m = spec.match(/^@\/server\/features\/([^/]+)\/(.+)$/)
+      if (m && m[2] !== 'public') {
+        problems.push(
+          `${rel}: 共有の場所から feature（${m[1]}）を使うときは public だけにしてください → ${spec}`
+        )
       }
     }
     if (area === 'server' && group === 'features') {
