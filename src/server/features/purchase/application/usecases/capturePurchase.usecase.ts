@@ -38,8 +38,11 @@ type Dependencies = Readonly<{
     purchaseId: string,
     payment: { stripeSubscriptionId: string | null }
   ) => Promise<void>
-  /** Stripe を通っていない申し込み（開発用）でも進めてよいか。本番では false */
-  allowWithoutStripe: boolean
+  /**
+   * Stripe を通っていない申し込みでも進めてよいか（開発中の申し込みと、デモのコーチの申し込み）。
+   * 本物の申し込みでは false
+   */
+  allowWithoutStripe: (purchase: Pick<Purchase, 'coachUserId'>) => Promise<boolean>
 }>
 
 export type CapturePurchaseError = 'not_found' | 'not_authorized' | 'capture_failed'
@@ -73,7 +76,11 @@ export const capturePurchase: CapturePurchase = async ({ purchaseId, now }, deps
   }
   const paymentIntentId = purchase.stripePaymentIntentId
   // 無料のモニターは、Stripe を通さずに確定する
-  if (paymentIntentId === null && needsPayment(purchase) && !deps.allowWithoutStripe) {
+  if (
+    paymentIntentId === null &&
+    needsPayment(purchase) &&
+    !(await deps.allowWithoutStripe(purchase))
+  ) {
     return err('capture_failed')
   }
 
