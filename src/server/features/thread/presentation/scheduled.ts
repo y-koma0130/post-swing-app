@@ -4,7 +4,7 @@ import {
   findCoachAvailabilityFactsForCoaches,
 } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
-import { voidPayment } from '@/server/features/purchase/public'
+import { releasePendingPurchase, voidPayment } from '@/server/features/purchase/public'
 import { notifyAbsenceEnded } from '../application/usecases/notifyAbsenceEnded.usecase'
 import { runThreadMaintenance } from '../application/usecases/runThreadMaintenance.usecase'
 import { deleteMediaObject } from '../infrastructure/external-services/videoStorage'
@@ -51,6 +51,7 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       notifyApplicationExpired: (input) => notify({ kind: 'application_expired', ...input }),
       findDraftThreadsToDelete,
       deleteDraftThreads,
+      releasePendingPurchase,
     }
   )
   if (result.ok) console.info('[scheduled] レッスン', result.value)

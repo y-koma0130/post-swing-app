@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, eq, gt, inArray, isNull, lt, lte } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, lt, lte, type SQL } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import {
   chatMessage,
@@ -211,34 +211,55 @@ export const findExpiredApplications: FindExpiredApplications = async (requested
     .where(and(eq(thread.status, 'requested'), lt(thread.requestedAt, requestedBefore)))
     .all()
 
-export type FindDraftThreadsToDelete = (
-  createdBefore: Date
-) => Promise<Array<{ threadId: string; videoR2Keys: string[] }>>
-/** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
-export const findDraftThreadsToDelete: FindDraftThreadsToDelete = async (createdBefore) => {
+/** 消す下書きのスレッドと、その申し込み・動画の場所 */
+export type DraftThreadToDelete = Readonly<{
+  threadId: string
+  purchaseId: string
+  videoR2Keys: string[]
+}>
+
+const findDraftThreadsBy = async (where: SQL | undefined): Promise<DraftThreadToDelete[]> => {
   const db = getDb()
   const threads = await db
-    .select({ id: thread.id })
+    .select({ id: thread.id, purchaseId: thread.purchaseId })
     .from(thread)
-    .where(and(eq(thread.status, 'draft'), lt(thread.createdAt, createdBefore)))
+    .where(and(eq(thread.status, 'draft'), where))
     .all()
   if (threads.length === 0) return []
-  const ids = threads.map((t) => t.id)
   const videos = await db
     .select({ threadId: video.threadId, r2Key: video.r2Key })
     .from(video)
-    .where(and(inArray(video.threadId, ids), isNull(video.deletedAt)))
+    .where(
+      and(
+        inArray(
+          video.threadId,
+          threads.map((t) => t.id)
+        ),
+        isNull(video.deletedAt)
+      )
+    )
     .all()
-  return ids.map((id) => ({
-    threadId: id,
-    videoR2Keys: videos.filter((v) => v.threadId === id).map((v) => v.r2Key),
+  return threads.map((t) => ({
+    threadId: t.id,
+    purchaseId: t.purchaseId,
+    videoR2Keys: videos.filter((v) => v.threadId === t.id).map((v) => v.r2Key),
   }))
 }
+
+export type FindDraftThreadsToDelete = (createdBefore: Date) => Promise<DraftThreadToDelete[]>
+/** createdBefore より前に作り、カードを登録しないままの下書きのスレッドと、その動画の場所 */
+export const findDraftThreadsToDelete: FindDraftThreadsToDelete = (createdBefore) =>
+  findDraftThreadsBy(lt(thread.createdAt, createdBefore))
+
+export type FindDraftThreadToDelete = (threadId: string) => Promise<DraftThreadToDelete | null>
+/** 下書きのスレッド1つと、その動画の場所（下書きでなければ null） */
+export const findDraftThreadToDelete: FindDraftThreadToDelete = async (threadId) =>
+  (await findDraftThreadsBy(eq(thread.id, threadId)))[0] ?? null
 
 export type DeleteDraftThreads = (threadIds: string[]) => Promise<void>
 /**
  * 下書きのスレッドを、提出・動画・既読の記録ごと消す（コーチには見えていないので、残す理由がない）。
- * 申し込み（purchase）は支払いが済んでいない記録として残る
+ * 申し込み（purchase）は、呼ぶ側が purchase の releasePendingPurchase で取り消す
  */
 export const deleteDraftThreads: DeleteDraftThreads = async (threadIds) => {
   const db = getDb()
