@@ -3,9 +3,10 @@ import {
   generateCoachSlug,
   RANDOM_SLUG_LENGTH,
 } from '@/server/features/coach/domain/services/generateCoachSlug.service'
+import { MONITOR_RULES } from '@/server/features/monitor/domain/rules'
+import { generateMonitorCode } from '@/server/features/monitor/domain/services/generateMonitorCode.service'
 import { isStaging } from '@/server/utils/siteUrl'
 import { DEMO_RULES } from '../domain/rules'
-import { randomMonitorCode } from '../infrastructure/repositories/buildDemoSeed'
 
 /** デモを使える環境か（staging と開発中だけ。本番では作れず、リンクでも入れない） */
 export const isDemoEnabled = (): boolean => import.meta.env.DEV || isStaging()
@@ -30,7 +31,4 @@ export const generateDemoSlug = (): string =>
   `demo-${generateCoachSlug(crypto.getRandomValues(new Uint8Array(RANDOM_SLUG_LENGTH)))}`
 
 export const generateDemoMonitorCode = (): string =>
-  randomMonitorCode((max) => {
-    const [value = 0] = crypto.getRandomValues(new Uint32Array(1))
-    return value % max
-  })
+  generateMonitorCode(crypto.getRandomValues(new Uint8Array(MONITOR_RULES.codeLength)))

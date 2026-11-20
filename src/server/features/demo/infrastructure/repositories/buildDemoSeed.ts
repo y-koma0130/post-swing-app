@@ -19,7 +19,6 @@ import type {
 } from '@/server/db/schema'
 import { COACH_RULES, DEFAULT_PLANS } from '@/server/features/coach/domain/rules'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
-import { MONITOR_RULES } from '@/server/features/monitor/domain/rules'
 import { calcSystemFee } from '@/server/features/purchase/domain/services/calcSystemFee.service'
 import { SHARE_RULES } from '@/server/features/share/domain/rules'
 import { THREAD_RULES } from '@/server/features/thread/domain/rules'
@@ -489,9 +488,3 @@ export const buildDemoSeed = (input: BuildDemoSeedInput): DemoSeed => {
 
   return seed
 }
-
-/** プロモーションコードの文字列（MONITOR_RULES の文字から、決まった長さで作る） */
-export const randomMonitorCode = (randomIndex: (max: number) => number): string =>
-  Array.from({ length: MONITOR_RULES.codeLength }, () =>
-    MONITOR_RULES.codeAlphabet.charAt(randomIndex(MONITOR_RULES.codeAlphabet.length))
-  ).join('')
