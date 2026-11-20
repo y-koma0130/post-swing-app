@@ -63,6 +63,7 @@
 | ページの見出し・戻り先・右上の操作 | `PageHeader` |
 | ボタン | `Button`・`ButtonLink`・`buttonClass`（variant：primary・secondary・ghost・danger。size：sm・md・lg） |
 | 文字だけの目立たない操作（消す・閉じる・終える） | `TextButton`・`textButtonClass`（取り消せないものは `danger`） |
+| 押した瞬間の見た目（自分で作るとき） | `pressStyles` の `PRESSED_CLASS`（薄いミント）。カード・行・文字のリンク・文字のボタンで同じものを使う |
 | 文字だけのリンク | `linkStyles` の `navLinkClass`（戻り先・ヘッダーのメニュー）・`inlineLinkClass`（文の中の下線のリンク）・`plainLinkClass`（色や太字で押せると分かる、下線なしのリンク）・`quietLinkClass`（フッター） |
 | 押せないカード | `Card` |
 | **押すと別のページへ進むカード** | `CardLink`（右端に「›」が出る。たくさん並ぶ一覧では `compact` で詰める） |
