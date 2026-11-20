@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/Button'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { Notice } from '@/app/components/ui/Notice'
 import { formatYen } from '@/app/utils/format'
+import { planTermsText } from '@/app/utils/planText'
 import { SYSTEM_FEE_NOTE, systemFeeFor } from '@/app/utils/systemFeeText'
 import type { ApplyPageDto } from '@/server/features/purchase/application/dto/ApplyPage.dto'
 import { startApplicationAction } from '@/server/features/purchase/presentation/actions'
@@ -49,7 +50,6 @@ export const PlanCheckoutForm = ({
           kind: 'single' as const,
           name: `${single?.name ?? '1レッスン'}（モニター）`,
           priceYen: monitor.priceYen,
-          description: single?.description ?? '',
         },
       ]
     : plans
@@ -86,7 +86,9 @@ export const PlanCheckoutForm = ({
                     {plan.kind === 'monthly' && <span className="text-sm font-normal">/月</span>}
                   </span>
                 </span>
-                <span className="text-muted mt-1 block text-sm">{reason ?? plan.description}</span>
+                <span className="text-muted mt-1 block text-sm">
+                  {reason ?? planTermsText(plan.kind)}
+                </span>
                 <span className="text-caption text-muted mt-1 block">
                   {plan.priceYen === 0 ? (
                     'システム利用料もかかりません。カードの登録は不要です'

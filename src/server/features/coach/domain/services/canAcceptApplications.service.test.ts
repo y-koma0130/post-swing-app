@@ -6,7 +6,6 @@ const plan = (active: boolean) => ({
   kind: 'single' as const,
   name: '1レッスン',
   price: priceYenSchema.parse(4980),
-  description: '',
   active,
 })
 

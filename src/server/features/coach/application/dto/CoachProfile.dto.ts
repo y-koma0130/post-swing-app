@@ -32,6 +32,5 @@ export type CoachProfileDto = {
     kind: PlanKind
     name: string
     priceYen: number
-    description: string
   }>
 }

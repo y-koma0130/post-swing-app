@@ -1,5 +1,6 @@
 import { Card } from '@/app/components/ui/Card'
 import { formatYen } from '@/app/utils/format'
+import { planTermsText } from '@/app/utils/planText'
 import { SYSTEM_FEE_NOTE } from '@/app/utils/systemFeeText'
 import type { CoachProfileDto } from '@/server/features/coach/application/dto/CoachProfile.dto'
 
@@ -20,7 +21,7 @@ export const PlanList = ({ plans }: Props) => (
                 {plan.kind === 'monthly' && <span className="text-sm font-normal">/月</span>}
               </p>
             </div>
-            <p className="text-muted mt-1 text-sm">{plan.description}</p>
+            <p className="text-muted mt-1 text-sm">{planTermsText(plan.kind)}</p>
           </Card>
         </li>
       ))}

@@ -67,7 +67,6 @@ export const findCoachByUserId: FindCoachByUserId = async (userId) => {
       kind: p.kind,
       name: p.name,
       price: p.priceYen,
-      description: p.description,
       active: p.active,
     })),
   })
@@ -80,7 +79,8 @@ const planRows = (userId: string, plans: readonly Plan[], now: Date) =>
     kind: p.kind,
     name: p.name,
     priceYen: p.price,
-    description: p.description,
+    // 説明はもう使わない（プランの中身から作る）。列は残してあるので空にしておく
+    description: '',
     active: p.active,
     createdAt: now,
     updatedAt: now,
@@ -174,7 +174,6 @@ export const savePlans: SavePlans = async (userId, plans) => {
       .set({
         name: p.name,
         priceYen: p.price,
-        description: p.description,
         active: p.active,
         updatedAt: now,
       })
