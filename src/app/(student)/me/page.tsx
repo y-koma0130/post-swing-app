@@ -7,7 +7,7 @@ import { MyPurchaseList } from '@/app/features/apply/components/MyPurchaseList'
 import { MyCoachLinks } from '@/app/features/coach-profile/components/MyCoachLinks'
 import { uniqueCoaches } from '@/app/features/coach-profile/utils/uniqueCoaches'
 import { LineFriendPrompt } from '@/app/features/notification/components/LineFriendPrompt'
-import { ThreadList } from '@/app/features/thread/components/ThreadList'
+import { StudentLessonSections } from '@/app/features/thread/components/StudentLessonSections'
 import { getLineFriendPrompt } from '@/server/features/notification/presentation/queries'
 import { getMyPurchases } from '@/server/features/purchase/presentation/queries'
 import { getMyThreadSummaries } from '@/server/features/thread/presentation/queries'
@@ -43,17 +43,7 @@ const MyPage = async ({ searchParams }: Props) => {
           description="コーチの受付ページ（インスタのプロフィールなどにあるリンク）から申し込むと、ここに添削のレッスンが表示されます。"
         />
       ) : (
-        <section className="space-y-3">
-          <div className="space-y-1">
-            <h2 className="text-heading">添削のやりとり</h2>
-            <p className="text-muted text-sm">申し込み中のものもここに出ます</p>
-          </div>
-          {threads.length === 0 ? (
-            <p className="text-muted text-sm">レッスンの準備ができると、ここに表示されます。</p>
-          ) : (
-            <ThreadList threads={threads} viewer="student" />
-          )}
-        </section>
+        <StudentLessonSections threads={threads} now={new Date()} />
       )}
       {purchases.length > 0 && (
         <section className="space-y-3">

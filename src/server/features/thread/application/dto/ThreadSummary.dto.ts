@@ -25,4 +25,15 @@ export type ThreadSummaryDto = {
   submissionCount: number
   /** 提出できる回数 */
   maxSubmissions: number
+  /**
+   * 添削の返事の目安（いちばん古い、まだ添削していない提出への）。
+   * 添削待ちでない・撮り直しを待っている（期限が止まっている）なら null
+   */
+  replyDueAt: Date | null
+  /** コーチが撮り直しをお願いしていて、まだ届いていない */
+  retakeOpen: boolean
+  /** 終わった・断られた時刻（終わっていなければ null） */
+  finishedAt: Date | null
+  /** 終わったレッスンで、生徒がまだレビューを書いていない */
+  needsReview: boolean
 }

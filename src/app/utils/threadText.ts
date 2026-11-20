@@ -239,8 +239,14 @@ export const THREAD_STATUS_LABEL = {
     draft: '申し込み途中',
     requested: 'コーチの確認待ち',
     waiting_coach: '添削待ち',
-    waiting_student: 'レッスン中',
+    waiting_student: '添削が届いています',
     closed: '完了',
     declined: 'お断り',
   },
 } as const satisfies Record<'coach' | 'student', Record<ThreadStatus, string>>
+
+/** 添削待ちのうち、コーチが撮り直しをお願いしていて、まだ届いていないとき（THREAD_STATUS_LABEL の代わりに出す） */
+export const RETAKE_OPEN_LABEL = {
+  coach: '撮り直し待ち',
+  student: '撮り直しのお願い',
+} as const satisfies Record<'coach' | 'student', string>
