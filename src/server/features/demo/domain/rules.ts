@@ -1,3 +1,6 @@
+import type { VIDEO_RULES } from '@/server/features/thread/domain/rules'
+import type { VideoAngle } from '@/server/features/thread/domain/values/VideoAngle'
+
 /**
  * デモのコーチ（staging で、コーチ候補に操作を試してもらう）のルール
  *
@@ -32,7 +35,15 @@ export const DEMO_SAMPLE_VIDEOS = {
     contentType: 'video/mp4',
     angle: 'back',
   },
-} as const
+} as const satisfies Record<
+  string,
+  Readonly<{
+    r2Key: string
+    /** 動画として受け取れる形式（VIDEO_RULES） */
+    contentType: (typeof VIDEO_RULES.allowedContentTypes)[number]
+    angle: VideoAngle
+  }>
+>
 
 /** デモのアカウントのメールアドレスのドメイン（届かない。ログインにも使わない） */
 export const DEMO_EMAIL_DOMAIN = 'demo.swingpost.invalid'
