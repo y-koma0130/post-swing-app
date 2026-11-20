@@ -25,21 +25,18 @@ export const DEFAULT_PLANS: readonly Plan[] = [
     kind: 'trial',
     name: 'お試し',
     price: priceYenSchema.parse(550),
-    description: '提出1回・チャット10通までのミニ添削',
     active: true,
   },
   {
     kind: 'single',
     name: '1レッスン',
     price: priceYenSchema.parse(4980),
-    description: '提出3回・チャット30通まで・30日間',
     active: true,
   },
   {
     kind: 'monthly',
     name: '月額',
     price: priceYenSchema.parse(3980),
-    description: '毎月1レッスン（提出3回・チャット30通まで）',
     active: true,
   },
 ]

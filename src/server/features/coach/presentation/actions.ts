@@ -204,7 +204,6 @@ export const updatePlansAction = async (
       kind,
       name: formString(formData, `${kind}.name`),
       price: formNumber(formData, `${kind}.price`),
-      description: formString(formData, `${kind}.description`),
       active: formChecked(formData, `${kind}.active`),
     }))
   )
