@@ -12,6 +12,7 @@ import {
   getCurrentCoach,
   getCurrentCoachAvailabilitySettings,
 } from '@/server/features/coach/presentation/queries'
+import { getCurrentDemoExpiry } from '@/server/features/demo/presentation/queries'
 import { getCoachThreadSummaries } from '@/server/features/thread/presentation/queries'
 
 /** コーチのホーム */
@@ -31,15 +32,17 @@ const CoachHomePage = async () => {
     )
   }
   const { settings, actor } = current
-  const [threads, availability] = await Promise.all([
+  const [threads, availability, demoExpiry] = await Promise.all([
     getCoachThreadSummaries(actor.userId),
     getCurrentCoachAvailabilitySettings(),
+    getCurrentDemoExpiry(),
   ])
 
   return (
     <Page layout="list">
       {availability && <AvailabilityBanner availability={availability.availability} />}
-      {!settings.chargesEnabled && (
+      {/* デモは口座を登録できない（お支払いも行わない）ので、口座の案内は出さない */}
+      {!settings.chargesEnabled && demoExpiry === null && (
         <Notice tone="warning" emphasis title="まだ申し込みを受け付けていません">
           <p>
             売上を受け取る口座を設定すると、受付ページから申し込めるようになります。
