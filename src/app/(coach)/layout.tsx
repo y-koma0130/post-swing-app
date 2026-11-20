@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Logo } from '@/app/components/Logo'
 import { StagingBadge } from '@/app/components/StagingBadge'
+import { Badge } from '@/app/components/ui/Badge'
 import { SignOutButton } from '@/app/features/auth/components/SignOutButton'
 import { CoachNav } from '@/app/features/coach-nav/components/CoachNav'
 import { formatDateTime } from '@/app/utils/format'
@@ -24,7 +25,8 @@ const CoachLayout = async ({ children }: Props) => {
             <Link href="/coach">
               <Logo height={36} />
             </Link>
-            <StagingBadge />
+            {/* デモのコーチには、stg環境ではなくデモ環境と出す（コーチ候補に見せる画面なので） */}
+            {demoExpiry ? <Badge tone="warning">デモ環境</Badge> : <StagingBadge />}
           </div>
           {actor && (
             <>
