@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { ShowMoreList } from '@/app/components/ShowMoreList'
 import { Badge } from '@/app/components/ui/Badge'
 import { Card } from '@/app/components/ui/Card'
 import { CardLink } from '@/app/components/ui/CardLink'
@@ -7,6 +8,7 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChartEntries } from '@/app/features/student-chart/components/ChartEntries'
 import { ChartMemo } from '@/app/features/student-chart/components/ChartMemo'
 import { ChartTags } from '@/app/features/student-chart/components/ChartTags'
+import { FINISHED_PAGE_SIZE } from '@/app/features/thread/utils/lessonGroups'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
 import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import { getActor } from '@/server/auth/getActor'
@@ -24,6 +26,8 @@ const StudentChartPage = async ({ params }: Props) => {
   if (!(await getActor())) redirect('/coach/login')
   const chart = await getStudentChart(studentId)
   if (!chart) notFound()
+  // ドリルを送ったレッスンのテーマ（どのレッスンで送ったかを添える）
+  const themeOf = new Map(chart.threads.map((t) => [t.id, t.theme]))
 
   return (
     <Page layout="list">
@@ -73,19 +77,25 @@ const StudentChartPage = async ({ params }: Props) => {
         {chart.drills.length === 0 ? (
           <p className="text-muted text-sm">まだドリルを送っていません。</p>
         ) : (
-          <ul className="divide-line-soft border-line-soft divide-y border-y bg-white">
-            {chart.drills.map((drill) => (
-              <li
-                key={`${drill.threadId}-${drill.sentAt.getTime()}-${drill.title}`}
-                className="flex items-baseline justify-between gap-2 px-3 py-2"
-              >
-                <span className="text-body text-sm">{drill.title}</span>
-                <span className="text-caption text-muted shrink-0">
-                  {formatDateTime(drill.sentAt)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          // レッスンと同じ詰めたカードにする。押すと、送ったレッスンを開く。増えていくので、はじめは10件
+          <ShowMoreList
+            pageSize={FINISHED_PAGE_SIZE}
+            className="space-y-2"
+            items={chart.drills.map((drill) => ({
+              key: `${drill.threadId}-${drill.sentAt.getTime()}-${drill.title}`,
+              node: (
+                <CardLink compact href={`/coach/threads/${drill.threadId}`}>
+                  <p className="truncate font-bold">{drill.title}</p>
+                  <p className="text-caption text-muted mt-0.5 flex gap-2">
+                    <span className="min-w-0 truncate">
+                      {themeOf.get(drill.threadId) || '（動画待ち）'}
+                    </span>
+                    <span className="ml-auto shrink-0">{formatDateTime(drill.sentAt)}に送信</span>
+                  </p>
+                </CardLink>
+              ),
+            }))}
+          />
         )}
       </section>
     </Page>
