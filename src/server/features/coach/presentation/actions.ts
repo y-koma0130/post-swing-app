@@ -244,15 +244,17 @@ export const startPayoutOnboardingAction = async (
   if (!actor) {
     redirect('/coach/login')
   }
-  // デモでは Stripe に口座を作らない（試すだけのアカウントなので）
-  if (await isDemoCoach(actor.userId)) {
-    return actionError('デモでは口座を登録できません。正式に登録したあとに設定できます')
-  }
   let result: Awaited<ReturnType<typeof startPayoutOnboarding>>
   try {
     result = await startPayoutOnboarding(
       { actor },
-      { findPayoutAccount, createConnectAccount, saveStripeAccountId, createOnboardingLink }
+      {
+        findPayoutAccount,
+        createConnectAccount,
+        saveStripeAccountId,
+        createOnboardingLink,
+        isDemoCoach,
+      }
     )
   } catch (error) {
     // Stripe の設定不足（本番の有効化前など）もここに来る。中身はログで確かめる
@@ -260,6 +262,9 @@ export const startPayoutOnboardingAction = async (
     return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
   }
   if (!result.ok) {
+    if (result.error === 'demo_coach') {
+      return actionError('デモでは口座を登録できません。正式に登録したあとに設定できます')
+    }
     redirect('/coach')
   }
   redirect(result.value.url)

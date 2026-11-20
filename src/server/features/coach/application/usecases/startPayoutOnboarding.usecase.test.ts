@@ -4,7 +4,7 @@ import { startPayoutOnboarding } from './startPayoutOnboarding.usecase'
 type Deps = Parameters<typeof startPayoutOnboarding>[1]
 const actor = { userId: 'coach-1', name: '山田' }
 
-const setup = (stripeAccountId: string | null) => {
+const setup = (stripeAccountId: string | null, isDemoCoach = false) => {
   const createConnectAccount = vi.fn<Deps['createConnectAccount']>(async () => 'acct_new')
   const saveStripeAccountId = vi.fn<Deps['saveStripeAccountId']>(async () => undefined)
   const deps: Deps = {
@@ -17,11 +17,21 @@ const setup = (stripeAccountId: string | null) => {
     createConnectAccount,
     saveStripeAccountId,
     createOnboardingLink: async (id) => `https://connect.stripe.com/setup/${id}`,
+    isDemoCoach: async () => isDemoCoach,
   }
   return { deps, createConnectAccount, saveStripeAccountId }
 }
 
 describe('startPayoutOnboarding', () => {
+  it('デモのコーチは、Stripe に口座を作らない', async () => {
+    const { deps, createConnectAccount } = setup(null, true)
+    expect(await startPayoutOnboarding({ actor }, deps)).toEqual({
+      ok: false,
+      error: 'demo_coach',
+    })
+    expect(createConnectAccount).not.toHaveBeenCalled()
+  })
+
   it('口座がなければ、受付ページと活動名を渡して作って保存し、設定画面のURLを返す', async () => {
     const { deps, createConnectAccount, saveStripeAccountId } = setup(null)
     const result = await startPayoutOnboarding({ actor }, deps)

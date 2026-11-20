@@ -97,6 +97,9 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - 自分の feature の中は相対パスで import する（`@/server/features/...` の絶対パスは、ほかの feature を指すときだけ）
 - 読み取り専用の query-service は、画面のためにほかの feature の表を join してよい（書き込みはしない）
 - Biome の `noRestrictedImports` と `scripts/check-boundaries.mjs`（`pnpm lint`）で検出する
+- 例外：`demo`（staging でコーチ候補が試すデモのコーチ）は、デモのデータを作る・消すために、ほかの feature の表へ直接書き込む。データの作り方を各 feature に持たせると、デモのためだけの口がどの feature にも増えるため。代わりに次を守る
+  - 消すのは、デモの印（`coach_profile.demo_expires_at`）が付いたコーチと、デモ用のアドレスの生徒に属するものだけ
+  - ユーザー・コーチ・レッスンにつながる表を足したら、`demo` の削除にも足す（足し忘れると `demoCleanupCoverage.test.ts` が落ちる）
 
 ## フロントエンド（`src/app/`）
 

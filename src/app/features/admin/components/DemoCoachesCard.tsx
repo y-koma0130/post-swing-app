@@ -8,6 +8,8 @@ import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
 import { useConfirmedSubmit } from '@/app/hooks/useConfirmedSubmit'
 import { formatDateTime } from '@/app/utils/format'
+import type { AdminDemoCoachesDto } from '@/server/features/demo/application/dto/AdminDemoCoaches.dto'
+import { DEMO_RULES } from '@/server/features/demo/domain/rules'
 import {
   createDemoCoachAction,
   deleteDemoCoachAction,
@@ -17,7 +19,7 @@ import type { DemoActionState } from '@/server/features/demo/presentation/demoAc
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 type Props = {
-  coaches: ReadonlyArray<{ userId: string; name: string; expiresAt: Date }>
+  coaches: AdminDemoCoachesDto['coaches']
 }
 
 /** 作った・作り直したときは、デモ用のリンクとコピーのボタンを出す。それ以外は FormMessage */
@@ -55,7 +57,7 @@ export const DemoCoachesCard = ({ coaches }: Props) => {
       <form action={action} className="flex flex-wrap items-end gap-3">
         <label className="block min-w-48 flex-1 space-y-1">
           <span className={labelTextClass}>コーチ候補の名前</span>
-          <input name="name" required maxLength={30} className={inputClass} />
+          <input name="name" required maxLength={DEMO_RULES.nameMaxLength} className={inputClass} />
         </label>
         <Button type="submit" pending={pending}>
           デモを作る

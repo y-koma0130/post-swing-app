@@ -9,6 +9,8 @@
 export const DEMO_RULES = {
   /** 作ってから消すまでの日数 */
   lifetimeDays: 7,
+  /** デモのコーチの名前（コーチ候補の名前）の長さ */
+  nameMaxLength: 30,
   /** デモ用のリンクに入れるトークンの長さ（バイト） */
   tokenBytes: 32,
   /**

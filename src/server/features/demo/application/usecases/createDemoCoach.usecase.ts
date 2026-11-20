@@ -1,5 +1,6 @@
 import { err, ok, type Result } from '@/server/utils/result'
 import { calcDemoExpiresAt } from '../../domain/services/demoPeriod.service'
+import { demoCoachNameSchema } from '../../domain/values/DemoCoachName'
 
 /** デモを作るのに要る値（infrastructure がこれから、デモのコーチとデータを作って書く） */
 export type NewDemoCoach = Readonly<{
@@ -30,9 +31,6 @@ export type CreateDemoCoach = (
   dependencies: Dependencies
 ) => Promise<Result<{ coachUserId: string; token: string; expiresAt: Date }, CreateDemoCoachError>>
 
-/** デモのコーチの名前（コーチ候補の名前を入れる） */
-const NAME_MAX_LENGTH = 30
-
 /**
  * デモのコーチを作る（管理者だけ。権限は呼ぶ側の Server Action で確かめる）
  *
@@ -43,15 +41,15 @@ const NAME_MAX_LENGTH = 30
  */
 export const createDemoCoach: CreateDemoCoach = async ({ name, now }, deps) => {
   if (!deps.isDemoEnabled) return err('not_enabled')
-  const coachName = name.trim()
-  if (coachName === '' || coachName.length > NAME_MAX_LENGTH) return err('invalid_name')
+  const coachName = demoCoachNameSchema.safeParse(name)
+  if (!coachName.success) return err('invalid_name')
 
   const coachUserId = deps.generateId()
   const token = deps.generateToken()
   const expiresAt = calcDemoExpiresAt(now)
   await deps.saveDemoCoach({
     coachUserId,
-    coachName,
+    coachName: coachName.data,
     slug: deps.generateSlug(),
     tokenHash: await deps.hashToken(token),
     expiresAt,

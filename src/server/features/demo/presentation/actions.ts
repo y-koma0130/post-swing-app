@@ -8,6 +8,14 @@ import { deleteMediaObject } from '@/server/utils/mediaStorage'
 import { createDemoCoach } from '../application/usecases/createDemoCoach.usecase'
 import { deleteDemoCoach } from '../application/usecases/deleteDemoCoach.usecase'
 import { reissueDemoLink } from '../application/usecases/reissueDemoLink.usecase'
+import { DEMO_RULES } from '../domain/rules'
+import {
+  generateDemoMonitorCode,
+  generateDemoSlug,
+  generateDemoToken,
+  hashDemoToken,
+  isDemoEnabled,
+} from '../infrastructure/external-services/demoEnv'
 import { buildDemoSeed } from '../infrastructure/repositories/buildDemoSeed'
 import {
   deleteDemoCoachData,
@@ -15,13 +23,6 @@ import {
   saveDemoTokenHash,
 } from '../infrastructure/repositories/demoRepository'
 import type { DemoActionState } from './demoActionState'
-import {
-  generateDemoMonitorCode,
-  generateDemoSlug,
-  generateDemoToken,
-  hashDemoToken,
-  isDemoEnabled,
-} from './demoEnv'
 import { demoLoginUrl } from './demoLink'
 
 const NOT_ENABLED = 'デモは staging でだけ作れます'
@@ -48,7 +49,10 @@ export const createDemoCoachAction = async (
   if (!result.ok) {
     return {
       status: 'error',
-      message: result.error === 'not_enabled' ? NOT_ENABLED : '名前を30文字までで入れてください',
+      message:
+        result.error === 'not_enabled'
+          ? NOT_ENABLED
+          : `名前を${DEMO_RULES.nameMaxLength}文字までで入れてください`,
     }
   }
   revalidatePath('/admin')

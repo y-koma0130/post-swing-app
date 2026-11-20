@@ -2,14 +2,16 @@ import { DEMO_RULES } from '../rules'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** デモの期限（作ってから7日） */
-export const calcDemoExpiresAt = (createdAt: Date): Date =>
+export type CalcDemoExpiresAt = (createdAt: Date) => Date
+/** デモの期限（ドメインルール：作ってから DEMO_RULES.lifetimeDays 日） */
+export const calcDemoExpiresAt: CalcDemoExpiresAt = (createdAt) =>
   new Date(createdAt.getTime() + DEMO_RULES.lifetimeDays * DAY_MS)
 
-/** デモ用のリンクで、まだログインできるか（期限を過ぎたら使えない） */
-export const isDemoActive = (expiresAt: Date, now: Date): boolean =>
-  expiresAt.getTime() > now.getTime()
+export type IsDemoActive = (expiresAt: Date, now: Date) => boolean
+/** デモ用のリンクで、まだログインできるか（ドメインルール：期限の時刻ちょうどからは使えない） */
+export const isDemoActive: IsDemoActive = (expiresAt, now) => expiresAt.getTime() > now.getTime()
 
-/** お手本の動画か（デモを消しても、毎日の処理でも、消さない） */
-export const isDemoSampleKey = (r2Key: string): boolean =>
+export type IsDemoSampleKey = (r2Key: string) => boolean
+/** お手本の動画か（ドメインルール：どのデモも使うので、デモを消しても、毎日の処理でも、消さない） */
+export const isDemoSampleKey: IsDemoSampleKey = (r2Key) =>
   r2Key.startsWith(DEMO_RULES.sampleKeyPrefix)

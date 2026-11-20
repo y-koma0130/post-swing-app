@@ -1,10 +1,10 @@
 import 'server-only'
 import { resolveDemoLogin } from './application/usecases/resolveDemoLogin.usecase'
+import { hashDemoToken, isDemoEnabled } from './infrastructure/external-services/demoEnv'
 import {
   findDemoCoachByTokenHash,
   findDemoExpiry,
 } from './infrastructure/repositories/demoRepository'
-import { hashDemoToken, isDemoEnabled } from './presentation/demoEnv'
 
 /**
  * demo がほかの feature に公開する関数（ほかの feature は、demo の domain と、このファイルだけを使う）

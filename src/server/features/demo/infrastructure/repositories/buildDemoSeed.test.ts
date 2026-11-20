@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEMO_EMAIL_DOMAIN } from '../../domain/rules'
 import { isDemoSampleKey } from '../../domain/services/demoPeriod.service'
-import { buildDemoSeed, randomMonitorCode } from './buildDemoSeed'
+import { buildDemoSeed } from './buildDemoSeed'
 
 const now = new Date('2026-11-20T00:00:00Z')
 let n = 0
@@ -67,11 +67,5 @@ describe('buildDemoSeed', () => {
       const pending = seed.submissions.filter((s) => s.threadId === t.id && !replied.has(s.id))
       expect(pending.length).toBe(1)
     }
-  })
-})
-
-describe('randomMonitorCode', () => {
-  it('決まった長さで、使える文字だけで作る', () => {
-    expect(randomMonitorCode(() => 0)).toBe('AAAAAAAA')
   })
 })
