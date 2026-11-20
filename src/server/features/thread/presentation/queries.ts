@@ -27,14 +27,22 @@ export const getCoachThread = async (threadId: string) => {
   return result.ok ? result.value : null
 }
 
-/** コーチのホームの一覧（コーチであることは呼び出し側で確かめる） */
-export const getCoachThreadSummaries = (coachUserId: string) =>
-  listCoachThreadSummaries(coachUserId)
+/**
+ * コーチのホームの一覧（コーチであることは呼び出し側で確かめる）。
+ * 終わったレッスンは finishedLimit 件まで（「もっと見る」で増やす）
+ */
+export const getCoachThreadSummaries = (coachUserId: string, finishedLimit: number) =>
+  listCoachThreadSummaries(coachUserId, finishedLimit)
 
-/** 生徒のマイページの一覧。ログインしていなければ null */
-export const getMyThreadSummaries = async () => {
+/**
+ * 生徒のマイページの一覧。ログインしていなければ null。
+ * coachSlug を渡すと、そのコーチとのレッスンだけ（コーチ詳細ページ）
+ */
+export const getMyThreadSummaries = async (
+  options: Readonly<{ finishedLimit: number; coachSlug?: string | undefined }>
+) => {
   const actor = await getActor()
-  return actor ? listStudentThreadSummaries(actor.userId) : null
+  return actor ? listStudentThreadSummaries(actor.userId, options) : null
 }
 
 /** 管理画面のスレッド一覧。管理者でなければ null */

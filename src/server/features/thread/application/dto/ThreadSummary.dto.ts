@@ -37,3 +37,16 @@ export type ThreadSummaryDto = {
   /** 終わったレッスンで、生徒がまだレビューを書いていない */
   needsReview: boolean
 }
+
+/**
+ * レッスンの一覧（コーチのホーム・生徒のマイページ）。進行中は全部、終わったもの（完了・お断り）は
+ * 新しい順に決まった数だけ返す（増え続けるので、画面の「もっと見る」で数を増やして読み直す）
+ */
+export type ThreadSummaryPageDto = {
+  /** 終わっていないもの（下書き・承認待ち・添削待ち・レッスン中） */
+  active: ThreadSummaryDto[]
+  /** 終わったもの（終わった新しい順。finishedLimit 件まで） */
+  finished: ThreadSummaryDto[]
+  /** 終わったものの合計 */
+  finishedTotal: number
+}

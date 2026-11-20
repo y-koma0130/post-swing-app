@@ -79,8 +79,6 @@ const planRows = (userId: string, plans: readonly Plan[], now: Date) =>
     kind: p.kind,
     name: p.name,
     priceYen: p.price,
-    // 説明はもう使わない（プランの中身から作る）。列は残してあるので空にしておく
-    description: '',
     active: p.active,
     createdAt: now,
     updatedAt: now,

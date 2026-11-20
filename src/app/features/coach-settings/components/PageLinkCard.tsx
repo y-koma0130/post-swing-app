@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Card } from '@/app/components/ui/Card'
 import { CopyButton, type CopyResult } from '@/app/components/ui/CopyButton'
+import { PRESSED_CLASS } from '@/app/components/ui/pressStyles'
 
 type Props = {
   /** 受付ページの URL（https://swingpost.app/c/yamada-golf） */
@@ -32,7 +33,7 @@ export const PageLinkCard = ({ url, path }: Props) => {
       <div className="bg-mint-soft flex items-center gap-2 rounded-xl py-2 pr-2 pl-4">
         <Link
           href={path}
-          className="text-ink focus-visible:ring-mint active:bg-mint-soft min-w-0 flex-1 rounded-sm font-bold break-all underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          className={`text-ink focus-visible:ring-mint ${PRESSED_CLASS} min-w-0 flex-1 rounded-sm font-bold break-all underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:outline-none`}
         >
           {url}
         </Link>

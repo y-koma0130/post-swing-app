@@ -108,7 +108,6 @@ export const buildDemoSeed = (input: BuildDemoSeedInput): DemoSeed => {
       kind: p.kind,
       name: p.name,
       priceYen: p.price,
-      description: '',
       active: p.active,
       createdAt: now,
       updatedAt: now,

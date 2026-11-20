@@ -8,8 +8,8 @@ import { Page, PageHeader } from '@/app/components/ui/Page'
 import { ChartEntries } from '@/app/features/student-chart/components/ChartEntries'
 import { ChartMemo } from '@/app/features/student-chart/components/ChartMemo'
 import { ChartTags } from '@/app/features/student-chart/components/ChartTags'
-import { FINISHED_PAGE_SIZE } from '@/app/features/thread/utils/lessonGroups'
 import { formatDateTime, formatMonthDay } from '@/app/utils/format'
+import { LIST_PAGE_SIZE } from '@/app/utils/listPaging'
 import { THREAD_STATUS_LABEL } from '@/app/utils/threadText'
 import { getActor } from '@/server/auth/getActor'
 import { getStudentChart } from '@/server/features/student-chart/presentation/queries'
@@ -79,7 +79,7 @@ const StudentChartPage = async ({ params }: Props) => {
         ) : (
           // レッスンと同じ詰めたカードにする。押すと、送ったレッスンを開く。増えていくので、はじめは10件
           <ShowMoreList
-            pageSize={FINISHED_PAGE_SIZE}
+            pageSize={LIST_PAGE_SIZE}
             className="space-y-2"
             items={chart.drills.map((drill) => ({
               key: `${drill.threadId}-${drill.sentAt.getTime()}-${drill.title}`,

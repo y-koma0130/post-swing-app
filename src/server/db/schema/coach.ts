@@ -71,7 +71,6 @@ export const plan = sqliteTable(
     kind: text({ enum: ['trial', 'single', 'monthly'] }).notNull(),
     name: text().notNull(),
     priceYen: integer().notNull(),
-    description: text().notNull(),
     active: integer({ mode: 'boolean' }).notNull(),
     ...timestamps,
   },

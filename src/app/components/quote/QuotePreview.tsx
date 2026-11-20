@@ -1,3 +1,4 @@
+import { PRESSED_CLASS } from '@/app/components/ui/pressStyles'
 import { quoteAnchorId, quoteLabel } from '@/app/utils/threadText'
 import type { ChatQuote } from '@/server/features/thread/domain/values/ChatMessage'
 
@@ -5,7 +6,7 @@ import type { ChatQuote } from '@/server/features/thread/domain/values/ChatMessa
 export const QuotePreview = ({ quote }: { quote: ChatQuote }) => (
   <a
     href={`#${quoteAnchorId(quote.kind, quote.targetId)}`}
-    className="border-mint text-caption text-muted hover:text-ink active:text-ink active:bg-mint-soft mb-1 block truncate border-l-2 pl-2 transition-colors"
+    className={`border-mint text-caption text-muted hover:text-ink active:text-ink ${PRESSED_CLASS} mb-1 block truncate border-l-2 pl-2 transition-colors`}
   >
     {quoteLabel(quote)}
   </a>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { PRESSED_CLASS } from '@/app/components/ui/pressStyles'
 
 const ITEMS = [
   { href: '/coach', label: 'ホーム' },
@@ -33,7 +34,7 @@ export const CoachNav = () => {
             className={`focus-visible:ring-mint rounded-full px-1 py-1.5 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none sm:px-3 ${
               active
                 ? 'bg-mint-soft text-ink font-semibold'
-                : 'text-muted hover:bg-surface hover:text-ink active:bg-mint-soft active:text-ink'
+                : `text-muted hover:bg-surface hover:text-ink ${PRESSED_CLASS} active:text-ink`
             }`}
           >
             {item.label}

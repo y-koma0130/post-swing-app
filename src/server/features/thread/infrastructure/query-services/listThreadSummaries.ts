@@ -1,9 +1,12 @@
 import 'server-only'
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, ne, notInArray, type SQL, sql } from 'drizzle-orm'
 import { getDb } from '@/server/db/client'
 import { coachProfile, purchase, thread, user } from '@/server/db/schema'
 import { findCoachAvailabilityFactsForCoaches } from '@/server/features/coach/public'
-import type { ThreadSummaryDto } from '../../application/dto/ThreadSummary.dto'
+import type {
+  ThreadSummaryDto,
+  ThreadSummaryPageDto,
+} from '../../application/dto/ThreadSummary.dto'
 import { THREAD_RULES } from '../../domain/rules'
 import { calcApprovalDeadline } from '../../domain/services/calcApprovalDeadline.service'
 import { calcEffectiveExpiry } from '../../domain/services/calcEffectiveExpiry.service'
@@ -103,13 +106,15 @@ const findUnread = async (
   )
 }
 
-/** コーチの一覧（並べ方と区分は画面で決める） */
-export type ListCoachThreadSummaries = (coachUserId: string) => Promise<ThreadSummaryDto[]>
-export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUserId) => {
-  const rows = await getDb()
+/** 終わったレッスン（完了・お断り） */
+const FINISHED_STATUSES = ['closed', 'declined'] as const
+
+/** 一覧の行を読む。相手の名前は、コーチの一覧なら生徒、生徒の一覧ならコーチ */
+const selectRows = (counterpart: 'student' | 'coach') =>
+  getDb()
     .select({
       id: thread.id,
-      counterpartName: user.name,
+      counterpartName: counterpart === 'student' ? user.name : coachProfile.displayName,
       planKind: thread.planKind,
       theme: thread.theme,
       status: thread.status,
@@ -124,38 +129,70 @@ export const listCoachThreadSummaries: ListCoachThreadSummaries = async (coachUs
     })
     .from(thread)
     .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
-    .innerJoin(user, eq(user.id, thread.studentUserId))
     .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
-    // 申し込みの下書き（カードを登録する前）は、コーチにはまだ見せない
-    .where(and(eq(thread.coachUserId, coachUserId), ne(thread.status, 'draft')))
-    .all()
-  return toSummaries(rows, { userId: coachUserId, side: 'coach' })
+    .innerJoin(user, eq(user.id, thread.studentUserId))
+
+/** 進行中は全部、終わったものは新しい順に finishedLimit 件まで読み、合計の数も数える */
+const listPage = async (
+  where: SQL | undefined,
+  viewer: { userId: string; side: 'coach' | 'student' },
+  finishedLimit: number
+): Promise<ThreadSummaryPageDto> => {
+  const counterpart = viewer.side === 'coach' ? 'student' : 'coach'
+  const finished = inArray(thread.status, [...FINISHED_STATUSES])
+  const [activeRows, finishedRows, total] = await Promise.all([
+    selectRows(counterpart)
+      .where(and(where, notInArray(thread.status, [...FINISHED_STATUSES])))
+      .orderBy(desc(thread.startedAt))
+      .all(),
+    selectRows(counterpart)
+      .where(and(where, finished))
+      // 終わった時刻（お断りは返事をした時刻）の新しい順
+      .orderBy(desc(sql`coalesce(${thread.closedAt}, ${thread.decidedAt}, ${thread.startedAt})`))
+      .limit(finishedLimit)
+      .all(),
+    getDb()
+      .select({ n: count() })
+      .from(thread)
+      .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
+      .where(and(where, finished))
+      .get(),
+  ])
+  const summaries = await toSummaries([...activeRows, ...finishedRows], viewer)
+  return {
+    active: summaries.slice(0, activeRows.length),
+    finished: summaries.slice(activeRows.length),
+    finishedTotal: total?.n ?? 0,
+  }
 }
 
-/** 生徒の一覧（始めた新しい順。区分は画面で決める） */
-export type ListStudentThreadSummaries = (studentUserId: string) => Promise<ThreadSummaryDto[]>
-export const listStudentThreadSummaries: ListStudentThreadSummaries = async (studentUserId) => {
-  const rows = await getDb()
-    .select({
-      id: thread.id,
-      counterpartName: coachProfile.displayName,
-      planKind: thread.planKind,
-      theme: thread.theme,
-      status: thread.status,
-      expiresAt: thread.expiresAt,
-      startedAt: thread.startedAt,
-      requestedAt: thread.requestedAt,
-      closedAt: thread.closedAt,
-      decidedAt: thread.decidedAt,
-      coachUserId: thread.coachUserId,
-      coachSlug: coachProfile.slug,
-      priceYen: purchase.priceYen,
-    })
-    .from(thread)
-    .innerJoin(purchase, eq(purchase.id, thread.purchaseId))
-    .innerJoin(coachProfile, eq(coachProfile.userId, thread.coachUserId))
-    .where(eq(thread.studentUserId, studentUserId))
-    .orderBy(desc(thread.startedAt))
-    .all()
-  return toSummaries(rows, { userId: studentUserId, side: 'student' })
-}
+/** コーチの一覧（並べ方と区分は画面で決める） */
+export type ListCoachThreadSummaries = (
+  coachUserId: string,
+  finishedLimit: number
+) => Promise<ThreadSummaryPageDto>
+export const listCoachThreadSummaries: ListCoachThreadSummaries = (coachUserId, finishedLimit) =>
+  listPage(
+    // 申し込みの下書き（カードを登録する前）は、コーチにはまだ見せない
+    and(eq(thread.coachUserId, coachUserId), ne(thread.status, 'draft')),
+    { userId: coachUserId, side: 'coach' },
+    finishedLimit
+  )
+
+/** 生徒の一覧（始めた新しい順。coachSlug を渡すと、そのコーチとのものだけ） */
+export type ListStudentThreadSummaries = (
+  studentUserId: string,
+  options: Readonly<{ finishedLimit: number; coachSlug?: string | undefined }>
+) => Promise<ThreadSummaryPageDto>
+export const listStudentThreadSummaries: ListStudentThreadSummaries = (
+  studentUserId,
+  { finishedLimit, coachSlug }
+) =>
+  listPage(
+    and(
+      eq(thread.studentUserId, studentUserId),
+      coachSlug === undefined ? undefined : eq(coachProfile.slug, coachSlug)
+    ),
+    { userId: studentUserId, side: 'student' },
+    finishedLimit
+  )
