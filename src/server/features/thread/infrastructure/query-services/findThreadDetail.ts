@@ -134,6 +134,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             videoId: replyDrill.videoId,
             youtubeVideoId: replyDrill.youtubeVideoId,
             youtubeStartSec: replyDrill.youtubeStartSec,
+            youtubeVertical: replyDrill.youtubeVertical,
             instagramPostKind: replyDrill.instagramPostKind,
             instagramShortcode: replyDrill.instagramShortcode,
           })

@@ -25,5 +25,9 @@ export const DrillVideoPlayer = ({ video, preload = 'none' }: Props) =>
       className="aspect-video w-full rounded-lg bg-black object-contain"
     />
   ) : (
-    <YoutubePlayer youtubeId={video.youtubeId} startSec={video.startSec} />
+    <YoutubePlayer
+      youtubeId={video.youtubeId}
+      startSec={video.startSec}
+      vertical={video.vertical}
+    />
   )

@@ -17,17 +17,11 @@ import {
   saveDrill,
 } from '../infrastructure/repositories/drillRepository'
 
-/** お手本の動画の入力（種類ごとに、送られてくる項目が違う） */
-const videoInput = (formData: FormData) => {
-  switch (formString(formData, 'videoKind')) {
-    case 'youtube':
-      return { kind: 'youtube', url: formString(formData, 'youtubeUrl') }
-    case 'instagram':
-      return { kind: 'instagram', url: formString(formData, 'instagramUrl') }
-    default:
-      return { kind: 'upload', videoId: formString(formData, 'videoId') }
-  }
-}
+/** お手本の動画の入力（上げた動画なら ID、YouTube・Instagram なら URL） */
+const videoInput = (formData: FormData) =>
+  formString(formData, 'videoKind') === 'link'
+    ? { kind: 'link', url: formString(formData, 'videoUrl') }
+    : { kind: 'upload', videoId: formString(formData, 'videoId') }
 
 const CREATE_DRILL_ERROR_MESSAGE = {
   not_found: 'コーチとして登録されていません',

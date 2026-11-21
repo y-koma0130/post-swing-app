@@ -6,7 +6,7 @@
  */
 export type DrillVideoDto =
   | { kind: 'upload'; url: string }
-  | { kind: 'youtube'; youtubeId: string; startSec: number }
+  | { kind: 'youtube'; youtubeId: string; startSec: number; vertical: boolean }
   | { kind: 'instagram'; url: string }
 
 /** コーチのドリル一覧・添削カードでの選択肢 */

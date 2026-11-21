@@ -146,7 +146,7 @@ export type ThreadDetailDto = {
       | { kind: 'none' }
       | { kind: 'drill'; title: string; description: string; video: DrillVideoDto | null }
       | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
-      | { kind: 'youtube'; youtubeId: string; startSec: number }
+      | { kind: 'youtube'; youtubeId: string; startSec: number; vertical: boolean }
       | { kind: 'instagram'; url: string }
     quote: ChatQuote | null
   }>

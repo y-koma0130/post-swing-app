@@ -83,7 +83,8 @@
 | 読み込み中 | `Skeleton`・`PageSkeleton`（`loading.tsx`） |
 | 404・エラーの画面 | `StatusScreen` |
 | Stripe などほかのサイトへ移るフォーム | `useLeavingPage`（移るまでボタンを押せないままにする） |
-| ドリルのお手本・チャットの動画 | `DrillVideoPlayer`（上げた動画・YouTube・Instagram）・`YoutubePlayer`（YouTube の埋め込み） |
+| ドリルのお手本・チャットの動画 | `DrillVideoPlayer`（上げた動画・YouTube・Instagram）・`YoutubePlayer`（YouTube。サムネイルを押してから埋め込みを読み込む。Shorts は縦の枠） |
+| YouTube・Instagram の URL を貼る欄 | `VideoLinkField`（どちらかは URL から判別し、中身と注意をその場で出す。読めない URL も知らせる） |
 | Instagram の投稿を開くリンク | `InstagramLink`（動画の枠の代わりに置く。スマホなら Instagram のアプリで開く） |
 
 ### 形

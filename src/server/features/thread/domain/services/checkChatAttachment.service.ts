@@ -1,6 +1,4 @@
-import type { ParsedInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
-import type { ParsedYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
-import type { DrillVideo } from '@/server/features/drill/domain/values/DrillVideo'
+import type { DrillVideo, VideoLink } from '@/server/features/drill/domain/values/DrillVideo'
 import { err, ok, type Result } from '@/server/utils/result'
 import type { ChatAttachment } from '../values/ChatMessage'
 import { type DraftVideo, isUnusedDraft } from '../values/Submission'
@@ -10,15 +8,14 @@ export type ChatAttachmentRequest =
   | { kind: 'none' }
   | { kind: 'drill'; drillId: string }
   | { kind: 'video'; videoId: string }
-  | { kind: 'youtube'; url: string }
-  | { kind: 'instagram'; url: string }
+  /** YouTube の動画か Instagram の投稿の URL（どちらかは URL から読む） */
+  | { kind: 'link'; url: string }
 
 export type ChatAttachmentBlocker =
   | 'invalid_drill'
   | 'invalid_video'
-  | 'invalid_youtube'
+  | 'invalid_link'
   | 'youtube_unavailable'
-  | 'invalid_instagram'
 
 export type CheckChatAttachment = (
   input: Readonly<{
@@ -29,13 +26,10 @@ export type CheckChatAttachment = (
     ownDrill: Readonly<{ title: string; description: string; video: DrillVideo | null }> | null
     /** request の動画。見つからなければ null */
     video: DraftVideo | null
-    /** request の YouTube の URL を読んだ結果（読めなければ null）と、埋め込みで再生できるか */
-    youtube: Readonly<{
-      parsed: ParsedYoutubeUrl | null
-      status: 'playable' | 'unavailable' | 'unknown' | null
-    }> | null
-    /** request の Instagram の URL を読んだ結果。読めなければ null */
-    instagram: ParsedInstagramUrl | null
+    /** request の URL を読んだ結果（読めなければ null） */
+    link: VideoLink | null
+    /** link が YouTube の動画なら、埋め込みで再生できるか。それ以外は null */
+    youtubeStatus: 'playable' | 'unavailable' | 'unknown' | null
   }>
 ) => Result<ChatAttachment, ChatAttachmentBlocker>
 
@@ -54,8 +48,8 @@ export const checkChatAttachment: CheckChatAttachment = ({
   actorUserId,
   ownDrill,
   video,
-  youtube,
-  instagram,
+  link,
+  youtubeStatus,
 }) => {
   switch (request.kind) {
     case 'none':
@@ -70,11 +64,11 @@ export const checkChatAttachment: CheckChatAttachment = ({
         isUnusedDraft(video)
         ? ok({ kind: 'video', videoId: video.id })
         : err('invalid_video')
-    case 'youtube':
-      if (!youtube?.parsed) return err('invalid_youtube')
-      if (youtube.status === 'unavailable') return err('youtube_unavailable')
-      return ok({ kind: 'youtube', ...youtube.parsed })
-    case 'instagram':
-      return instagram ? ok({ kind: 'instagram', ...instagram }) : err('invalid_instagram')
+    case 'link':
+      if (!link) return err('invalid_link')
+      if (link.kind === 'youtube' && youtubeStatus === 'unavailable') {
+        return err('youtube_unavailable')
+      }
+      return ok(link)
   }
 }

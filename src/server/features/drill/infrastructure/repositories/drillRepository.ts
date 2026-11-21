@@ -18,6 +18,7 @@ const videoColumns = {
   uploadVideoId: drill.videoId,
   youtubeVideoId: drill.youtubeVideoId,
   youtubeStartSec: drill.youtubeStartSec,
+  youtubeVertical: drill.youtubeVertical,
   instagramPostKind: drill.instagramPostKind,
   instagramShortcode: drill.instagramShortcode,
 }
@@ -36,6 +37,7 @@ export const saveDrill: SaveDrill = async ({ video, ...d }) => {
       videoId: columns.uploadVideoId,
       youtubeVideoId: columns.youtubeVideoId,
       youtubeStartSec: columns.youtubeStartSec,
+      youtubeVertical: columns.youtubeVertical,
       instagramPostKind: columns.instagramPostKind,
       instagramShortcode: columns.instagramShortcode,
       createdAt: now,

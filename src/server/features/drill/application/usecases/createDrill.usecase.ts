@@ -44,14 +44,14 @@ export const createDrill: CreateDrill = async ({ actor, drill }, deps) => {
       return err('invalid_video')
     }
     video = drill.video
-  } else if (drill.video.kind === 'instagram') {
-    video = { kind: 'instagram', ...drill.video.url }
   } else {
-    const { youtubeId, startSec } = drill.video.url
-    if ((await deps.checkYoutubeEmbed(youtubeId)) === 'unavailable') {
+    video = drill.video.url
+    if (
+      video.kind === 'youtube' &&
+      (await deps.checkYoutubeEmbed(video.youtubeId)) === 'unavailable'
+    ) {
       return err('youtube_unavailable')
     }
-    video = { kind: 'youtube', youtubeId, startSec }
   }
   const id = deps.generateId()
   await deps.saveDrill({

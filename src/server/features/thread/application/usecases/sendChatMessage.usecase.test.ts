@@ -183,23 +183,24 @@ describe('sendChatMessage', () => {
 
   it('コーチは YouTube の動画を開始位置つきで送れる。再生できない動画・生徒は送れない', async () => {
     const { deps, saveChatMessage } = setup()
-    const attachment = { kind: 'youtube' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=1m30s' }
+    const attachment = { kind: 'link' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=1m30s' }
     expect((await send(coach, deps, '', false, { attachment })).ok).toBe(true)
     expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual({
       kind: 'youtube',
       youtubeId: 'dQw4w9WgXcQ',
       startSec: 90,
+      vertical: false,
     })
     expect(
       await send(coach, deps, '', false, {
-        attachment: { kind: 'youtube', url: 'https://youtu.be/deletedVid0' },
+        attachment: { kind: 'link', url: 'https://youtu.be/deletedVid0' },
       })
     ).toEqual({ ok: false, error: 'youtube_unavailable' })
     expect(
       await send(coach, deps, '', false, {
-        attachment: { kind: 'youtube', url: 'https://example.com/' },
+        attachment: { kind: 'link', url: 'https://example.com/' },
       })
-    ).toEqual({ ok: false, error: 'invalid_youtube' })
+    ).toEqual({ ok: false, error: 'invalid_link' })
     expect(await send(student, deps, '見て', false, { attachment })).toEqual({
       ok: false,
       error: 'attachment_not_allowed',
@@ -209,7 +210,7 @@ describe('sendChatMessage', () => {
   it('コーチは Instagram の投稿を送れる。投稿の URL でなければ送れない', async () => {
     const { deps, saveChatMessage } = setup()
     const attachment = {
-      kind: 'instagram' as const,
+      kind: 'link' as const,
       url: 'https://www.instagram.com/coach/reel/C1a2B3c4D5e/?igsh=x',
     }
     expect((await send(coach, deps, 'これを見てください', false, { attachment })).ok).toBe(true)
@@ -220,9 +221,9 @@ describe('sendChatMessage', () => {
     })
     expect(
       await send(coach, deps, '', false, {
-        attachment: { kind: 'instagram', url: 'https://www.instagram.com/coach/' },
+        attachment: { kind: 'link', url: 'https://www.instagram.com/coach/' },
       })
-    ).toEqual({ ok: false, error: 'invalid_instagram' })
+    ).toEqual({ ok: false, error: 'invalid_link' })
   })
 
   it('引用は送った時点の様子を写す。レッスンにないものは引用できない', async () => {

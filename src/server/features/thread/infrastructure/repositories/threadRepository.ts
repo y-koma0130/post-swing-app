@@ -18,6 +18,7 @@ import {
   type DrillVideo,
   drillVideoFromColumns,
   toDrillVideoColumns,
+  type VideoLink,
 } from '@/server/features/drill/domain/values/DrillVideo'
 import type { ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
@@ -28,7 +29,11 @@ import type { NewSubmission } from '../../application/usecases/submitSubmission.
 import type { NewDraftVideo } from '../../application/usecases/uploadVideo.usecase'
 import type { ApprovedThread } from '../../domain/services/approveThread.service'
 import type { ThreadCard } from '../../domain/services/checkQuoteTarget.service'
-import { type ChatMessage, chatMessageSchema } from '../../domain/values/ChatMessage'
+import {
+  type ChatAttachment,
+  type ChatMessage,
+  chatMessageSchema,
+} from '../../domain/values/ChatMessage'
 import { type DraftVideo, isUnusedDraft } from '../../domain/values/Submission'
 import { type NewThread, type Thread, threadSchema } from '../../domain/values/Thread'
 import type { NewThreadNotice } from '../../domain/values/ThreadNotice'
@@ -89,6 +94,7 @@ const drillVideoInsert = (video: DrillVideo | null) => {
     videoId: c.uploadVideoId,
     youtubeVideoId: c.youtubeVideoId,
     youtubeStartSec: c.youtubeStartSec,
+    youtubeVertical: c.youtubeVertical,
     instagramPostKind: c.instagramPostKind,
     instagramShortcode: c.instagramShortcode,
   }
@@ -101,9 +107,34 @@ const chatDrillVideoInsert = (video: DrillVideo | null) => {
     drillVideoId: c.uploadVideoId,
     drillYoutubeVideoId: c.youtubeVideoId,
     drillYoutubeStartSec: c.youtubeStartSec,
+    drillYoutubeVertical: c.youtubeVertical,
     drillInstagramPostKind: c.instagramPostKind,
     drillInstagramShortcode: c.instagramShortcode,
   }
+}
+
+/** チャットに添えた YouTube の動画・Instagram の投稿の列（chat_message。ドリルと同じ形で持つ） */
+const chatLinkInsert = (link: VideoLink | null) => {
+  const c = toDrillVideoColumns(link)
+  return {
+    youtubeVideoId: c.youtubeVideoId,
+    youtubeStartSec: c.youtubeStartSec,
+    youtubeVertical: c.youtubeVertical,
+    instagramPostKind: c.instagramPostKind,
+    instagramShortcode: c.instagramShortcode,
+  }
+}
+
+const chatLinkFromRow = (m: typeof chatMessage.$inferSelect): ChatAttachment => {
+  const link = drillVideoFromColumns({
+    uploadVideoId: null,
+    youtubeVideoId: m.youtubeVideoId,
+    youtubeStartSec: m.youtubeStartSec,
+    youtubeVertical: m.youtubeVertical,
+    instagramPostKind: m.instagramPostKind,
+    instagramShortcode: m.instagramShortcode,
+  })
+  return link && link.kind !== 'upload' ? link : { kind: 'none' }
 }
 
 /** 保存したチャットの行を domain の形にする（引用の JSON はここで検証する） */
@@ -123,21 +154,16 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
               uploadVideoId: m.drillVideoId,
               youtubeVideoId: m.drillYoutubeVideoId,
               youtubeStartSec: m.drillYoutubeStartSec,
+              youtubeVertical: m.drillYoutubeVertical,
               instagramPostKind: m.drillInstagramPostKind,
               instagramShortcode: m.drillInstagramShortcode,
             }),
           }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
-          : m.attachmentKind === 'youtube' && m.youtubeVideoId
-            ? { kind: 'youtube', youtubeId: m.youtubeVideoId, startSec: m.youtubeStartSec ?? 0 }
-            : m.attachmentKind === 'instagram' && m.instagramShortcode
-              ? {
-                  kind: 'instagram',
-                  postKind: m.instagramPostKind,
-                  shortcode: m.instagramShortcode,
-                }
-              : { kind: 'none' },
+          : m.attachmentKind === 'youtube' || m.attachmentKind === 'instagram'
+            ? chatLinkFromRow(m)
+            : { kind: 'none' },
     quote: m.quote ?? null,
   })
 
@@ -330,10 +356,9 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
       ...chatDrillVideoInsert(m.attachment.kind === 'drill' ? m.attachment.video : null),
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
-      youtubeVideoId: m.attachment.kind === 'youtube' ? m.attachment.youtubeId : null,
-      youtubeStartSec: m.attachment.kind === 'youtube' ? m.attachment.startSec : null,
-      instagramPostKind: m.attachment.kind === 'instagram' ? m.attachment.postKind : null,
-      instagramShortcode: m.attachment.kind === 'instagram' ? m.attachment.shortcode : null,
+      ...chatLinkInsert(
+        m.attachment.kind === 'youtube' || m.attachment.kind === 'instagram' ? m.attachment : null
+      ),
       quote: m.quote,
       sentAt: m.sentAt,
       sentDuringAbsenceId: m.sentDuringAbsenceId,

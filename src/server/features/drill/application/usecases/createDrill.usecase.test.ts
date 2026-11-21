@@ -11,11 +11,11 @@ const uploadDrill = drillInputSchema.parse({
 })
 const youtubeDrill = drillInputSchema.parse({
   ...base,
-  video: { kind: 'youtube', url: 'https://youtu.be/dQw4w9WgXcQ?t=90' },
+  video: { kind: 'link', url: 'https://youtu.be/dQw4w9WgXcQ?t=90' },
 })
 const instagramDrill = drillInputSchema.parse({
   ...base,
-  video: { kind: 'instagram', url: 'https://www.instagram.com/reel/C1a2B3c4D5e/?igsh=x' },
+  video: { kind: 'link', url: 'https://www.instagram.com/reel/C1a2B3c4D5e/?igsh=x' },
 })
 const actor = { userId: 'coach-1', name: '' }
 
@@ -69,7 +69,7 @@ describe('createDrill', () => {
       ...base,
       id: 'drill-1',
       coachUserId: 'coach-1',
-      video: { kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', startSec: 90 },
+      video: { kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', startSec: 90, vertical: false },
     })
   })
 

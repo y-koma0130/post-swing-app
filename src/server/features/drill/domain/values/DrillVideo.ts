@@ -40,21 +40,40 @@ export const instagramPostUrl = (post: Readonly<{ postKind: string; shortcode: s
   `https://www.instagram.com/${post.postKind}/${post.shortcode}/`
 
 /**
+ * YouTube の動画
+ *
+ * ドメインルール:
+ * - ダウンロードせず、YouTube の埋め込みでサービスの中で再生する（規約で置き直せないため）
+ * - 何秒目から再生するかを持てる（長い解説動画の一部だけを見せる）
+ * - Shorts（縦の動画）かを持つ。縦の枠で見せる（URL の /shorts/ で決める）
+ */
+export const youtubeVideoSchema = z.object({
+  youtubeId: youtubeVideoIdSchema,
+  startSec: z.number().int().nonnegative(),
+  vertical: z.boolean(),
+})
+
+export type YoutubeVideo = z.infer<typeof youtubeVideoSchema>
+
+/**
+ * URL で添える動画（YouTube の動画か Instagram の投稿）。誰の投稿でもよい（公開されているもの）
+ */
+export const videoLinkSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('youtube'), ...youtubeVideoSchema.shape }),
+  z.object({ kind: z.literal('instagram'), ...instagramPostSchema.shape }),
+])
+
+export type VideoLink = z.infer<typeof videoLinkSchema>
+
+/**
  * ドリルのお手本の動画
  *
  * ドメインルール:
- * - コーチが上げた動画（drill_video）か、コーチの YouTube の動画か、Instagram の投稿
- * - YouTube の動画はダウンロードせず、YouTube の埋め込みでサービスの中で再生する（規約で置き直せないため）
- * - YouTube の動画は、何秒目から再生するかを持てる（長い解説動画の一部だけを見せる）
+ * - コーチが上げた動画（drill_video）か、URL で添える動画（YouTube の動画・Instagram の投稿）
  */
 export const drillVideoSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('upload'), videoId: z.string().min(1) }),
-  z.object({
-    kind: z.literal('youtube'),
-    youtubeId: youtubeVideoIdSchema,
-    startSec: z.number().int().nonnegative(),
-  }),
-  z.object({ kind: z.literal('instagram'), ...instagramPostSchema.shape }),
+  ...videoLinkSchema.options,
 ])
 
 export type DrillVideo = z.infer<typeof drillVideoSchema>
@@ -64,6 +83,7 @@ export type DrillVideoColumns = {
   uploadVideoId: string | null
   youtubeVideoId: string | null
   youtubeStartSec: number | null
+  youtubeVertical: boolean | null
   instagramPostKind: string | null
   instagramShortcode: string | null
 }
@@ -72,6 +92,7 @@ const EMPTY_COLUMNS: DrillVideoColumns = {
   uploadVideoId: null,
   youtubeVideoId: null,
   youtubeStartSec: null,
+  youtubeVertical: null,
   instagramPostKind: null,
   instagramShortcode: null,
 }
@@ -81,7 +102,12 @@ export const toDrillVideoColumns = (video: DrillVideo | null): DrillVideoColumns
     case 'upload':
       return { ...EMPTY_COLUMNS, uploadVideoId: video.videoId }
     case 'youtube':
-      return { ...EMPTY_COLUMNS, youtubeVideoId: video.youtubeId, youtubeStartSec: video.startSec }
+      return {
+        ...EMPTY_COLUMNS,
+        youtubeVideoId: video.youtubeId,
+        youtubeStartSec: video.startSec,
+        youtubeVertical: video.vertical,
+      }
     case 'instagram':
       return {
         ...EMPTY_COLUMNS,
@@ -103,6 +129,7 @@ export const drillVideoFromColumns = (columns: DrillVideoColumns): DrillVideo | 
       kind: 'youtube',
       youtubeId: columns.youtubeVideoId,
       startSec: columns.youtubeStartSec ?? 0,
+      vertical: columns.youtubeVertical ?? false,
     })
   }
   if (columns.instagramShortcode !== null) {

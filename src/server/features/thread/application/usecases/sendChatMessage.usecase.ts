@@ -1,7 +1,6 @@
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
-import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
-import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
+import { parseVideoLink } from '@/server/features/drill/domain/services/parseVideoLink.service'
 import type { DrillVideo, YoutubeVideoId } from '@/server/features/drill/domain/values/DrillVideo'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
@@ -119,7 +118,7 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
     return err(checked.error)
   }
   const request = params.attachment
-  const youtube = request.kind === 'youtube' ? parseYoutubeUrl(request.url) : null
+  const link = request.kind === 'link' ? parseVideoLink(request.url) : null
   const attachment = checkChatAttachment({
     request,
     threadId: thread.id,
@@ -129,14 +128,8 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
         ? await deps.findOwnDrill(thread.coachUserId, request.drillId)
         : null,
     video: request.kind === 'video' ? await deps.findDraftVideo(request.videoId) : null,
-    youtube:
-      request.kind === 'youtube'
-        ? {
-            parsed: youtube,
-            status: youtube ? await deps.checkYoutubeEmbed(youtube.youtubeId) : null,
-          }
-        : null,
-    instagram: request.kind === 'instagram' ? parseInstagramUrl(request.url) : null,
+    link,
+    youtubeStatus: link?.kind === 'youtube' ? await deps.checkYoutubeEmbed(link.youtubeId) : null,
   })
   if (!attachment.ok) {
     return err(attachment.error)

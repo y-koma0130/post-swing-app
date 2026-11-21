@@ -180,6 +180,8 @@ export const replyDrill = sqliteTable(
     /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** YouTube の Shorts（縦の動画）か */
+    youtubeVertical: integer({ mode: 'boolean' }),
     /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
     instagramPostKind: text(),
     instagramShortcode: text(),
@@ -237,6 +239,7 @@ export const chatMessage = sqliteTable(
     /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
     drillYoutubeVideoId: text(),
     drillYoutubeStartSec: integer(),
+    drillYoutubeVertical: integer({ mode: 'boolean' }),
     /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
     drillInstagramPostKind: text(),
     drillInstagramShortcode: text(),
@@ -244,6 +247,8 @@ export const chatMessage = sqliteTable(
     /** 添えた YouTube の動画 ID と開始の秒（YouTube を添えたときだけ） */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** YouTube の Shorts（縦の動画）か */
+    youtubeVertical: integer({ mode: 'boolean' }),
     /** 添えた Instagram の投稿（種類と shortcode。Instagram を添えたときだけ） */
     instagramPostKind: text(),
     instagramShortcode: text(),
@@ -335,6 +340,8 @@ export const drill = sqliteTable(
     /** お手本の YouTube の動画 ID と、再生を始める秒。上げた動画なら null */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** YouTube の Shorts（縦の動画）か */
+    youtubeVertical: integer({ mode: 'boolean' }),
     /** お手本の Instagram の投稿（種類と shortcode）。それ以外なら null */
     instagramPostKind: text(),
     instagramShortcode: text(),

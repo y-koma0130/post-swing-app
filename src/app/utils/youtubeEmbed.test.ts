@@ -13,6 +13,12 @@ describe('youtubeEmbedUrl', () => {
       'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&playsinline=1&start=90'
     )
   })
+
+  it('サムネイルから開くときは、すぐ再生する', () => {
+    expect(youtubeEmbedUrl('dQw4w9WgXcQ', 0, { autoplay: true })).toBe(
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&playsinline=1&autoplay=1'
+    )
+  })
 })
 
 describe('formatStartSec', () => {

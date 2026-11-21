@@ -12,7 +12,12 @@ export const toDrillVideoDto: ToDrillVideoDto = (video) => {
     case 'upload':
       return { kind: 'upload', url: `/api/drill-videos/${video.videoId}` }
     case 'youtube':
-      return { kind: 'youtube', youtubeId: video.youtubeId, startSec: video.startSec }
+      return {
+        kind: 'youtube',
+        youtubeId: video.youtubeId,
+        startSec: video.startSec,
+        vertical: video.vertical,
+      }
     case 'instagram':
       return { kind: 'instagram', url: instagramPostUrl(video) }
   }

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
-import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
+import { parseVideoLink } from '@/server/features/drill/domain/services/parseVideoLink.service'
 import { checkChatAttachment } from './checkChatAttachment.service'
 
 const video = {
@@ -16,8 +15,8 @@ const base = {
   actorUserId: 'coach',
   ownDrill: null,
   video: null,
-  youtube: null,
-  instagram: null,
+  link: null,
+  youtubeStatus: null,
 }
 
 describe('checkChatAttachment', () => {
@@ -74,38 +73,34 @@ describe('checkChatAttachment', () => {
     ).toEqual(invalid)
   })
 
-  it('YouTube は、動画の URL で、埋め込みで再生できるものなら送れる', () => {
-    const request = { kind: 'youtube' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=90' }
-    const parsed = parseYoutubeUrl(request.url)
-    expect(
-      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'playable' } })
-    ).toEqual({ ok: true, value: { kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', startSec: 90 } })
+  it('YouTube の動画は、埋め込みで再生できるものなら送れる', () => {
+    const request = { kind: 'link' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=90' }
+    const link = parseVideoLink(request.url)
+    expect(checkChatAttachment({ ...base, request, link, youtubeStatus: 'playable' })).toEqual({
+      ok: true,
+      value: { kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', startSec: 90, vertical: false },
+    })
     // YouTube に問い合わせられないときは止めない
-    expect(
-      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'unknown' } }).ok
-    ).toBe(true)
-    expect(
-      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'unavailable' } })
-    ).toEqual({ ok: false, error: 'youtube_unavailable' })
-    expect(
-      checkChatAttachment({ ...base, request, youtube: { parsed: null, status: null } })
-    ).toEqual({ ok: false, error: 'invalid_youtube' })
+    expect(checkChatAttachment({ ...base, request, link, youtubeStatus: 'unknown' }).ok).toBe(true)
+    expect(checkChatAttachment({ ...base, request, link, youtubeStatus: 'unavailable' })).toEqual({
+      ok: false,
+      error: 'youtube_unavailable',
+    })
   })
 
-  it('Instagram は、投稿かリールの URL なら送れる', () => {
-    const request = {
-      kind: 'instagram' as const,
-      url: 'https://www.instagram.com/reel/C1a2B3c4D5e/',
-    }
-    expect(
-      checkChatAttachment({ ...base, request, instagram: parseInstagramUrl(request.url) })
-    ).toEqual({
+  it('Instagram の投稿は、確かめずに送れる', () => {
+    const request = { kind: 'link' as const, url: 'https://www.instagram.com/reel/C1a2B3c4D5e/' }
+    expect(checkChatAttachment({ ...base, request, link: parseVideoLink(request.url) })).toEqual({
       ok: true,
       value: { kind: 'instagram', postKind: 'reel', shortcode: 'C1a2B3c4D5e' },
     })
-    expect(checkChatAttachment({ ...base, request, instagram: null })).toEqual({
+  })
+
+  it('YouTube でも Instagram でもない URL は送れない', () => {
+    const request = { kind: 'link' as const, url: 'https://example.com/' }
+    expect(checkChatAttachment({ ...base, request, link: null })).toEqual({
       ok: false,
-      error: 'invalid_instagram',
+      error: 'invalid_link',
     })
   })
 })

@@ -1,9 +1,5 @@
 import { z } from 'zod'
-import {
-  drillVideoSchema,
-  instagramPostSchema,
-  youtubeVideoIdSchema,
-} from '@/server/features/drill/domain/values/DrillVideo'
+import { drillVideoSchema, videoLinkSchema } from '@/server/features/drill/domain/values/DrillVideo'
 import { keyPositionSchema } from './KeyPosition'
 import { videoAngleSchema } from './VideoAngle'
 
@@ -13,8 +9,8 @@ export type ChatSender = z.infer<typeof chatSenderSchema>
 
 /**
  * チャットに添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ（ドリルを消しても残る）。
- * YouTube はコーチの YouTube の動画で、ダウンロードせず埋め込みで再生する（開始の秒を持てる）。
- * Instagram はコーチの投稿で、Instagram（スマホならアプリ）の投稿を開くリンクにする
+ * YouTube の動画はダウンロードせず埋め込みで再生する（開始の秒を持てる）。
+ * Instagram の投稿は、Instagram（スマホならアプリ）の投稿を開くリンクにする
  */
 export const chatAttachmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -22,16 +18,11 @@ export const chatAttachmentSchema = z.discriminatedUnion('kind', [
     kind: z.literal('drill'),
     title: z.string(),
     description: z.string(),
-    /** ドリルのお手本の動画（上げた動画か YouTube）。動画のないドリルなら null */
+    /** ドリルのお手本の動画。動画のないドリルなら null */
     video: drillVideoSchema.nullable(),
   }),
   z.object({ kind: z.literal('video'), videoId: z.string().min(1) }),
-  z.object({
-    kind: z.literal('youtube'),
-    youtubeId: youtubeVideoIdSchema,
-    startSec: z.number().int().nonnegative(),
-  }),
-  z.object({ kind: z.literal('instagram'), ...instagramPostSchema.shape }),
+  ...videoLinkSchema.options,
 ])
 
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>

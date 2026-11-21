@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { parseInstagramUrl } from '../services/parseInstagramUrl.service'
-import { parseYoutubeUrl } from '../services/parseYoutubeUrl.service'
+import { parseVideoLink, VIDEO_LINK_HINT } from '../services/parseVideoLink.service'
 
 /** お手本の動画の入力。上げた動画は先に上げてその ID を、YouTube・Instagram は URL を受け取る */
 export const drillVideoInputSchema = z.discriminatedUnion('kind', [
@@ -9,29 +8,11 @@ export const drillVideoInputSchema = z.discriminatedUnion('kind', [
     videoId: z.string().trim().min(1, 'お手本の動画を選んでください'),
   }),
   z.object({
-    kind: z.literal('youtube'),
+    kind: z.literal('link'),
     url: z.string().transform((url, ctx) => {
-      const parsed = parseYoutubeUrl(url)
+      const parsed = parseVideoLink(url)
       if (!parsed) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'YouTube の動画の URL を入れてください（例：https://youtu.be/…）',
-        })
-        return z.NEVER
-      }
-      return parsed
-    }),
-  }),
-  z.object({
-    kind: z.literal('instagram'),
-    url: z.string().transform((url, ctx) => {
-      const parsed = parseInstagramUrl(url)
-      if (!parsed) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'Instagram の投稿かリールの URL を入れてください（例：https://www.instagram.com/reel/…）',
-        })
+        ctx.addIssue({ code: 'custom', message: VIDEO_LINK_HINT })
         return z.NEVER
       }
       return parsed

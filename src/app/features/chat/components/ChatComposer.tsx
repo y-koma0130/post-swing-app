@@ -15,14 +15,9 @@ import { Button } from '@/app/components/ui/Button'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, selectClass } from '@/app/components/ui/fieldStyles'
-import { InstagramLink } from '@/app/components/video/InstagramLink'
+import { VideoLinkField } from '@/app/components/video/VideoLinkField'
 import { VideoSlot, type VideoSlotHandle } from '@/app/components/video/VideoSlot'
-import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
-import { formatStartSec } from '@/app/utils/youtubeEmbed'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
-import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
-import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
-import { instagramPostUrl } from '@/server/features/drill/domain/values/DrillVideo'
 import type { SendGuard } from '@/server/features/thread/domain/services/decideSendGuard.service'
 import { sendChatMessageAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
@@ -52,18 +47,17 @@ type Props = {
   quoteByLongPress?: boolean | undefined
 }
 
-type Panel = 'none' | 'drill' | 'video' | 'youtube' | 'instagram'
+type Panel = 'none' | 'drill' | 'video' | 'link'
 
 type AttachPanel = Exclude<Panel, 'none'>
 
 const PANEL_LABEL = {
   drill: '＋ドリル',
   video: '＋動画',
-  youtube: '＋YouTube',
-  instagram: '＋Instagram',
+  link: '＋URL',
 } satisfies Record<AttachPanel, string>
 
-const ATTACH_PANELS: AttachPanel[] = ['drill', 'video', 'youtube', 'instagram']
+const ATTACH_PANELS: AttachPanel[] = ['drill', 'video', 'link']
 
 /**
  * チャットの入力欄（スレッドに1つ）。やりとりの表示は ThreadTimeline が持つ。
@@ -95,10 +89,7 @@ export const ChatComposer = ({
   const [videoSelected, setVideoSelected] = useState(false)
   const [videoBusy, setVideoBusy] = useState(false)
   const [slotKey, setSlotKey] = useState(0)
-  const [youtubeUrl, setYoutubeUrl] = useState('')
-  const youtube = panel === 'youtube' ? parseYoutubeUrl(youtubeUrl) : null
-  const [instagramUrl, setInstagramUrl] = useState('')
-  const instagram = panel === 'instagram' ? parseInstagramUrl(instagramUrl) : null
+  const [videoUrl, setVideoUrl] = useState('')
 
   // 送れたら入力欄・引用・添付を空にする（「やめる」のときは残す）
   useEffect(() => {
@@ -109,8 +100,7 @@ export const ChatComposer = ({
     setDrillId('')
     setVideoSelected(false)
     setSlotKey((k) => k + 1)
-    setYoutubeUrl('')
-    setInstagramUrl('')
+    setVideoUrl('')
   }, [state, setQuote])
 
   const onSlotStatus = useCallback((status: { selected: boolean; busy: boolean }) => {
@@ -152,8 +142,7 @@ export const ChatComposer = ({
   const attaching =
     (panel === 'drill' && drillId !== '') ||
     (panel === 'video' && videoSelected) ||
-    (panel === 'youtube' && youtubeUrl.trim() !== '') ||
-    (panel === 'instagram' && instagramUrl.trim() !== '')
+    (panel === 'link' && videoUrl.trim() !== '')
 
   return (
     <>
@@ -210,44 +199,13 @@ export const ChatComposer = ({
             onStatusChange={onSlotStatus}
           />
         )}
-        {coach && panel === 'youtube' && (
-          <div className="space-y-2">
-            <input
-              name="youtubeUrl"
-              type="url"
-              inputMode="url"
-              value={youtubeUrl}
-              onChange={(event) => setYoutubeUrl(event.currentTarget.value)}
-              placeholder="YouTube の動画の URL（https://youtu.be/…）"
-              aria-label="送る YouTube の動画の URL"
-              className={inputClass}
-            />
-            {youtube && (
-              <div className="space-y-1">
-                <YoutubePlayer youtubeId={youtube.youtubeId} startSec={youtube.startSec} />
-                {youtube.startSec > 0 && (
-                  <p className="text-caption text-muted">
-                    {formatStartSec(youtube.startSec)} から再生します
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-        {coach && panel === 'instagram' && (
-          <div className="space-y-2">
-            <input
-              name="instagramUrl"
-              type="url"
-              inputMode="url"
-              value={instagramUrl}
-              onChange={(event) => setInstagramUrl(event.currentTarget.value)}
-              placeholder="Instagram の投稿・リールの URL"
-              aria-label="送る Instagram の投稿の URL"
-              className={inputClass}
-            />
-            {instagram && <InstagramLink url={instagramPostUrl(instagram)} />}
-          </div>
+        {coach && panel === 'link' && (
+          <VideoLinkField
+            name="videoUrl"
+            value={videoUrl}
+            onChange={setVideoUrl}
+            ariaLabel="送る YouTube の動画か Instagram の投稿の URL"
+          />
         )}
         <div className="flex items-end gap-2">
           <textarea

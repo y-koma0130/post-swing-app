@@ -8,6 +8,7 @@ import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import { formatDateTime } from '@/app/utils/format'
 import { quoteAnchorId } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
+import { messageExcerpt } from '@/server/features/thread/domain/services/messageExcerpt.service'
 import { buildTimeline, firstNewItemKey, type TimelineItem } from '../utils/buildTimeline'
 import { TIMELINE_END_ID, TIMELINE_NEW_ID } from './ScrollToLatest'
 
@@ -128,16 +129,11 @@ const MessageBubble = ({
   quoteMode: 'button' | 'longPress'
 }) => {
   const { attachment } = message
-  const excerpt =
-    message.body.trim() !== ''
-      ? message.body.trim().slice(0, 40)
-      : attachment.kind === 'drill'
-        ? `ドリル：${attachment.title}`
-        : attachment.kind === 'youtube'
-          ? 'YouTube の動画'
-          : attachment.kind === 'instagram'
-            ? 'Instagram の投稿'
-            : '動画'
+  const excerpt = messageExcerpt({
+    body: message.body,
+    attachmentKind: attachment.kind,
+    drillTitle: attachment.kind === 'drill' ? attachment.title : null,
+  })
   const target = {
     kind: 'message' as const,
     targetId: message.id,
@@ -159,7 +155,11 @@ const MessageBubble = ({
         />
       )}
       {attachment.kind === 'youtube' && (
-        <YoutubePlayer youtubeId={attachment.youtubeId} startSec={attachment.startSec} />
+        <YoutubePlayer
+          youtubeId={attachment.youtubeId}
+          startSec={attachment.startSec}
+          vertical={attachment.vertical}
+        />
       )}
       {attachment.kind === 'instagram' && <InstagramLink url={attachment.url} />}
       {attachment.kind === 'video' && (
