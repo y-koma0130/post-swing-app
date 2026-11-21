@@ -180,6 +180,9 @@ export const replyDrill = sqliteTable(
     /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
+    instagramPostKind: text(),
+    instagramShortcode: text(),
   },
   (t) => [primaryKey({ columns: [t.replyId, t.sortOrder] })]
 )
@@ -224,7 +227,7 @@ export const chatMessage = sqliteTable(
     /** 添付だけのメッセージでは空 */
     body: text().notNull(),
     /** 添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ */
-    attachmentKind: text({ enum: ['none', 'drill', 'video', 'youtube'] })
+    attachmentKind: text({ enum: ['none', 'drill', 'video', 'youtube', 'instagram'] })
       .notNull()
       .default('none'),
     drillTitle: text(),
@@ -234,10 +237,16 @@ export const chatMessage = sqliteTable(
     /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
     drillYoutubeVideoId: text(),
     drillYoutubeStartSec: integer(),
+    /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
+    drillInstagramPostKind: text(),
+    drillInstagramShortcode: text(),
     videoId: text().references(() => video.id),
     /** 添えた YouTube の動画 ID と開始の秒（YouTube を添えたときだけ） */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** 添えた Instagram の投稿（種類と shortcode。Instagram を添えたときだけ） */
+    instagramPostKind: text(),
+    instagramShortcode: text(),
     /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
     quote: text({ mode: 'json' }),
     sentAt: integer({ mode: 'timestamp_ms' }).notNull(),
@@ -326,6 +335,9 @@ export const drill = sqliteTable(
     /** お手本の YouTube の動画 ID と、再生を始める秒。上げた動画なら null */
     youtubeVideoId: text(),
     youtubeStartSec: integer(),
+    /** お手本の Instagram の投稿（種類と shortcode）。それ以外なら null */
+    instagramPostKind: text(),
+    instagramShortcode: text(),
     ...timestamps,
   },
   (t) => [index('drill_coach_idx').on(t.coachUserId)]

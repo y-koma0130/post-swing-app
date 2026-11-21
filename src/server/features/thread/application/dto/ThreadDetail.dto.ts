@@ -147,6 +147,7 @@ export type ThreadDetailDto = {
       | { kind: 'drill'; title: string; description: string; video: DrillVideoDto | null }
       | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
       | { kind: 'youtube'; youtubeId: string; startSec: number }
+      | { kind: 'instagram'; url: string }
     quote: ChatQuote | null
   }>
   /** システムメッセージ（不在中に送られたときの「戻り次第返信します」） */

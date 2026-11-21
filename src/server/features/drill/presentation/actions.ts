@@ -17,6 +17,18 @@ import {
   saveDrill,
 } from '../infrastructure/repositories/drillRepository'
 
+/** お手本の動画の入力（種類ごとに、送られてくる項目が違う） */
+const videoInput = (formData: FormData) => {
+  switch (formString(formData, 'videoKind')) {
+    case 'youtube':
+      return { kind: 'youtube', url: formString(formData, 'youtubeUrl') }
+    case 'instagram':
+      return { kind: 'instagram', url: formString(formData, 'instagramUrl') }
+    default:
+      return { kind: 'upload', videoId: formString(formData, 'videoId') }
+  }
+}
+
 const CREATE_DRILL_ERROR_MESSAGE = {
   not_found: 'コーチとして登録されていません',
   invalid_video: 'お手本の動画が見つかりません。動画を選び直してください',
@@ -33,10 +45,7 @@ export const createDrillAction = async (
   const input = drillInputSchema.safeParse({
     title: formString(formData, 'title'),
     description: formString(formData, 'description'),
-    video:
-      formString(formData, 'videoKind') === 'youtube'
-        ? { kind: 'youtube', url: formString(formData, 'youtubeUrl') }
-        : { kind: 'upload', videoId: formString(formData, 'videoId') },
+    video: videoInput(formData),
   })
   if (!input.success) {
     return actionError(input.error.issues[0]?.message ?? '入力を確かめてください')

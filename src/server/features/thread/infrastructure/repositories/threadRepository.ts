@@ -89,6 +89,8 @@ const drillVideoInsert = (video: DrillVideo | null) => {
     videoId: c.uploadVideoId,
     youtubeVideoId: c.youtubeVideoId,
     youtubeStartSec: c.youtubeStartSec,
+    instagramPostKind: c.instagramPostKind,
+    instagramShortcode: c.instagramShortcode,
   }
 }
 
@@ -99,6 +101,8 @@ const chatDrillVideoInsert = (video: DrillVideo | null) => {
     drillVideoId: c.uploadVideoId,
     drillYoutubeVideoId: c.youtubeVideoId,
     drillYoutubeStartSec: c.youtubeStartSec,
+    drillInstagramPostKind: c.instagramPostKind,
+    drillInstagramShortcode: c.instagramShortcode,
   }
 }
 
@@ -119,13 +123,21 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
               uploadVideoId: m.drillVideoId,
               youtubeVideoId: m.drillYoutubeVideoId,
               youtubeStartSec: m.drillYoutubeStartSec,
+              instagramPostKind: m.drillInstagramPostKind,
+              instagramShortcode: m.drillInstagramShortcode,
             }),
           }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
           : m.attachmentKind === 'youtube' && m.youtubeVideoId
             ? { kind: 'youtube', youtubeId: m.youtubeVideoId, startSec: m.youtubeStartSec ?? 0 }
-            : { kind: 'none' },
+            : m.attachmentKind === 'instagram' && m.instagramShortcode
+              ? {
+                  kind: 'instagram',
+                  postKind: m.instagramPostKind,
+                  shortcode: m.instagramShortcode,
+                }
+              : { kind: 'none' },
     quote: m.quote ?? null,
   })
 
@@ -320,6 +332,8 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
       youtubeVideoId: m.attachment.kind === 'youtube' ? m.attachment.youtubeId : null,
       youtubeStartSec: m.attachment.kind === 'youtube' ? m.attachment.startSec : null,
+      instagramPostKind: m.attachment.kind === 'instagram' ? m.attachment.postKind : null,
+      instagramShortcode: m.attachment.kind === 'instagram' ? m.attachment.shortcode : null,
       quote: m.quote,
       sentAt: m.sentAt,
       sentDuringAbsenceId: m.sentDuringAbsenceId,

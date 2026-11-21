@@ -7,6 +7,7 @@ import type { NewDrill } from '../../application/usecases/createDrill.usecase'
 import type { NewDrillVideo } from '../../application/usecases/uploadDrillVideo.usecase'
 import {
   type DrillVideo,
+  type DrillVideoColumns,
   drillVideoFromColumns,
   toDrillVideoColumns,
 } from '../../domain/values/DrillVideo'
@@ -17,6 +18,8 @@ const videoColumns = {
   uploadVideoId: drill.videoId,
   youtubeVideoId: drill.youtubeVideoId,
   youtubeStartSec: drill.youtubeStartSec,
+  instagramPostKind: drill.instagramPostKind,
+  instagramShortcode: drill.instagramShortcode,
 }
 
 /** そのコーチのドリルを、ほかの feature に写すときの形 */
@@ -33,6 +36,8 @@ export const saveDrill: SaveDrill = async ({ video, ...d }) => {
       videoId: columns.uploadVideoId,
       youtubeVideoId: columns.youtubeVideoId,
       youtubeStartSec: columns.youtubeStartSec,
+      instagramPostKind: columns.instagramPostKind,
+      instagramShortcode: columns.instagramShortcode,
       createdAt: now,
       updatedAt: now,
     })
@@ -101,28 +106,21 @@ export const listDrills: ListDrills = async (coachUserId) => {
     .where(eq(drill.coachUserId, coachUserId))
     .orderBy(desc(drill.createdAt))
     .all()
-  return rows.map(({ uploadVideoId, youtubeVideoId, youtubeStartSec, ...d }) => ({
-    ...d,
-    video: toDrillVideoDto(
-      drillVideoFromColumns({ uploadVideoId, youtubeVideoId, youtubeStartSec })
-    ),
+  return rows.map(({ id, title, description, ...columns }) => ({
+    id,
+    title,
+    description,
+    video: toDrillVideoDto(drillVideoFromColumns(columns)),
   }))
 }
 
-type OwnDrillRow = Omit<OwnDrill, 'video'> & {
-  uploadVideoId: string | null
-  youtubeVideoId: string | null
-  youtubeStartSec: number | null
-}
+type OwnDrillRow = Omit<OwnDrill, 'video'> & DrillVideoColumns
 
-const toOwnDrill = ({
-  uploadVideoId,
-  youtubeVideoId,
-  youtubeStartSec,
-  ...d
-}: OwnDrillRow): OwnDrill => ({
-  ...d,
-  video: drillVideoFromColumns({ uploadVideoId, youtubeVideoId, youtubeStartSec }),
+const toOwnDrill = ({ id, title, description, ...columns }: OwnDrillRow): OwnDrill => ({
+  id,
+  title,
+  description,
+  video: drillVideoFromColumns(columns),
 })
 
 const ownDrillColumns = {

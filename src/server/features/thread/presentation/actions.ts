@@ -57,19 +57,23 @@ const CHAT_ERROR = {
   invalid_drill: '選んだドリルが見つかりません',
   invalid_video: '動画をもう一度選び直してください',
   invalid_youtube: 'YouTube の動画の URL を入れてください（例：https://youtu.be/…）',
+  invalid_instagram:
+    'Instagram の投稿かリールの URL を入れてください（例：https://www.instagram.com/reel/…）',
   youtube_unavailable:
     'この YouTube の動画は再生できません。公開か限定公開になっているか、埋め込みを許可しているかを確かめてください',
   invalid_quote: '引用したものが見つかりません',
 } as const satisfies Record<SendChatMessageError, string>
 
-/** 添付（コーチだけ。ドリルか、先に上げておいた動画か、YouTube の動画の URL） */
+/** 添付（コーチだけ。ドリルか、先に上げておいた動画か、YouTube の動画・Instagram の投稿の URL） */
 const parseAttachment = (formData: FormData): ChatAttachmentRequest => {
   const drillId = formString(formData, 'drillId')
   const videoId = formString(formData, 'videoId')
   const youtubeUrl = formString(formData, 'youtubeUrl').trim()
   if (drillId !== '') return { kind: 'drill', drillId }
   if (videoId !== '') return { kind: 'video', videoId }
+  const instagramUrl = formString(formData, 'instagramUrl').trim()
   if (youtubeUrl !== '') return { kind: 'youtube', url: youtubeUrl }
+  if (instagramUrl !== '') return { kind: 'instagram', url: instagramUrl }
   return { kind: 'none' }
 }
 

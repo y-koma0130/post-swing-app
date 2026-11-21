@@ -206,6 +206,25 @@ describe('sendChatMessage', () => {
     })
   })
 
+  it('コーチは Instagram の投稿を送れる。投稿の URL でなければ送れない', async () => {
+    const { deps, saveChatMessage } = setup()
+    const attachment = {
+      kind: 'instagram' as const,
+      url: 'https://www.instagram.com/coach/reel/C1a2B3c4D5e/?igsh=x',
+    }
+    expect((await send(coach, deps, 'これを見てください', false, { attachment })).ok).toBe(true)
+    expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual({
+      kind: 'instagram',
+      postKind: 'reel',
+      shortcode: 'C1a2B3c4D5e',
+    })
+    expect(
+      await send(coach, deps, '', false, {
+        attachment: { kind: 'instagram', url: 'https://www.instagram.com/coach/' },
+      })
+    ).toEqual({ ok: false, error: 'invalid_instagram' })
+  })
+
   it('引用は送った時点の様子を写す。レッスンにないものは引用できない', async () => {
     const { deps, saveChatMessage } = setup()
     const quote = { kind: 'video' as const, targetId: 'v1' }

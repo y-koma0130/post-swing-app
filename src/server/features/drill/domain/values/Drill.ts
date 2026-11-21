@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { parseInstagramUrl } from '../services/parseInstagramUrl.service'
 import { parseYoutubeUrl } from '../services/parseYoutubeUrl.service'
 
-/** お手本の動画の入力。上げた動画は先に上げてその ID を、YouTube は動画の URL を受け取る */
+/** お手本の動画の入力。上げた動画は先に上げてその ID を、YouTube・Instagram は URL を受け取る */
 export const drillVideoInputSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('upload'),
@@ -21,6 +22,21 @@ export const drillVideoInputSchema = z.discriminatedUnion('kind', [
       return parsed
     }),
   }),
+  z.object({
+    kind: z.literal('instagram'),
+    url: z.string().transform((url, ctx) => {
+      const parsed = parseInstagramUrl(url)
+      if (!parsed) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'Instagram の投稿かリールの URL を入れてください（例：https://www.instagram.com/reel/…）',
+        })
+        return z.NEVER
+      }
+      return parsed
+    }),
+  }),
 ])
 
 export type DrillVideoInput = z.infer<typeof drillVideoInputSchema>
@@ -30,7 +46,7 @@ export type DrillVideoInput = z.infer<typeof drillVideoInputSchema>
  *
  * ドメインルール:
  * - 名前・やり方・お手本の動画で登録する
- * - お手本の動画は、上げた動画か YouTube の動画（DrillVideo）
+ * - お手本の動画は、上げた動画か YouTube の動画か Instagram の投稿（DrillVideo）
  */
 export const drillInputSchema = z.object({
   title: z.string().trim().min(1, '名前を入れてください').max(50, '名前は50文字までです'),

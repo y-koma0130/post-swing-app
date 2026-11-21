@@ -1,3 +1,4 @@
+import { InstagramLink } from '@/app/components/video/InstagramLink'
 import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import type { DrillVideoDto } from '@/server/features/drill/application/dto/Drill.dto'
 
@@ -8,10 +9,13 @@ type Props = {
 }
 
 /**
- * ドリルのお手本の動画。上げた動画はそのまま、YouTube は埋め込みで再生する（サービスの中で見られる）
+ * ドリルのお手本の動画。上げた動画はそのまま、YouTube は埋め込みで再生する（サービスの中で見られる）。
+ * Instagram は投稿を開くリンクにする
  */
 export const DrillVideoPlayer = ({ video, preload = 'none' }: Props) =>
-  video.kind === 'upload' ? (
+  video.kind === 'instagram' ? (
+    <InstagramLink url={video.url} />
+  ) : video.kind === 'upload' ? (
     // biome-ignore lint/a11y/useMediaCaption: コーチが撮ったお手本の動画で、字幕はない
     <video
       src={video.url}

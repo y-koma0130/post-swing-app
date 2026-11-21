@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   drillVideoSchema,
+  instagramPostSchema,
   youtubeVideoIdSchema,
 } from '@/server/features/drill/domain/values/DrillVideo'
 import { keyPositionSchema } from './KeyPosition'
@@ -12,7 +13,8 @@ export type ChatSender = z.infer<typeof chatSenderSchema>
 
 /**
  * チャットに添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ（ドリルを消しても残る）。
- * YouTube はコーチの YouTube の動画で、ダウンロードせず埋め込みで再生する（開始の秒を持てる）
+ * YouTube はコーチの YouTube の動画で、ダウンロードせず埋め込みで再生する（開始の秒を持てる）。
+ * Instagram はコーチの投稿で、Instagram（スマホならアプリ）の投稿を開くリンクにする
  */
 export const chatAttachmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -29,6 +31,7 @@ export const chatAttachmentSchema = z.discriminatedUnion('kind', [
     youtubeId: youtubeVideoIdSchema,
     startSec: z.number().int().nonnegative(),
   }),
+  z.object({ kind: z.literal('instagram'), ...instagramPostSchema.shape }),
 ])
 
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>

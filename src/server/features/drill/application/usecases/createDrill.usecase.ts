@@ -29,7 +29,8 @@ export type CreateDrill = (
 ) => Promise<Result<{ drillId: string }, CreateDrillError>>
 
 /**
- * コーチがドリルを登録する。お手本の動画は、先に上げた自分の動画か、YouTube の動画。
+ * コーチがドリルを登録する。お手本の動画は、先に上げた自分の動画か、YouTube の動画か、Instagram の投稿。
+ * Instagram は投稿を開くリンクなので、確かめない（問い合わせるには Meta の審査が要る）。
  * YouTube は、非公開・削除済み・埋め込みを許可していない動画を止める（生徒が見られないため）。
  * YouTube に問い合わせられないときは止めない
  */
@@ -43,6 +44,8 @@ export const createDrill: CreateDrill = async ({ actor, drill }, deps) => {
       return err('invalid_video')
     }
     video = drill.video
+  } else if (drill.video.kind === 'instagram') {
+    video = { kind: 'instagram', ...drill.video.url }
   } else {
     const { youtubeId, startSec } = drill.video.url
     if ((await deps.checkYoutubeEmbed(youtubeId)) === 'unavailable') {

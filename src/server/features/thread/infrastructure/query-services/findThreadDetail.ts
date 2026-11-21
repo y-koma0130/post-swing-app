@@ -22,7 +22,10 @@ import {
   toAvailabilityDto,
   toAvatarUrl,
 } from '@/server/features/coach/public'
-import { drillVideoFromColumns } from '@/server/features/drill/domain/values/DrillVideo'
+import {
+  drillVideoFromColumns,
+  instagramPostUrl,
+} from '@/server/features/drill/domain/values/DrillVideo'
 import { toDrillVideoDto } from '@/server/features/drill/public'
 import { isShareConsentLocked } from '@/server/features/share/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
@@ -131,6 +134,8 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             videoId: replyDrill.videoId,
             youtubeVideoId: replyDrill.youtubeVideoId,
             youtubeStartSec: replyDrill.youtubeStartSec,
+            instagramPostKind: replyDrill.instagramPostKind,
+            instagramShortcode: replyDrill.instagramShortcode,
           })
           .from(replyDrill)
           .innerJoin(reply, eq(reply.id, replyDrill.replyId))
@@ -253,15 +258,11 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               comment: r.comment,
               drills: replyDrills
                 .filter((d) => d.replyId === r.id)
-                .map(({ title, description, videoId, youtubeVideoId, youtubeStartSec }) => ({
+                .map(({ title, description, videoId, ...columns }) => ({
                   title,
                   description,
                   video: toDrillVideoDto(
-                    drillVideoFromColumns({
-                      uploadVideoId: videoId,
-                      youtubeVideoId,
-                      youtubeStartSec,
-                    })
+                    drillVideoFromColumns({ uploadVideoId: videoId, ...columns })
                   ),
                 })),
               cards: cards
@@ -295,7 +296,9 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
                 description: attachment.description,
                 video: toDrillVideoDto(attachment.video),
               }
-            : attachment,
+            : attachment.kind === 'instagram'
+              ? { kind: 'instagram', url: instagramPostUrl(attachment) }
+              : attachment,
     })),
     notices: notices.map((n) => ({
       id: n.id,

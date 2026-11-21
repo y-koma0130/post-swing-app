@@ -1,5 +1,6 @@
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
+import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
 import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
 import type { DrillVideo, YoutubeVideoId } from '@/server/features/drill/domain/values/DrillVideo'
 import type { Actor } from '@/server/utils/actor'
@@ -135,6 +136,7 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
             status: youtube ? await deps.checkYoutubeEmbed(youtube.youtubeId) : null,
           }
         : null,
+    instagram: request.kind === 'instagram' ? parseInstagramUrl(request.url) : null,
   })
   if (!attachment.ok) {
     return err(attachment.error)

@@ -83,6 +83,8 @@
 | 読み込み中 | `Skeleton`・`PageSkeleton`（`loading.tsx`） |
 | 404・エラーの画面 | `StatusScreen` |
 | Stripe などほかのサイトへ移るフォーム | `useLeavingPage`（移るまでボタンを押せないままにする） |
+| ドリルのお手本・チャットの動画 | `DrillVideoPlayer`（上げた動画・YouTube・Instagram）・`YoutubePlayer`（YouTube の埋め込み） |
+| Instagram の投稿を開くリンク | `InstagramLink`（動画の枠の代わりに置く。スマホなら Instagram のアプリで開く） |
 
 ### 形
 

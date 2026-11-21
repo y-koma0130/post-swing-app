@@ -15,16 +15,19 @@ import { Button } from '@/app/components/ui/Button'
 import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, selectClass } from '@/app/components/ui/fieldStyles'
+import { InstagramLink } from '@/app/components/video/InstagramLink'
 import { VideoSlot, type VideoSlotHandle } from '@/app/components/video/VideoSlot'
 import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import { formatStartSec } from '@/app/utils/youtubeEmbed'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
+import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
 import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
+import { instagramPostUrl } from '@/server/features/drill/domain/values/DrillVideo'
 import type { SendGuard } from '@/server/features/thread/domain/services/decideSendGuard.service'
 import { sendChatMessageAction } from '@/server/features/thread/presentation/actions'
 import { IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
-/** コーチだけが使う添付（ドリル・動画・YouTube）の設定 */
+/** コーチだけが使う添付（ドリル・動画・YouTube・Instagram）の設定 */
 type CoachAttachments = {
   drills: DrillDto[]
   maxVideoBytes: number
@@ -41,7 +44,7 @@ type Props = {
   /** 送る前の確認（生徒だけ） */
   guard?: SendGuard | undefined
   confirmMessage?: string | undefined
-  /** コーチなら、ドリル・動画・YouTube の動画を添えられる */
+  /** コーチなら、ドリル・動画・YouTube の動画・Instagram の投稿を添えられる */
   coach?: CoachAttachments | undefined
   /** 入力欄の下の段の左に置く操作（生徒の「スイング動画を送る」など） */
   actions?: ReactNode
@@ -49,7 +52,7 @@ type Props = {
   quoteByLongPress?: boolean | undefined
 }
 
-type Panel = 'none' | 'drill' | 'video' | 'youtube'
+type Panel = 'none' | 'drill' | 'video' | 'youtube' | 'instagram'
 
 type AttachPanel = Exclude<Panel, 'none'>
 
@@ -57,14 +60,15 @@ const PANEL_LABEL = {
   drill: '＋ドリル',
   video: '＋動画',
   youtube: '＋YouTube',
+  instagram: '＋Instagram',
 } satisfies Record<AttachPanel, string>
 
-const ATTACH_PANELS: AttachPanel[] = ['drill', 'video', 'youtube']
+const ATTACH_PANELS: AttachPanel[] = ['drill', 'video', 'youtube', 'instagram']
 
 /**
  * チャットの入力欄（スレッドに1つ）。やりとりの表示は ThreadTimeline が持つ。
  * 時系列の「引用する」で選んだものを、入力欄の上に置いて一緒に送る。
- * コーチはドリル・動画（お手本など）・YouTube の動画を添えられる
+ * コーチはドリル・動画（お手本など）・YouTube の動画・Instagram の投稿を添えられる
  */
 export const ChatComposer = ({
   threadId,
@@ -93,6 +97,8 @@ export const ChatComposer = ({
   const [slotKey, setSlotKey] = useState(0)
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const youtube = panel === 'youtube' ? parseYoutubeUrl(youtubeUrl) : null
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const instagram = panel === 'instagram' ? parseInstagramUrl(instagramUrl) : null
 
   // 送れたら入力欄・引用・添付を空にする（「やめる」のときは残す）
   useEffect(() => {
@@ -104,6 +110,7 @@ export const ChatComposer = ({
     setVideoSelected(false)
     setSlotKey((k) => k + 1)
     setYoutubeUrl('')
+    setInstagramUrl('')
   }, [state, setQuote])
 
   const onSlotStatus = useCallback((status: { selected: boolean; busy: boolean }) => {
@@ -145,7 +152,8 @@ export const ChatComposer = ({
   const attaching =
     (panel === 'drill' && drillId !== '') ||
     (panel === 'video' && videoSelected) ||
-    (panel === 'youtube' && youtubeUrl.trim() !== '')
+    (panel === 'youtube' && youtubeUrl.trim() !== '') ||
+    (panel === 'instagram' && instagramUrl.trim() !== '')
 
   return (
     <>
@@ -224,6 +232,21 @@ export const ChatComposer = ({
                 )}
               </div>
             )}
+          </div>
+        )}
+        {coach && panel === 'instagram' && (
+          <div className="space-y-2">
+            <input
+              name="instagramUrl"
+              type="url"
+              inputMode="url"
+              value={instagramUrl}
+              onChange={(event) => setInstagramUrl(event.currentTarget.value)}
+              placeholder="Instagram の投稿・リールの URL"
+              aria-label="送る Instagram の投稿の URL"
+              className={inputClass}
+            />
+            {instagram && <InstagramLink url={instagramPostUrl(instagram)} />}
           </div>
         )}
         <div className="flex items-end gap-2">

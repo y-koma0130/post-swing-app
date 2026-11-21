@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { parseInstagramUrl } from '@/server/features/drill/domain/services/parseInstagramUrl.service'
 import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
 import { checkChatAttachment } from './checkChatAttachment.service'
 
@@ -10,7 +11,14 @@ const video = {
   chatMessageId: null,
   angle: 'other' as const,
 }
-const base = { threadId: 't1', actorUserId: 'coach', ownDrill: null, video: null, youtube: null }
+const base = {
+  threadId: 't1',
+  actorUserId: 'coach',
+  ownDrill: null,
+  video: null,
+  youtube: null,
+  instagram: null,
+}
 
 describe('checkChatAttachment', () => {
   it('添付なし', () => {
@@ -82,5 +90,22 @@ describe('checkChatAttachment', () => {
     expect(
       checkChatAttachment({ ...base, request, youtube: { parsed: null, status: null } })
     ).toEqual({ ok: false, error: 'invalid_youtube' })
+  })
+
+  it('Instagram は、投稿かリールの URL なら送れる', () => {
+    const request = {
+      kind: 'instagram' as const,
+      url: 'https://www.instagram.com/reel/C1a2B3c4D5e/',
+    }
+    expect(
+      checkChatAttachment({ ...base, request, instagram: parseInstagramUrl(request.url) })
+    ).toEqual({
+      ok: true,
+      value: { kind: 'instagram', postKind: 'reel', shortcode: 'C1a2B3c4D5e' },
+    })
+    expect(checkChatAttachment({ ...base, request, instagram: null })).toEqual({
+      ok: false,
+      error: 'invalid_instagram',
+    })
   })
 })
