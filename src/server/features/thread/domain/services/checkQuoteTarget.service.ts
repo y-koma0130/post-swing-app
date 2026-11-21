@@ -52,6 +52,8 @@ export const checkQuoteTarget: CheckQuoteTarget = ({ thread, cards, request }) =
       ? message.body.trim().slice(0, EXCERPT_LENGTH)
       : message.attachment.kind === 'drill'
         ? `ドリル：${message.attachment.title}`
-        : '動画'
+        : message.attachment.kind === 'youtube'
+          ? 'YouTube の動画'
+          : '動画'
   return ok({ kind, targetId, from: message.from, excerpt })
 }

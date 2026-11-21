@@ -224,7 +224,7 @@ export const chatMessage = sqliteTable(
     /** 添付だけのメッセージでは空 */
     body: text().notNull(),
     /** 添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ */
-    attachmentKind: text({ enum: ['none', 'drill', 'video'] })
+    attachmentKind: text({ enum: ['none', 'drill', 'video', 'youtube'] })
       .notNull()
       .default('none'),
     drillTitle: text(),
@@ -235,6 +235,9 @@ export const chatMessage = sqliteTable(
     drillYoutubeVideoId: text(),
     drillYoutubeStartSec: integer(),
     videoId: text().references(() => video.id),
+    /** 添えた YouTube の動画 ID と開始の秒（YouTube を添えたときだけ） */
+    youtubeVideoId: text(),
+    youtubeStartSec: integer(),
     /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
     quote: text({ mode: 'json' }),
     sentAt: integer({ mode: 'timestamp_ms' }).notNull(),

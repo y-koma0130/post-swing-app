@@ -12,12 +12,12 @@ import { Button } from '@/app/components/ui/Button'
 import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
-import { DrillVideoPlayer } from '@/app/components/video/DrillVideoPlayer'
 import {
   VideoSlot,
   type VideoSlotHandle,
   type VideoSlotStatus,
 } from '@/app/components/video/VideoSlot'
+import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import { formatStartSec } from '@/app/utils/youtubeEmbed'
 import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
 import { createDrillAction } from '@/server/features/drill/presentation/actions'
@@ -157,7 +157,7 @@ export const DrillForm = () => {
             </p>
             {youtube && (
               <div className="space-y-1">
-                <DrillVideoPlayer video={{ kind: 'youtube', ...youtube }} />
+                <YoutubePlayer youtubeId={youtube.youtubeId} startSec={youtube.startSec} />
                 {youtube.startSec > 0 && (
                   <p className="text-caption text-muted">
                     {formatStartSec(youtube.startSec)} から再生します

@@ -80,6 +80,8 @@ const setup = (
             angle: 'other',
           }
         : null,
+    checkYoutubeEmbed: async (youtubeId) =>
+      youtubeId === 'deletedVid0' ? 'unavailable' : 'playable',
     findCoachAvailabilityFacts: async () => facts,
     saveThreadNotice,
     saveAbsenceAck,
@@ -173,6 +175,31 @@ describe('sendChatMessage', () => {
     const attachment = { kind: 'video' as const, videoId: 'coach-video' }
     expect((await send(coach, deps, 'お手本です', false, { attachment })).ok).toBe(true)
     expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual(attachment)
+    expect(await send(student, deps, '見て', false, { attachment })).toEqual({
+      ok: false,
+      error: 'attachment_not_allowed',
+    })
+  })
+
+  it('コーチは YouTube の動画を開始位置つきで送れる。再生できない動画・生徒は送れない', async () => {
+    const { deps, saveChatMessage } = setup()
+    const attachment = { kind: 'youtube' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=1m30s' }
+    expect((await send(coach, deps, '', false, { attachment })).ok).toBe(true)
+    expect(saveChatMessage.mock.calls[0]?.[0].attachment).toEqual({
+      kind: 'youtube',
+      youtubeId: 'dQw4w9WgXcQ',
+      startSec: 90,
+    })
+    expect(
+      await send(coach, deps, '', false, {
+        attachment: { kind: 'youtube', url: 'https://youtu.be/deletedVid0' },
+      })
+    ).toEqual({ ok: false, error: 'youtube_unavailable' })
+    expect(
+      await send(coach, deps, '', false, {
+        attachment: { kind: 'youtube', url: 'https://example.com/' },
+      })
+    ).toEqual({ ok: false, error: 'invalid_youtube' })
     expect(await send(student, deps, '見て', false, { attachment })).toEqual({
       ok: false,
       error: 'attachment_not_allowed',

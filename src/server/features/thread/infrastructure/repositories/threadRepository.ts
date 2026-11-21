@@ -123,7 +123,9 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
           }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
-          : { kind: 'none' },
+          : m.attachmentKind === 'youtube' && m.youtubeVideoId
+            ? { kind: 'youtube', youtubeId: m.youtubeVideoId, startSec: m.youtubeStartSec ?? 0 }
+            : { kind: 'none' },
     quote: m.quote ?? null,
   })
 
@@ -316,6 +318,8 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
       ...chatDrillVideoInsert(m.attachment.kind === 'drill' ? m.attachment.video : null),
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
+      youtubeVideoId: m.attachment.kind === 'youtube' ? m.attachment.youtubeId : null,
+      youtubeStartSec: m.attachment.kind === 'youtube' ? m.attachment.startSec : null,
       quote: m.quote,
       sentAt: m.sentAt,
       sentDuringAbsenceId: m.sentDuringAbsenceId,

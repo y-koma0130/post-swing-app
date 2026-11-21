@@ -4,7 +4,7 @@ import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { getActor } from '@/server/auth/getActor'
 import { findCoachAvailabilityFacts } from '@/server/features/coach/public'
-import { findOwnDrill } from '@/server/features/drill/public'
+import { checkYoutubeEmbed, findOwnDrill } from '@/server/features/drill/public'
 import { notify } from '@/server/features/notification/public'
 import { capturePayment, voidPayment } from '@/server/features/purchase/public'
 import { parseShareConsentForm } from '@/server/features/share/domain/values/ShareConsent'
@@ -56,15 +56,20 @@ const CHAT_ERROR = {
   attachment_not_allowed: 'チャットではメッセージだけを送れます',
   invalid_drill: '選んだドリルが見つかりません',
   invalid_video: '動画をもう一度選び直してください',
+  invalid_youtube: 'YouTube の動画の URL を入れてください（例：https://youtu.be/…）',
+  youtube_unavailable:
+    'この YouTube の動画は再生できません。公開か限定公開になっているか、埋め込みを許可しているかを確かめてください',
   invalid_quote: '引用したものが見つかりません',
 } as const satisfies Record<SendChatMessageError, string>
 
-/** 添付（コーチだけ。ドリルか、先に上げておいた動画） */
+/** 添付（コーチだけ。ドリルか、先に上げておいた動画か、YouTube の動画の URL） */
 const parseAttachment = (formData: FormData): ChatAttachmentRequest => {
   const drillId = formString(formData, 'drillId')
   const videoId = formString(formData, 'videoId')
+  const youtubeUrl = formString(formData, 'youtubeUrl').trim()
   if (drillId !== '') return { kind: 'drill', drillId }
   if (videoId !== '') return { kind: 'video', videoId }
+  if (youtubeUrl !== '') return { kind: 'youtube', url: youtubeUrl }
   return { kind: 'none' }
 }
 
@@ -101,6 +106,7 @@ export const sendChatMessageAction = async (
       findThreadCards,
       findOwnDrill,
       findDraftVideo,
+      checkYoutubeEmbed,
       findCoachAvailabilityFacts,
       saveThreadNotice,
       saveAbsenceAck,

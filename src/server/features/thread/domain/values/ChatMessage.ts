@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { drillVideoSchema } from '@/server/features/drill/domain/values/DrillVideo'
+import {
+  drillVideoSchema,
+  youtubeVideoIdSchema,
+} from '@/server/features/drill/domain/values/DrillVideo'
 import { keyPositionSchema } from './KeyPosition'
 import { videoAngleSchema } from './VideoAngle'
 
@@ -8,7 +11,8 @@ export const chatSenderSchema = z.enum(['coach', 'student'])
 export type ChatSender = z.infer<typeof chatSenderSchema>
 
 /**
- * チャットに添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ（ドリルを消しても残る）
+ * チャットに添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ（ドリルを消しても残る）。
+ * YouTube はコーチの YouTube の動画で、ダウンロードせず埋め込みで再生する（開始の秒を持てる）
  */
 export const chatAttachmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -20,6 +24,11 @@ export const chatAttachmentSchema = z.discriminatedUnion('kind', [
     video: drillVideoSchema.nullable(),
   }),
   z.object({ kind: z.literal('video'), videoId: z.string().min(1) }),
+  z.object({
+    kind: z.literal('youtube'),
+    youtubeId: youtubeVideoIdSchema,
+    startSec: z.number().int().nonnegative(),
+  }),
 ])
 
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>

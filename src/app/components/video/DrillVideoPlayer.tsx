@@ -1,4 +1,4 @@
-import { youtubeEmbedUrl } from '@/app/utils/youtubeEmbed'
+import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import type { DrillVideoDto } from '@/server/features/drill/application/dto/Drill.dto'
 
 type Props = {
@@ -6,8 +6,6 @@ type Props = {
   /** 上げた動画を、開く前にどこまで読むか（一覧では長さだけ、時系列では読まない） */
   preload?: 'none' | 'metadata'
 }
-
-const frameClass = 'aspect-video w-full rounded-lg bg-black'
 
 /**
  * ドリルのお手本の動画。上げた動画はそのまま、YouTube は埋め込みで再生する（サービスの中で見られる）
@@ -20,17 +18,8 @@ export const DrillVideoPlayer = ({ video, preload = 'none' }: Props) =>
       controls
       playsInline
       preload={preload}
-      className={`${frameClass} object-contain`}
+      className="aspect-video w-full rounded-lg bg-black object-contain"
     />
   ) : (
-    <iframe
-      src={youtubeEmbedUrl(video.youtubeId, video.startSec)}
-      title="お手本の動画（YouTube）"
-      loading="lazy"
-      // YouTube は埋め込み元が分からないと再生しない（Referer を送る）
-      referrerPolicy="strict-origin-when-cross-origin"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowFullScreen
-      className={frameClass}
-    />
+    <YoutubePlayer youtubeId={video.youtubeId} startSec={video.startSec} />
   )

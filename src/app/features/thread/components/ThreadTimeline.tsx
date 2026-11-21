@@ -3,6 +3,7 @@ import { DrillDetails } from '@/app/components/DrillDetails'
 import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
 import { QuoteButton } from '@/app/components/quote/QuoteContext'
 import { QuotePreview } from '@/app/components/quote/QuotePreview'
+import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import { formatDateTime } from '@/app/utils/format'
 import { quoteAnchorId } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
@@ -131,7 +132,9 @@ const MessageBubble = ({
       ? message.body.trim().slice(0, 40)
       : attachment.kind === 'drill'
         ? `ドリル：${attachment.title}`
-        : '動画'
+        : attachment.kind === 'youtube'
+          ? 'YouTube の動画'
+          : '動画'
   const target = {
     kind: 'message' as const,
     targetId: message.id,
@@ -151,6 +154,9 @@ const MessageBubble = ({
           description={attachment.description}
           video={attachment.video}
         />
+      )}
+      {attachment.kind === 'youtube' && (
+        <YoutubePlayer youtubeId={attachment.youtubeId} startSec={attachment.startSec} />
       )}
       {attachment.kind === 'video' && (
         <div id={quoteAnchorId('video', attachment.videoId)} className="scroll-mt-20">

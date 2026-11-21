@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { parseYoutubeUrl } from '@/server/features/drill/domain/services/parseYoutubeUrl.service'
 import { checkChatAttachment } from './checkChatAttachment.service'
 
 const video = {
@@ -9,7 +10,7 @@ const video = {
   chatMessageId: null,
   angle: 'other' as const,
 }
-const base = { threadId: 't1', actorUserId: 'coach', ownDrill: null, video: null }
+const base = { threadId: 't1', actorUserId: 'coach', ownDrill: null, video: null, youtube: null }
 
 describe('checkChatAttachment', () => {
   it('添付なし', () => {
@@ -63,5 +64,23 @@ describe('checkChatAttachment', () => {
     expect(
       checkChatAttachment({ ...base, request, video: { ...video, submissionId: 's' } })
     ).toEqual(invalid)
+  })
+
+  it('YouTube は、動画の URL で、埋め込みで再生できるものなら送れる', () => {
+    const request = { kind: 'youtube' as const, url: 'https://youtu.be/dQw4w9WgXcQ?t=90' }
+    const parsed = parseYoutubeUrl(request.url)
+    expect(
+      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'playable' } })
+    ).toEqual({ ok: true, value: { kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', startSec: 90 } })
+    // YouTube に問い合わせられないときは止めない
+    expect(
+      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'unknown' } }).ok
+    ).toBe(true)
+    expect(
+      checkChatAttachment({ ...base, request, youtube: { parsed, status: 'unavailable' } })
+    ).toEqual({ ok: false, error: 'youtube_unavailable' })
+    expect(
+      checkChatAttachment({ ...base, request, youtube: { parsed: null, status: null } })
+    ).toEqual({ ok: false, error: 'invalid_youtube' })
   })
 })
