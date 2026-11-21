@@ -229,7 +229,7 @@ export const chatMessage = sqliteTable(
     /** 添付だけのメッセージでは空 */
     body: text().notNull(),
     /** 添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ */
-    attachmentKind: text({ enum: ['none', 'drill', 'video', 'youtube', 'instagram'] })
+    attachmentKind: text({ enum: ['none', 'drill', 'video'] })
       .notNull()
       .default('none'),
     drillTitle: text(),
@@ -244,14 +244,6 @@ export const chatMessage = sqliteTable(
     drillInstagramPostKind: text(),
     drillInstagramShortcode: text(),
     videoId: text().references(() => video.id),
-    /** 添えた YouTube の動画 ID と開始の秒（YouTube を添えたときだけ） */
-    youtubeVideoId: text(),
-    youtubeStartSec: integer(),
-    /** YouTube の Shorts（縦の動画）か */
-    youtubeVertical: integer({ mode: 'boolean' }),
-    /** 添えた Instagram の投稿（種類と shortcode。Instagram を添えたときだけ） */
-    instagramPostKind: text(),
-    instagramShortcode: text(),
     /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
     quote: text({ mode: 'json' }),
     sentAt: integer({ mode: 'timestamp_ms' }).notNull(),

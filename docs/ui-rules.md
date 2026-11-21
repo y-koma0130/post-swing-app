@@ -84,7 +84,9 @@
 | 404・エラーの画面 | `StatusScreen` |
 | Stripe などほかのサイトへ移るフォーム | `useLeavingPage`（移るまでボタンを押せないままにする） |
 | ドリルのお手本・チャットの動画 | `DrillVideoPlayer`（上げた動画・YouTube・Instagram）・`YoutubePlayer`（YouTube。サムネイルを押してから埋め込みを読み込む。Shorts は縦の枠） |
-| YouTube・Instagram の URL を貼る欄 | `VideoLinkField`（どちらかは URL から判別し、中身と注意をその場で出す。読めない URL も知らせる） |
+| YouTube・Instagram の URL を貼る欄（ドリルのお手本） | `VideoLinkField`（どちらかは URL から判別し、中身と注意をその場で出す。読めない URL も知らせる） |
+| URL で添えた動画を出す | `VideoLinkPreview`（YouTube は `YoutubePlayer`、Instagram は `InstagramLink`） |
+| チャットの本文 | `MessageText`（URL をリンクにし、YouTube・Instagram の URL は本文の下に `VideoLinkPreview` で出す） |
 | Instagram の投稿を開くリンク | `InstagramLink`（動画の枠の代わりに置く。スマホなら Instagram のアプリで開く） |
 
 ### 形

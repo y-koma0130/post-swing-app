@@ -6,7 +6,7 @@ describe('messageExcerpt', () => {
     expect(
       messageExcerpt({
         body: `  ${'あ'.repeat(50)}  `,
-        attachmentKind: 'youtube',
+        attachmentKind: 'video',
         drillTitle: null,
       })
     ).toBe('あ'.repeat(40))
@@ -14,8 +14,6 @@ describe('messageExcerpt', () => {
 
   it.each([
     ['drill', 'ドリル：タオルドリル'],
-    ['youtube', 'YouTube の動画'],
-    ['instagram', 'Instagram の投稿'],
     ['video', '動画'],
   ] as const)('本文がなければ添付の種類（%s）', (attachmentKind, excerpt) => {
     expect(messageExcerpt({ body: '', attachmentKind, drillTitle: 'タオルドリル' })).toBe(excerpt)

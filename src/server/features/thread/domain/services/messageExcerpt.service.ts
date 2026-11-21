@@ -19,10 +19,6 @@ export const messageExcerpt: MessageExcerpt = ({ body, attachmentKind, drillTitl
   switch (attachmentKind) {
     case 'drill':
       return `ドリル：${drillTitle ?? ''}`
-    case 'youtube':
-      return 'YouTube の動画'
-    case 'instagram':
-      return 'Instagram の投稿'
     case 'video':
     case 'none':
       return '動画'

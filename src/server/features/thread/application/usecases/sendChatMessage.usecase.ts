@@ -1,7 +1,6 @@
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
-import { parseVideoLink } from '@/server/features/drill/domain/services/parseVideoLink.service'
-import type { DrillVideo, YoutubeVideoId } from '@/server/features/drill/domain/values/DrillVideo'
+import type { DrillVideo } from '@/server/features/drill/domain/values/DrillVideo'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import { absenceAtSend } from '../../domain/services/absenceAtSend.service'
@@ -61,8 +60,6 @@ type Dependencies = Readonly<{
     drillId: string
   ) => Promise<{ title: string; description: string; video: DrillVideo | null } | null>
   findDraftVideo: (videoId: string) => Promise<DraftVideo | null>
-  /** YouTube の動画を埋め込みで再生できるか（drill が持つ。分からないときは unknown） */
-  checkYoutubeEmbed: (youtubeId: YoutubeVideoId) => Promise<'playable' | 'unavailable' | 'unknown'>
   /** コーチの不在期間と返信遅れフラグ（coach が持つ） */
   findCoachAvailabilityFacts: (coachUserId: string) => Promise<{
     absences: CoachAbsence[]
@@ -118,7 +115,6 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
     return err(checked.error)
   }
   const request = params.attachment
-  const link = request.kind === 'link' ? parseVideoLink(request.url) : null
   const attachment = checkChatAttachment({
     request,
     threadId: thread.id,
@@ -128,8 +124,6 @@ export const sendChatMessage: SendChatMessage = async (params, deps) => {
         ? await deps.findOwnDrill(thread.coachUserId, request.drillId)
         : null,
     video: request.kind === 'video' ? await deps.findDraftVideo(request.videoId) : null,
-    link,
-    youtubeStatus: link?.kind === 'youtube' ? await deps.checkYoutubeEmbed(link.youtubeId) : null,
   })
   if (!attachment.ok) {
     return err(attachment.error)

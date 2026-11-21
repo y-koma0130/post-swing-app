@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { drillVideoSchema, videoLinkSchema } from '@/server/features/drill/domain/values/DrillVideo'
+import { drillVideoSchema } from '@/server/features/drill/domain/values/DrillVideo'
 import { keyPositionSchema } from './KeyPosition'
 import { videoAngleSchema } from './VideoAngle'
 
@@ -9,8 +9,7 @@ export type ChatSender = z.infer<typeof chatSenderSchema>
 
 /**
  * チャットに添えたもの（コーチだけ）。ドリルは送った時点の中身を写して持つ（ドリルを消しても残る）。
- * YouTube の動画はダウンロードせず埋め込みで再生する（開始の秒を持てる）。
- * Instagram の投稿は、Instagram（スマホならアプリ）の投稿を開くリンクにする
+ * YouTube の動画・Instagram の投稿は添付にしない（本文に貼った URL を、表示するときに展開する）
  */
 export const chatAttachmentSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
@@ -22,7 +21,6 @@ export const chatAttachmentSchema = z.discriminatedUnion('kind', [
     video: drillVideoSchema.nullable(),
   }),
   z.object({ kind: z.literal('video'), videoId: z.string().min(1) }),
-  ...videoLinkSchema.options,
 ])
 
 export type ChatAttachment = z.infer<typeof chatAttachmentSchema>

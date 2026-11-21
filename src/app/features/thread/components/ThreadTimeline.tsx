@@ -1,10 +1,9 @@
 import { Fragment, type ReactNode } from 'react'
 import { DrillDetails } from '@/app/components/DrillDetails'
+import { MessageText } from '@/app/components/MessageText'
 import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
 import { QuoteButton } from '@/app/components/quote/QuoteContext'
 import { QuotePreview } from '@/app/components/quote/QuotePreview'
-import { InstagramLink } from '@/app/components/video/InstagramLink'
-import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
 import { formatDateTime } from '@/app/utils/format'
 import { quoteAnchorId } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
@@ -154,20 +153,12 @@ const MessageBubble = ({
           video={attachment.video}
         />
       )}
-      {attachment.kind === 'youtube' && (
-        <YoutubePlayer
-          youtubeId={attachment.youtubeId}
-          startSec={attachment.startSec}
-          vertical={attachment.vertical}
-        />
-      )}
-      {attachment.kind === 'instagram' && <InstagramLink url={attachment.url} />}
       {attachment.kind === 'video' && (
         <div id={quoteAnchorId('video', attachment.videoId)} className="scroll-mt-20">
           {renderVideo(attachment)}
         </div>
       )}
-      {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
+      {message.body && <MessageText body={message.body} />}
       <div className="flex items-center justify-between gap-3">
         <p className="text-caption text-muted">{formatDateTime(message.sentAt)}</p>
         {quoteMode === 'button' && <QuoteButton target={target} />}

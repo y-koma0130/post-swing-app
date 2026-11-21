@@ -22,10 +22,7 @@ import {
   toAvailabilityDto,
   toAvatarUrl,
 } from '@/server/features/coach/public'
-import {
-  drillVideoFromColumns,
-  instagramPostUrl,
-} from '@/server/features/drill/domain/values/DrillVideo'
+import { drillVideoFromColumns } from '@/server/features/drill/domain/values/DrillVideo'
 import { toDrillVideoDto } from '@/server/features/drill/public'
 import { isShareConsentLocked } from '@/server/features/share/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
@@ -297,9 +294,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
                 description: attachment.description,
                 video: toDrillVideoDto(attachment.video),
               }
-            : attachment.kind === 'instagram'
-              ? { kind: 'instagram', url: instagramPostUrl(attachment) }
-              : attachment,
+            : attachment,
     })),
     notices: notices.map((n) => ({
       id: n.id,

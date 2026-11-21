@@ -1,11 +1,9 @@
 'use client'
 
 import { inputClass } from '@/app/components/ui/fieldStyles'
-import { InstagramLink } from '@/app/components/video/InstagramLink'
-import { YoutubePlayer } from '@/app/components/video/YoutubePlayer'
+import { VideoLinkPreview } from '@/app/components/video/VideoLinkPreview'
 import { formatStartSec } from '@/app/utils/youtubeEmbed'
 import { parseVideoLink } from '@/server/features/drill/domain/services/parseVideoLink.service'
-import { instagramPostUrl } from '@/server/features/drill/domain/values/DrillVideo'
 
 type Props = {
   /** フォームで送る名前 */
@@ -38,11 +36,7 @@ export const VideoLinkField = ({ name, value, onChange, ariaLabel }: Props) => {
       />
       {link?.kind === 'youtube' ? (
         <>
-          <YoutubePlayer
-            youtubeId={link.youtubeId}
-            startSec={link.startSec}
-            vertical={link.vertical}
-          />
+          <VideoLinkPreview link={link} />
           <p className="text-caption text-muted">
             {link.startSec > 0 ? `${formatStartSec(link.startSec)} から再生します。` : ''}
             公開か限定公開の動画が使えます。YouTube の「共有」で開始位置を指定した URL
@@ -51,7 +45,7 @@ export const VideoLinkField = ({ name, value, onChange, ariaLabel }: Props) => {
         </>
       ) : link?.kind === 'instagram' ? (
         <>
-          <InstagramLink url={instagramPostUrl(link)} />
+          <VideoLinkPreview link={link} />
           <p className="text-caption text-muted">
             生徒が押すと、Instagram
             のアプリで投稿が開きます。鍵をかけたアカウントの投稿は、フォローしていない生徒には見えません。
