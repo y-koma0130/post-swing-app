@@ -4,6 +4,7 @@ import { resolveFeeAt } from '@/server/features/campaign/public'
 import { savePayoutStatus } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
 import { createThread, requestThreadApproval, threadExists } from '@/server/features/thread/public'
+import { logError, logWarn } from '@/server/utils/logger'
 import { applyInvoiceFee } from '../application/usecases/applyInvoiceFee.usecase'
 import { recordAuthorization } from '../application/usecases/recordAuthorization.usecase'
 import { recordPayment } from '../application/usecases/recordPayment.usecase'
@@ -148,7 +149,10 @@ const handleEvent = async (event: Stripe.Event): Promise<void> => {
       )
       if (!settled.ok) throw new Error(`申し込みが見つかりません: ${target.purchaseId}`)
       if (settled.value.feeAdjustedYen > 0) {
-        console.warn('[stripe] 手数料の差額を戻しました', target.invoiceId, settled.value)
+        logWarn('stripe', '手数料の差額を戻しました', {
+          ids: { invoiceId: target.invoiceId },
+          counts: settled.value,
+        })
       }
       return
     }
@@ -190,7 +194,10 @@ export const handleStripeWebhook = async (request: Request): Promise<Response> =
   try {
     await handleEvent(event)
   } catch (error) {
-    console.error('[stripe] イベントの処理に失敗しました', event.id, event.type, error)
+    logError('stripe', 'イベントの処理に失敗しました。Stripe が再送します', error, {
+      ids: { eventId: event.id },
+      kind: event.type,
+    })
     return new Response('処理に失敗しました', { status: 500 })
   }
   await markStripeEventProcessed(event)

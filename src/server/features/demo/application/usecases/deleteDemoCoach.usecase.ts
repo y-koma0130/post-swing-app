@@ -1,3 +1,4 @@
+import { logError } from '@/server/utils/logger'
 import { err, ok, type Result } from '@/server/utils/result'
 
 type Dependencies = Readonly<{
@@ -28,7 +29,7 @@ export const deleteDemoCoach: DeleteDemoCoach = async ({ coachUserId }, deps) =>
       await deps.deleteMediaObject(key)
       deletedObjects += 1
     } catch (error) {
-      console.error('[demo] 動画・画像を消せませんでした', key, error)
+      logError('demo', '動画・画像を消せませんでした', error, { ids: { coachUserId } })
     }
   }
   return ok({ deletedObjects })

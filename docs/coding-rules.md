@@ -68,6 +68,20 @@ TypeScript の型の制約を最大限に使う。`tsconfig.json` で `strict` �
 - ユースケースごとに `*.usecase.test.ts` を置き、権限（他人は `not_found`）とドメインのルールを Vitest で確かめる。依存は `vi.fn` で差し替える
 - 戻り値は `Result`（`src/server/utils/result.ts`）。失敗は例外ではなく値で返す
 
+### 失敗の扱いとログ
+
+失敗を3つに分け、出し方を決める。ログは `src/server/utils/logger.ts` を使う（出してよい値は [認証とセキュリティ](auth-and-security.md#ログと-sentry)）。
+
+| 種類 | 例 | 返し方 | ログ |
+|---|---|---|---|
+| 想定内（ルール違反・権限なし） | 締め切り後の申し込み、他人のレッスン | ユースケースが `Result` の `err` で返し、画面に文言を出す | 出さない |
+| 一時的な失敗（自動で立て直せる） | 通知の送信の失敗（再送する）、カードの不備 | 再送・翌日にもう一度・「もう一度お試しください」 | `logWarn`（運営には知らせない） |
+| 想定外の障害 | Stripe・R2 の失敗、データの食い違い、再送が尽きた | 外部の失敗は presentation で捕まえて `err('stripe_error')` などにする。直せないものは投げてよい | `logError`（Sentry で運営に知らせる） |
+
+- 捕まえていない例外（画面・Route Handler・Server Action）は `src/instrumentation.ts` が `logError` する。ルートごとに try/catch を書かなくてよい
+- 定期処理は `src/worker.ts` の `runJob` で1つずつ包む。失敗しても次の処理を止めない
+- 一時的な失敗でも、立て直せなくなったら（再送が尽きた、翌日に回しても直らない）`logError` にする
+
 ### infrastructure
 
 - `repositories/`：集約を保存・取得する。戻り値は `schema.parse` でドメインの型にして返す。状態などの値は受け取ったものを書き、自分で決めない

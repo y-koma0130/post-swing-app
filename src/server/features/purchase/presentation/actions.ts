@@ -21,6 +21,7 @@ import {
 } from '@/server/features/thread/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formString } from '@/server/utils/formData'
+import { logError } from '@/server/utils/logger'
 import type { ErrorOf } from '@/server/utils/result'
 import { TURNSTILE_ACTIONS, verifyTurnstile } from '@/server/utils/turnstile'
 import { joinWaitlist } from '../application/usecases/joinWaitlist.usecase'
@@ -241,7 +242,7 @@ export const refundThreadAction = async (
       return actionError(REFUND_ERROR_MESSAGE[result.error])
     }
   } catch (error) {
-    console.error('[refund] 返金に失敗しました', error)
+    logError('purchase', '返金に失敗しました', error)
     return actionError(
       'Stripe で返金できませんでした。Stripe のダッシュボードで状態を確かめてください'
     )

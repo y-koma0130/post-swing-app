@@ -27,3 +27,6 @@ STRIPE_CONNECT_WEBHOOK_SECRET=
 # Cloudflare Turnstile（ボット対策）。空なら、開発中は Cloudflare のテスト用のキー（いつも通る）を使う
 TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
+
+# Sentry（想定外の障害を運営に知らせる）の DSN。開発中は空でよい（空なら送らない）
+SENTRY_DSN=

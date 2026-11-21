@@ -1,5 +1,6 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
+import { logWarn } from '@/server/utils/logger'
 
 export type FetchLineFriendship = (lineUserId: string) => Promise<boolean | null>
 
@@ -18,6 +19,8 @@ export const fetchLineFriendship: FetchLineFriendship = async (lineUserId) => {
   )
   if (response.ok) return true
   if (response.status === 404) return false
-  console.error('[notification] LINE の友だち状態を確かめられませんでした', response.status)
+  logWarn('notification', 'LINE の友だち状態を確かめられませんでした', {
+    counts: { status: response.status },
+  })
   return null
 }

@@ -116,4 +116,5 @@ Workers Secrets に、`.dev.vars.example` にある名前で値を入れる。�
 - `EMAIL_FROM`：Cloudflare Email Service で送信を許可したアドレス
 - LINE ログイン・Messaging API のチャネル（同じプロバイダーの下に作る）。Messaging API の Webhook URL は `<APP_URL>/api/webhooks/line`
 - Stripe の Webhook：同じ `<APP_URL>/api/webhooks/stripe` に、エンドポイントを2つ作る。自分のアカウント用（`checkout.session.completed`・`invoice.created`・`invoice.paid`・`customer.subscription.deleted`）の署名シークレットを `STRIPE_WEBHOOK_SECRET` に、Connect 用（`account.updated`）を `STRIPE_CONNECT_WEBHOOK_SECRET` に入れる
+- `SENTRY_DSN`：Sentry のプロジェクトの DSN（本番と staging で同じプロジェクトでよい。`environment` で分かれる）。通知の先（メール・Slack）は Sentry の Alerts で決める。定期処理のモニター（`daily-maintenance`・`morning`）は初回の実行で Sentry に自動でできる
 - `/admin` を Cloudflare Access で守り、`ACCESS_TEAM_DOMAIN`・`ACCESS_AUD` を入れる。Access のアプリケーションは本番（`swingpost.app`）と staging で分ける（1つのアプリに両方のドメインを入れると、staging でログインしても戻り先が本番のドメインになる）。`ACCESS_AUD` は環境ごとに別の値になる

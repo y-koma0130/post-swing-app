@@ -57,11 +57,11 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | アプリ本体 | Workers ＋ Static Assets | vinext のビルド結果をそのまま載せる |
 | DB | D1 | ユーザー・コーチ・プラン・申し込み・レッスン・提出・動画・カード・チャット・ドリル・レビュー。Drizzle でマイグレーション（`migrations/`） |
 | 動画・画像 | R2 | 生徒の動画とカード画像。非公開のまま使う。アップロードは Worker が受けて R2 へ流し（100MB まで）、配信は権限を確かめる Route Handler から Range 付きで返す |
-| 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送 |
+| 通知 | Queues（`swingpost-notifications`） | LINE・メールの送信。失敗したら5回まで再送し、最後も失敗したら Sentry で運営に知らせる |
 | 定期処理 | Cron Triggers（毎日4:00・9:00 JST） | 4:00：期限切れの終了、期限前のお知らせ、返信の期限（48時間）を過ぎたコーチへのお知らせ、古い動画の削除、キャンセル待ちへの連絡。9:00：不在が明けたコーチへ、不在中に届いた件数のお知らせ。どちらの処理かは `src/worker.ts` が cron の値で見分ける |
 | メール | Email Service（`send_email`） | コーチのログインコードとお知らせ。届きにくければ Resend に切り替え |
 | 秘密情報 | Workers Secrets | 一覧は `.dev.vars.example` |
-| ログ | Workers Logs | Sentry は未導入 |
+| ログ | Workers Logs | 1行の JSON（`scope`・`message`・`ids`・`counts`・`kind`）。ダッシュボードで項目ごとに絞り込める |
 | 管理画面 | Cloudflare Access | `/admin` を守る。アプリでも Access の JWT を検証する。コーチの招待・受付の停止、レッスンの一覧（返信の遅れ）、返金（全額。コーチへの送金も取り戻す） |
 | ドメイン | DNS（Cloudflare） | 未確認（計画書 13章） |
 
@@ -76,7 +76,7 @@ Web（Next.js）── Server Component / Server Actions ───────�
 | 生徒ログイン | LINE ログイン | Better Auth の LINE プロバイダー |
 | 通知 | LINE Messaging API（共通公式アカウント） | **プッシュ通知は通数で課金される**。無料枠は月200通で、超えると有料プラン。原価に入れる。友だち追加は `/api/webhooks/line` で記録 |
 | CI/CD | GitHub Actions | `ci.yml`（check・build）、`deploy.yml`（手動。マイグレーション → デプロイ） |
-| エラー監視 | Sentry | 未導入 |
+| エラー監視 | Sentry（`@sentry/cloudflare`） | 想定外の障害（`logError`・捕まえていない例外）と、定期処理の死活監視（モニター `daily-maintenance`・`morning`）。通知の先は Sentry の Alerts で決める。`SENTRY_DSN` がない開発中は送らない。ブラウザ側のエラーはまだ送っていない |
 
 ### 返信目安と不在
 

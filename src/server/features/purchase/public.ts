@@ -5,6 +5,7 @@ import {
   startGrantsOnApproval,
 } from '@/server/features/campaign/public'
 import { isDemoCoach } from '@/server/features/demo/public'
+import { logError } from '@/server/utils/logger'
 import { err, type Result } from '@/server/utils/result'
 import { capturePurchase } from './application/usecases/capturePurchase.usecase'
 import { lowerMonthlyPrices as lowerMonthlyPricesUsecase } from './application/usecases/lowerMonthlyPrices.usecase'
@@ -47,7 +48,7 @@ const guard = async <T, E extends string>(
   try {
     return await run()
   } catch (error) {
-    console.error(`[stripe] ${label}に失敗しました`, error)
+    logError('stripe', `${label}に失敗しました`, error)
     return err('stripe_error')
   }
 }
@@ -95,7 +96,9 @@ export const lowerMonthlyPrices = (coachUserId: string, monthlyPriceYen: number)
           await changeSubscriptionPrice(input)
           return true
         } catch (error) {
-          console.error('[stripe] 月額の価格を変えられませんでした', input.subscriptionId, error)
+          logError('stripe', '月額の価格を変えられませんでした', error, {
+            ids: { subscriptionId: input.subscriptionId },
+          })
           return false
         }
       },

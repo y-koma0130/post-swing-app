@@ -1,3 +1,4 @@
+import { withSentry } from '@sentry/cloudflare'
 import vinext from 'vinext/server/fetch-handler'
 import { applyDevMigrations } from './server/db/applyDevMigrations'
 import { runDailyDemoCleanup } from './server/features/demo/presentation/scheduled'
@@ -11,23 +12,26 @@ import {
   runAbsenceEndedNotification,
   runDailyThreadMaintenance,
 } from './server/features/thread/presentation/scheduled'
+import { logError } from './server/utils/logger'
+import { sentryOptions } from './server/utils/sentry'
 
 /** cloudflare.config.ts の定期処理と同じ値 */
 const MORNING_CRON = '0 0 * * *'
 
-/**
- * Worker の入口。画面と API は vinext に任せ、キュー（通知）と定期処理（毎日）をここで足す
- */
-/** 毎日の処理を1つ動かす。失敗してもほかの処理を止めない */
+/** 定期処理を1つ動かす。失敗してもほかの処理を止めない（運営に知らせ、翌日にもう一度） */
 const runJob = async (label: string, run: () => Promise<void>) => {
   try {
     await run()
   } catch (error) {
-    console.error(`[scheduled] ${label}の処理に失敗しました`, error)
+    logError('scheduled', `${label}の処理に失敗しました`, error)
   }
 }
 
-export default {
+/**
+ * Worker の入口。画面と API は vinext に任せ、キュー（通知）と定期処理（毎日）をここで足す。
+ * 全体を Sentry で包み、想定外の例外と Cron の実行（動かなかった・終わらなかった）を運営に知らせる
+ */
+export default withSentry(sentryOptions, {
   ...vinext,
   fetch: async (request, env, ctx) => {
     if (import.meta.env.DEV) {
@@ -42,7 +46,7 @@ export default {
     const now = new Date(controller.scheduledTime)
     // 朝（日本時間9時）は、不在明けのお知らせだけ
     if (controller.cron === MORNING_CRON) {
-      await runAbsenceEndedNotification(now)
+      await runJob('不在明け', () => runAbsenceEndedNotification(now))
       return
     }
     // レッスンを終了してから、空いた枠をキャンセル待ちに知らせる（順に動かす）。
@@ -53,4 +57,4 @@ export default {
     await runJob('ドリルの動画', () => runDailyDrillVideoCleanup(now))
     await runJob('デモ', () => runDailyDemoCleanup(now))
   },
-} satisfies ExportedHandler<Env>
+} satisfies ExportedHandler<Env>)

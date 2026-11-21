@@ -1,4 +1,5 @@
 import 'server-only'
+import { logInfo } from '@/server/utils/logger'
 import { deleteMediaObject } from '@/server/utils/mediaStorage'
 import { cleanupDrillVideos } from '../application/usecases/cleanupDrillVideos.usecase'
 import { findOrphanDrillVideos } from '../infrastructure/query-services/drillVideoAccess'
@@ -10,5 +11,7 @@ export const runDailyDrillVideoCleanup = async (now: Date) => {
     { now },
     { findOrphanDrillVideos, deleteMediaObject, deleteDrillVideos }
   )
-  if (result.deleted > 0) console.info('[scheduled] 使われていないドリルの動画を消しました', result)
+  if (result.deleted > 0) {
+    logInfo('drill', '使われていないドリルの動画を消しました', { counts: result })
+  }
 }

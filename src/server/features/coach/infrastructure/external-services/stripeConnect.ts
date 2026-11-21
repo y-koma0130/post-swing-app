@@ -1,6 +1,7 @@
 import 'server-only'
 import { env } from 'cloudflare:workers'
 import type Stripe from 'stripe'
+import { logError } from '@/server/utils/logger'
 import { getStripe } from '@/server/utils/stripeClient'
 import type { ConnectAccountInput } from '../../application/usecases/startPayoutOnboarding.usecase'
 
@@ -87,7 +88,9 @@ export const syncConnectProfile: SyncConnectProfile = async ({
       defaults: { profile: profileOf(slug, displayName) },
     })
   } catch (error) {
-    console.error('[stripe] 口座のビジネスの情報の更新に失敗しました', error)
+    logError('stripe', '口座のビジネスの情報の更新に失敗しました', error, {
+      ids: { stripeAccountId },
+    })
   }
 }
 
