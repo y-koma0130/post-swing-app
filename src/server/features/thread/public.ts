@@ -25,6 +25,8 @@ export {
   threadExists,
 } from './infrastructure/repositories/threadRepository'
 
+import { logError } from '@/server/utils/logger'
+
 /**
  * カードの仮押さえが済んだ申し込みを、コーチの承認待ちにして、コーチに知らせる（purchase の Webhook から呼ぶ）
  */
@@ -46,7 +48,7 @@ export const discardDraftThread = async (threadId: string): Promise<void> => {
     try {
       await deleteMediaObject(key)
     } catch (error) {
-      console.error('[thread] 下書きの動画を消せませんでした', key, error)
+      logError('thread', '下書きの動画を消せませんでした', error, { ids: { threadId } })
     }
   }
   await deleteDraftThreads([draft.threadId])
