@@ -2,8 +2,7 @@ import { err, ok, type Result } from '@/server/utils/result'
 import type { ChatQuote, QuoteKind } from '../values/ChatMessage'
 import type { KeyPosition } from '../values/KeyPosition'
 import type { Thread } from '../values/Thread'
-
-const EXCERPT_LENGTH = 40
+import { messageExcerpt } from './messageExcerpt.service'
 
 export type QuoteRequest = Readonly<{ kind: QuoteKind; targetId: string }>
 
@@ -47,11 +46,10 @@ export const checkQuoteTarget: CheckQuoteTarget = ({ thread, cards, request }) =
   }
   const message = thread.messages.find((m) => m.id === targetId)
   if (!message) return err('invalid_quote')
-  const excerpt =
-    message.body.trim() !== ''
-      ? message.body.trim().slice(0, EXCERPT_LENGTH)
-      : message.attachment.kind === 'drill'
-        ? `ドリル：${message.attachment.title}`
-        : '動画'
+  const excerpt = messageExcerpt({
+    body: message.body,
+    attachmentKind: message.attachment.kind,
+    drillTitle: message.attachment.kind === 'drill' ? message.attachment.title : null,
+  })
   return ok({ kind, targetId, from: message.from, excerpt })
 }

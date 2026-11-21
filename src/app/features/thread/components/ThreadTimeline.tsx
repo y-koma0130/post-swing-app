@@ -1,11 +1,13 @@
 import { Fragment, type ReactNode } from 'react'
 import { DrillDetails } from '@/app/components/DrillDetails'
+import { MessageText } from '@/app/components/MessageText'
 import { LongPressQuote } from '@/app/components/quote/LongPressQuote'
 import { QuoteButton } from '@/app/components/quote/QuoteContext'
 import { QuotePreview } from '@/app/components/quote/QuotePreview'
 import { formatDateTime } from '@/app/utils/format'
 import { quoteAnchorId } from '@/app/utils/threadText'
 import type { ThreadDetailDto } from '@/server/features/thread/application/dto/ThreadDetail.dto'
+import { messageExcerpt } from '@/server/features/thread/domain/services/messageExcerpt.service'
 import { buildTimeline, firstNewItemKey, type TimelineItem } from '../utils/buildTimeline'
 import { TIMELINE_END_ID, TIMELINE_NEW_ID } from './ScrollToLatest'
 
@@ -126,12 +128,11 @@ const MessageBubble = ({
   quoteMode: 'button' | 'longPress'
 }) => {
   const { attachment } = message
-  const excerpt =
-    message.body.trim() !== ''
-      ? message.body.trim().slice(0, 40)
-      : attachment.kind === 'drill'
-        ? `ドリル：${attachment.title}`
-        : '動画'
+  const excerpt = messageExcerpt({
+    body: message.body,
+    attachmentKind: attachment.kind,
+    drillTitle: attachment.kind === 'drill' ? attachment.title : null,
+  })
   const target = {
     kind: 'message' as const,
     targetId: message.id,
@@ -149,7 +150,7 @@ const MessageBubble = ({
         <DrillDetails
           title={attachment.title}
           description={attachment.description}
-          videoUrl={attachment.videoUrl}
+          video={attachment.video}
         />
       )}
       {attachment.kind === 'video' && (
@@ -157,7 +158,7 @@ const MessageBubble = ({
           {renderVideo(attachment)}
         </div>
       )}
-      {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
+      {message.body && <MessageText body={message.body} />}
       <div className="flex items-center justify-between gap-3">
         <p className="text-caption text-muted">{formatDateTime(message.sentAt)}</p>
         {quoteMode === 'button' && <QuoteButton target={target} />}

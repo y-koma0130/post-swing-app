@@ -14,7 +14,7 @@ export const segmentClass = (active: boolean): string =>
   [
     'rounded-full px-3 py-1 text-sm font-bold transition-colors disabled:opacity-40',
     focusRing,
-    active ? 'bg-ink text-white' : 'text-muted hover:text-ink',
+    active ? 'bg-mint-soft text-ink' : 'text-muted hover:text-ink',
   ].join(' ')
 
 export const chipClass = (active: boolean): string =>

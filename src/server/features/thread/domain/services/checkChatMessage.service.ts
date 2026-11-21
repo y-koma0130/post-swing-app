@@ -1,8 +1,9 @@
 import { err, ok, type Result } from '@/server/utils/result'
 import { CHAT_RULES } from '../rules'
-import type { ChatAttachment, ChatSender } from '../values/ChatMessage'
+import type { ChatSender } from '../values/ChatMessage'
 import type { Thread } from '../values/Thread'
 import { isFinished, isInLesson } from '../values/ThreadStatus'
+import type { ChatAttachmentRequest } from './checkChatAttachment.service'
 import { countRemainingStudentMessages } from './countRemainingStudentMessages.service'
 
 export type ChatBlocker =
@@ -20,7 +21,7 @@ export type CheckChatMessage = (
     sender: ChatSender
     body: string
     /** 添えるもの（中身の確認は checkChatAttachment） */
-    attachmentKind: ChatAttachment['kind']
+    attachmentKind: ChatAttachmentRequest['kind']
   }>
 ) => Result<{ body: string }, ChatBlocker>
 

@@ -1,5 +1,6 @@
 import { calcCoachAvailability } from '@/server/features/coach/domain/services/calcCoachAvailability.service'
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
+import type { DrillVideo } from '@/server/features/drill/domain/values/DrillVideo'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import { absenceAtSend } from '../../domain/services/absenceAtSend.service'
@@ -57,7 +58,7 @@ type Dependencies = Readonly<{
   findOwnDrill: (
     coachUserId: string,
     drillId: string
-  ) => Promise<{ title: string; description: string; videoId: string | null } | null>
+  ) => Promise<{ title: string; description: string; video: DrillVideo | null } | null>
   findDraftVideo: (videoId: string) => Promise<DraftVideo | null>
   /** コーチの不在期間と返信遅れフラグ（coach が持つ） */
   findCoachAvailabilityFacts: (coachUserId: string) => Promise<{

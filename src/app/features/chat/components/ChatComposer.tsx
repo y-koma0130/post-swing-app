@@ -16,6 +16,8 @@ import { iconButtonClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, selectClass } from '@/app/components/ui/fieldStyles'
 import { VideoSlot, type VideoSlotHandle } from '@/app/components/video/VideoSlot'
+import { findMessageVideoLinks } from '@/app/utils/messageLinks'
+import { youtubeThumbnailUrl } from '@/app/utils/youtubeEmbed'
 import type { DrillDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { SendGuard } from '@/server/features/thread/domain/services/decideSendGuard.service'
 import { sendChatMessageAction } from '@/server/features/thread/presentation/actions'
@@ -38,7 +40,7 @@ type Props = {
   /** 送る前の確認（生徒だけ） */
   guard?: SendGuard | undefined
   confirmMessage?: string | undefined
-  /** コーチなら、ドリルと動画を添えられる */
+  /** コーチなら、ドリル・動画を添えられる */
   coach?: CoachAttachments | undefined
   /** 入力欄の下の段の左に置く操作（生徒の「スイング動画を送る」など） */
   actions?: ReactNode
@@ -48,10 +50,20 @@ type Props = {
 
 type Panel = 'none' | 'drill' | 'video'
 
+type AttachPanel = Exclude<Panel, 'none'>
+
+const PANEL_LABEL = {
+  drill: '＋ドリル',
+  video: '＋動画',
+} satisfies Record<AttachPanel, string>
+
+const ATTACH_PANELS: AttachPanel[] = ['drill', 'video']
+
 /**
  * チャットの入力欄（スレッドに1つ）。やりとりの表示は ThreadTimeline が持つ。
  * 時系列の「引用する」で選んだものを、入力欄の上に置いて一緒に送る。
- * コーチはドリル・動画（お手本など）を添えられる
+ * コーチはドリル・動画（お手本など）を添えられる。
+ * YouTube の動画・Instagram の投稿は、本文に URL を貼れば時系列で展開される（コーチも生徒も）
  */
 export const ChatComposer = ({
   threadId,
@@ -78,6 +90,9 @@ export const ChatComposer = ({
   const [videoSelected, setVideoSelected] = useState(false)
   const [videoBusy, setVideoBusy] = useState(false)
   const [slotKey, setSlotKey] = useState(0)
+  // 本文に貼った YouTube・Instagram を、送る前に知らせる
+  const [body, setBody] = useState('')
+  const bodyLinks = findMessageVideoLinks(body)
 
   // 送れたら入力欄・引用・添付を空にする（「やめる」のときは残す）
   useEffect(() => {
@@ -88,6 +103,7 @@ export const ChatComposer = ({
     setDrillId('')
     setVideoSelected(false)
     setSlotKey((k) => k + 1)
+    setBody('')
   }, [state, setQuote])
 
   const onSlotStatus = useCallback((status: { selected: boolean; busy: boolean }) => {
@@ -183,6 +199,30 @@ export const ChatComposer = ({
             onStatusChange={onSlotStatus}
           />
         )}
+        {bodyLinks.length > 0 && (
+          <ul className="space-y-1" aria-label="メッセージの下に出るもの">
+            {bodyLinks.map((link) => (
+              <li
+                key={
+                  link.kind === 'youtube' ? `${link.youtubeId}:${link.startSec}` : link.shortcode
+                }
+                className="bg-surface text-caption text-muted flex items-center gap-2 rounded-lg px-3 py-2"
+              >
+                {link.kind === 'youtube' && (
+                  <img
+                    src={youtubeThumbnailUrl(link.youtubeId, 'hqdefault')}
+                    alt=""
+                    className="aspect-video w-14 shrink-0 rounded object-cover"
+                  />
+                )}
+                <span>
+                  {link.kind === 'youtube' ? 'YouTube の動画' : 'Instagram の投稿'}
+                  を、メッセージの下に出します
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             id={CHAT_INPUT_ID}
@@ -191,6 +231,7 @@ export const ChatComposer = ({
             rows={1}
             maxLength={1000}
             placeholder={viewer === 'coach' ? '補足を送る' : 'コーチに質問する'}
+            onChange={(event) => setBody(event.currentTarget.value)}
             className={`${inputClass} field-sizing-content max-h-40 min-h-11 resize-none`}
           />
           <Button type="submit" pending={pending} disabled={videoBusy} className="shrink-0">
@@ -201,7 +242,7 @@ export const ChatComposer = ({
           <div className="flex items-center gap-1">
             {actions}
             {coach &&
-              (['drill', 'video'] as const).map((p) => (
+              ATTACH_PANELS.map((p) => (
                 <Button
                   key={p}
                   variant={panel === p ? 'secondary' : 'ghost'}
@@ -210,7 +251,7 @@ export const ChatComposer = ({
                   onClick={() => setPanel(panel === p ? 'none' : p)}
                   disabled={p === 'drill' && coach.drills.length === 0}
                 >
-                  ＋{p === 'drill' ? 'ドリル' : '動画'}
+                  {PANEL_LABEL[p]}
                 </Button>
               ))}
           </div>
