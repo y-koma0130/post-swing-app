@@ -89,7 +89,16 @@ src/server/
 | LINE のメールアドレス | 取得しない |
 | LINE のアクセストークン | 暗号化して保存する（Better Auth の `encryptOAuthTokens`） |
 | 生徒の動画 | レッスン終了から一定期間後に自動で削除する（期間は未定） |
-| ログ | 名前・メール・本文・トークンを出さない。IDだけを出す |
+| ログ | 名前・メール・本文・トークンを出さない。IDだけを出す（`src/server/utils/logger.ts` が型で絞る。下の「ログと Sentry」） |
+
+### ログと Sentry
+
+- ログは `logInfo`・`logWarn`・`logError`（`src/server/utils/logger.ts`）で出す。`console.*` を直接使わない（開発中だけのログは除く）
+- 渡せるのは `ids`（`…Id` という名前の内部の ID・Stripe の ID）、`counts`（数値）、`kind`（コードで決めた値）だけ
+- 出さないもの：名前・メールアドレス・LINE のユーザー ID・チャットやカードの本文・動画や画像の R2 のキーと URL・トークン・Cookie
+- 例外はそのまま出さず、`serializeError` で名前・文言・スタックと、Stripe の種類・コードだけにする（Stripe の例外はリクエストの中身を持つことがある）
+- Sentry には利用者・Cookie・ヘッダー・本文・クエリ・DB の値・ローカル変数を送らない（`src/server/utils/sentry.ts` の `dataCollection` と `beforeSend`）。操作の記録（breadcrumbs）も送らない
+- vinext が捕まえていない例外をそのまま出すログは `VINEXT_QUIET` で止め、`src/instrumentation.ts` が同じ形で出す
 
 ### 見せる範囲を絞る
 

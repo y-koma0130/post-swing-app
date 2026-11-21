@@ -17,6 +17,10 @@ const DOMAIN = 'swingpost.app'
 const hostnameFor = (mode: string | undefined): string =>
   mode === 'staging' ? `staging.${DOMAIN}` : DOMAIN
 
+/** Sentry に送るときの環境の名前 */
+const appEnvFor = (mode: string | undefined): string =>
+  mode === 'staging' || mode === 'production' ? mode : 'development'
+
 export default defineConfig({
   worker: defineWorker((ctx) => {
     const suffix = suffixFor(ctx.mode)
@@ -44,6 +48,7 @@ export default defineConfig({
         runWorkerFirst: ['/*', '!/_next/static/*', '!/*/_next/static/*'],
       },
       triggers: [
+        // maxRetries を変えたら、handleNotificationBatch.ts の MAX_ATTEMPTS も変える
         triggers.queue({ name: notificationQueue, maxRetries: 5, retryDelay: 60 }),
         // 毎日 4:00（日本時間）。期限切れの処理、リマインド、古い動画の削除、キャンセル待ちへの連絡
         triggers.scheduled({ schedule: DAILY_MAINTENANCE_CRON }),
@@ -52,6 +57,10 @@ export default defineConfig({
       ],
       env: {
         ASSETS: bindings.assets(),
+        APP_ENV: bindings.text(appEnvFor(ctx.mode)),
+        // vinext が想定外の例外を console.error にそのまま出すのを止める。
+        // 代わりに src/instrumentation.ts が、個人情報を除いた形でログと Sentry に出す
+        VINEXT_QUIET: bindings.text('1'),
         DB: bindings.d1({ name: `swingpost${suffix}` }),
         MEDIA: bindings.r2({ name: `swingpost-media${suffix}` }),
         NOTIFICATIONS: bindings.queue({ name: notificationQueue }),
@@ -78,6 +87,8 @@ export default defineConfig({
         // ボット対策の Cloudflare Turnstile（ログインコードの送信と申し込み）。サイトキーは公開してよい値
         TURNSTILE_SITE_KEY: bindings.secret(),
         TURNSTILE_SECRET_KEY: bindings.secret(),
+        // 想定外の障害を運営に知らせる Sentry。入れていない環境（開発中）では送らない
+        SENTRY_DSN: bindings.secret(),
       },
     }
   }),

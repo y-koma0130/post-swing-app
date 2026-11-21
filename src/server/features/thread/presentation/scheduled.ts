@@ -5,6 +5,7 @@ import {
 } from '@/server/features/coach/public'
 import { notify } from '@/server/features/notification/public'
 import { releasePendingPurchase, voidPayment } from '@/server/features/purchase/public'
+import { logInfo } from '@/server/utils/logger'
 import { notifyAbsenceEnded } from '../application/usecases/notifyAbsenceEnded.usecase'
 import { runThreadMaintenance } from '../application/usecases/runThreadMaintenance.usecase'
 import { deleteMediaObject } from '../infrastructure/external-services/videoStorage'
@@ -54,7 +55,14 @@ export const runDailyThreadMaintenance = async (now: Date) => {
       releasePendingPurchase,
     }
   )
-  if (result.ok) console.info('[scheduled] レッスン', result.value)
+  if (result.ok) {
+    // 失敗した区切りは、それぞれ logError で運営に知らせている
+    const { failed, ...counts } = result.value
+    logInfo('thread', 'レッスンの毎日の処理を終えました', {
+      counts,
+      ...(failed.length === 0 ? {} : { kind: `失敗：${failed.join(',')}` }),
+    })
+  }
 }
 
 /** 不在が明けた朝の処理（日本時間9時の Cron）。不在中に届いた件数をコーチに知らせる */
@@ -67,5 +75,5 @@ export const runAbsenceEndedNotification = async (now: Date) => {
       notifyAbsenceEnded: (input) => notify({ kind: 'absence_ended', ...input }),
     }
   )
-  if (result.ok) console.info('[scheduled] 不在明け', result.value)
+  if (result.ok) logInfo('thread', '不在明けを知らせました', { counts: result.value })
 }

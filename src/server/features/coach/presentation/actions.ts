@@ -12,6 +12,7 @@ import { notify } from '@/server/features/notification/public'
 import { lowerMonthlyPrices } from '@/server/features/purchase/public'
 import { type ActionState, actionError, actionSuccess } from '@/server/utils/actionState'
 import { formChecked, formNumber, formString } from '@/server/utils/formData'
+import { logError } from '@/server/utils/logger'
 import type { ErrorOf } from '@/server/utils/result'
 import { deleteAbsence } from '../application/usecases/deleteAbsence.usecase'
 import { inviteCoach } from '../application/usecases/inviteCoach.usecase'
@@ -258,7 +259,7 @@ export const startPayoutOnboardingAction = async (
     )
   } catch (error) {
     // Stripe の設定不足（本番の有効化前など）もここに来る。中身はログで確かめる
-    console.error('[stripe] 口座の設定を始められませんでした', actor.userId, error)
+    logError('stripe', '口座の設定を始められませんでした', error, { ids: { userId: actor.userId } })
     return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
   }
   if (!result.ok) {
@@ -287,7 +288,7 @@ export const openPayoutDashboardAction = async (
   try {
     url = await createDashboardLink(accountId)
   } catch (error) {
-    console.error('[stripe] 売上の画面を開けませんでした', actor.userId, error)
+    logError('stripe', '売上の画面を開けませんでした', error, { ids: { userId: actor.userId } })
     return actionError(PAYOUT_STRIPE_ERROR_MESSAGE)
   }
   redirect(url)

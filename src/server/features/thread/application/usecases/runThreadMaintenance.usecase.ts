@@ -1,4 +1,5 @@
 import type { CoachAbsence } from '@/server/features/coach/domain/values/CoachAbsence'
+import { logError } from '@/server/utils/logger'
 import { ok, type Result } from '@/server/utils/result'
 import {
   calcEffectiveExpiry,
@@ -120,7 +121,7 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
     try {
       return await run()
     } catch (error) {
-      console.error(`[scheduled] ${name} に失敗しました`, error)
+      logError('scheduled', 'レッスンの毎日の処理の一部に失敗しました', error, { kind: name })
       failed.push(name)
       return 0
     }
@@ -133,7 +134,7 @@ export const runThreadMaintenance: RunThreadMaintenance = async ({ now }, deps) 
         for (const key of keyOf(item)) await deps.deleteMediaObject(key)
         deleted.push(item)
       } catch (error) {
-        console.error('[scheduled] 動画を消せませんでした', error)
+        logError('scheduled', '動画を消せませんでした。翌日にもう一度試します', error)
       }
     }
     return deleted

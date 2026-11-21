@@ -1,5 +1,6 @@
 import 'server-only'
 import Stripe from 'stripe'
+import { logWarn } from '@/server/utils/logger'
 import { getStripe } from '@/server/utils/stripeClient'
 import type { StartSubscriptionInput } from '../../application/usecases/capturePurchase.usecase'
 import { calcSubscriptionFeePercent } from '../../domain/services/calcCharge.service'
@@ -35,7 +36,12 @@ export const capturePaymentIntent: CapturePaymentIntent = async ({
     if (!isCardProblem(error)) throw error
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
     if (intent.status === 'succeeded') return true
-    console.error('[stripe] 支払いを確定できませんでした', paymentIntentId, intent.status)
+    logWarn(
+      'stripe',
+      '支払いを確定できませんでした',
+      { ids: { paymentIntentId }, kind: intent.status },
+      error
+    )
     return false
   }
 }
@@ -52,7 +58,12 @@ export const cancelPaymentIntent: CancelPaymentIntent = async (paymentIntentId) 
     if (!isCardProblem(error)) throw error
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
     if (intent.status === 'canceled') return true
-    console.error('[stripe] 仮押さえを外せませんでした', paymentIntentId, intent.status)
+    logWarn(
+      'stripe',
+      '仮押さえを外せませんでした',
+      { ids: { paymentIntentId }, kind: intent.status },
+      error
+    )
     return false
   }
 }

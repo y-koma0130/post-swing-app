@@ -1,3 +1,4 @@
+import { logError } from '@/server/utils/logger'
 import { ok, type Result } from '@/server/utils/result'
 
 type Dependencies = Readonly<{
@@ -18,7 +19,7 @@ export const deleteExpiredDemos: DeleteExpiredDemos = async ({ now }, deps) => {
       await deps.deleteDemoCoach(coachUserId)
       deleted += 1
     } catch (error) {
-      console.error('[demo] デモを消せませんでした', coachUserId, error)
+      logError('demo', 'デモを消せませんでした', error, { ids: { coachUserId } })
     }
   }
   return ok({ deleted })

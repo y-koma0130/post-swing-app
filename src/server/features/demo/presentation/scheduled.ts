@@ -1,4 +1,5 @@
 import 'server-only'
+import { logInfo } from '@/server/utils/logger'
 import { deleteMediaObject } from '@/server/utils/mediaStorage'
 import { deleteDemoCoach } from '../application/usecases/deleteDemoCoach.usecase'
 import { deleteExpiredDemos } from '../application/usecases/deleteExpiredDemos.usecase'
@@ -17,5 +18,7 @@ export const runDailyDemoCleanup = async (now: Date) => {
         deleteDemoCoach({ coachUserId }, { deleteDemoCoachData, deleteMediaObject }),
     }
   )
-  if (result.ok && result.value.deleted > 0) console.info('[scheduled] デモ', result.value)
+  if (result.ok && result.value.deleted > 0) {
+    logInfo('demo', '期限を過ぎたデモを消しました', { counts: result.value })
+  }
 }
