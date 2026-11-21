@@ -9,7 +9,12 @@ const video = {
   chatMessageId: null,
   angle: 'other' as const,
 }
-const base = { threadId: 't1', actorUserId: 'coach', ownDrill: null, video: null }
+const base = {
+  threadId: 't1',
+  actorUserId: 'coach',
+  ownDrill: null,
+  video: null,
+}
 
 describe('checkChatAttachment', () => {
   it('添付なし', () => {
@@ -25,11 +30,20 @@ describe('checkChatAttachment', () => {
       checkChatAttachment({
         ...base,
         request,
-        ownDrill: { title: '壁ドリル', description: '説明', videoId: 'dv1' },
+        ownDrill: {
+          title: '壁ドリル',
+          description: '説明',
+          video: { kind: 'upload' as const, videoId: 'dv1' },
+        },
       })
     ).toEqual({
       ok: true,
-      value: { kind: 'drill', title: '壁ドリル', description: '説明', videoId: 'dv1' },
+      value: {
+        kind: 'drill',
+        title: '壁ドリル',
+        description: '説明',
+        video: { kind: 'upload' as const, videoId: 'dv1' },
+      },
     })
     expect(checkChatAttachment({ ...base, request })).toEqual({ ok: false, error: 'invalid_drill' })
   })

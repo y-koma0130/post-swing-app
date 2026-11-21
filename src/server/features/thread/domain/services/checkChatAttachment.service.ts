@@ -1,3 +1,4 @@
+import type { DrillVideo } from '@/server/features/drill/domain/values/DrillVideo'
 import { err, ok, type Result } from '@/server/utils/result'
 import type { ChatAttachment } from '../values/ChatMessage'
 import { type DraftVideo, isUnusedDraft } from '../values/Submission'
@@ -16,7 +17,7 @@ export type CheckChatAttachment = (
     threadId: string
     actorUserId: string
     /** request のドリルのうち、送る人（コーチ）自身のもの。見つからなければ null */
-    ownDrill: Readonly<{ title: string; description: string; videoId: string | null }> | null
+    ownDrill: Readonly<{ title: string; description: string; video: DrillVideo | null }> | null
     /** request の動画。見つからなければ null */
     video: DraftVideo | null
   }>

@@ -9,28 +9,46 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/app/components/ui/Button'
+import { segmentClass, segmentGroupClass } from '@/app/components/ui/choiceStyles'
 import { FormMessage } from '@/app/components/ui/FormMessage'
 import { inputClass, labelTextClass } from '@/app/components/ui/fieldStyles'
+import { VideoLinkField } from '@/app/components/video/VideoLinkField'
 import {
   VideoSlot,
   type VideoSlotHandle,
   type VideoSlotStatus,
 } from '@/app/components/video/VideoSlot'
+import {
+  parseVideoLink,
+  VIDEO_LINK_HINT,
+} from '@/server/features/drill/domain/services/parseVideoLink.service'
 import { createDrillAction } from '@/server/features/drill/presentation/actions'
 import { VIDEO_RULES } from '@/server/features/thread/domain/rules'
 import { actionError, IDLE_ACTION_STATE } from '@/server/utils/actionState'
 
 const IDLE_SLOT: VideoSlotStatus = { selected: false, ready: false, busy: false }
 
+type VideoKind = 'upload' | 'link'
+
+const VIDEO_KIND_LABEL = {
+  upload: 'アップロード',
+  link: 'URL を貼る',
+} satisfies Record<VideoKind, string>
+
+const VIDEO_KINDS: VideoKind[] = ['upload', 'link']
+
 /**
  * ドリルの登録（名前・やり方・お手本の動画）。
- * 動画を先に上げてから、その ID を付けてドリルを登録する
+ * お手本は、アップロードした動画（先に上げてから、その ID を付けて登録する）か、YouTube の動画・Instagram の投稿の URL
+ * （どちらかは URL から判別する）
  */
 export const DrillForm = () => {
   const [state, action, pending] = useActionState(createDrillAction, IDLE_ACTION_STATE)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [slot, setSlot] = useState<VideoSlotStatus>(IDLE_SLOT)
+  const [videoKind, setVideoKind] = useState<VideoKind>('upload')
+  const [videoUrl, setVideoUrl] = useState('')
   // 登録できたら、動画の枠ごと作り直して空にする
   const [formKey, setFormKey] = useState(0)
   const [seenState, setSeenState] = useState(state)
@@ -39,6 +57,7 @@ export const DrillForm = () => {
     if (state.status === 'success') {
       setFormKey((key) => key + 1)
       setSlot(IDLE_SLOT)
+      setVideoUrl('')
     }
   }
   const slotRef = useRef<VideoSlotHandle | null>(null)
@@ -50,6 +69,15 @@ export const DrillForm = () => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     setUploadError(null)
+    formData.set('videoKind', videoKind)
+    if (videoKind === 'link') {
+      if (!parseVideoLink(videoUrl)) {
+        setUploadError(VIDEO_LINK_HINT)
+        return
+      }
+      startTransition(() => action(formData))
+      return
+    }
     if (!slot.selected) {
       setUploadError('お手本の動画を選んでください')
       return
@@ -66,7 +94,7 @@ export const DrillForm = () => {
   }
 
   return (
-    <form key={formKey} onSubmit={onSubmit} className="space-y-3">
+    <form key={formKey} onSubmit={onSubmit} noValidate className="space-y-3">
       <label className="block space-y-1">
         <span className={labelTextClass}>名前</span>
         <input
@@ -77,19 +105,49 @@ export const DrillForm = () => {
           className={inputClass}
         />
       </label>
-      <VideoSlot
-        ref={(handle) => {
-          slotRef.current = handle
-        }}
-        uploadUrl="/api/drill-videos"
-        chooseAngle={false}
-        label="お手本の動画"
-        defaultAngle="other"
-        maxBytes={VIDEO_RULES.maxBytes}
-        maxSeconds={VIDEO_RULES.maxDurationSeconds}
-        disabled={uploading || pending}
-        onStatusChange={onSlotStatus}
-      />
+      <fieldset className="space-y-2">
+        <legend className={labelTextClass}>お手本の動画</legend>
+        <div className={segmentGroupClass}>
+          {VIDEO_KINDS.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={videoKind === kind}
+              disabled={busy}
+              onClick={() => {
+                setVideoKind(kind)
+                setSlot(IDLE_SLOT)
+                setUploadError(null)
+              }}
+              className={segmentClass(videoKind === kind)}
+            >
+              {VIDEO_KIND_LABEL[kind]}
+            </button>
+          ))}
+        </div>
+        {videoKind === 'upload' ? (
+          <VideoSlot
+            ref={(handle) => {
+              slotRef.current = handle
+            }}
+            uploadUrl="/api/drill-videos"
+            chooseAngle={false}
+            label="アップロードする動画"
+            defaultAngle="other"
+            maxBytes={VIDEO_RULES.maxBytes}
+            maxSeconds={VIDEO_RULES.maxDurationSeconds}
+            disabled={uploading || pending}
+            onStatusChange={onSlotStatus}
+          />
+        ) : (
+          <VideoLinkField
+            name="videoUrl"
+            value={videoUrl}
+            onChange={setVideoUrl}
+            ariaLabel="お手本の動画の URL"
+          />
+        )}
+      </fieldset>
       <label className="block space-y-1">
         <span className={labelTextClass}>やり方</span>
         <textarea name="description" rows={4} maxLength={1000} className={inputClass} />
@@ -98,7 +156,7 @@ export const DrillForm = () => {
       <Button
         type="submit"
         pending={uploading || pending}
-        disabled={busy || (slot.selected && !slot.ready)}
+        disabled={busy || (videoKind === 'upload' && slot.selected && !slot.ready)}
       >
         {uploading ? '動画を送っています…' : pending ? '登録しています…' : '登録する'}
       </Button>

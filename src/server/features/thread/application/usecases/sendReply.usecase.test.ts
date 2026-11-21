@@ -49,8 +49,13 @@ const params = {
 }
 
 const myDrills = [
-  { id: 'd1', title: '壁ドリル', description: '壁の前で素振り', videoId: 'dv1' },
-  { id: 'd2', title: 'タオル', description: '脇にタオルを挟む', videoId: null },
+  {
+    id: 'd1',
+    title: '壁ドリル',
+    description: '壁の前で素振り',
+    video: { kind: 'upload' as const, videoId: 'dv1' },
+  },
+  { id: 'd2', title: 'タオル', description: '脇にタオルを挟む', video: null },
 ]
 
 const setup = (t: Thread = thread) => {
@@ -84,8 +89,13 @@ describe('sendReply', () => {
       nextStatus: 'waiting_student',
       comment: 'トップまで右ひざの角度を保ちましょう',
       drills: [
-        { drillId: 'd2', title: 'タオル', description: '脇にタオルを挟む', videoId: null },
-        { drillId: 'd1', title: '壁ドリル', description: '壁の前で素振り', videoId: 'dv1' },
+        { drillId: 'd2', title: 'タオル', description: '脇にタオルを挟む', video: null },
+        {
+          drillId: 'd1',
+          title: '壁ドリル',
+          description: '壁の前で素振り',
+          video: { kind: 'upload' as const, videoId: 'dv1' },
+        },
       ],
       cards: [
         { sortOrder: 0, position: 'top', comment: card.comment, videoId: 's1-front' },

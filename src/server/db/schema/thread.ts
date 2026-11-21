@@ -175,8 +175,16 @@ export const replyDrill = sqliteTable(
     drillId: text(),
     title: text().notNull(),
     description: text().notNull(),
-    /** 送った時点のドリルの動画（drill_video）。動画のないドリルなら null */
+    /** 送った時点のドリルの動画（drill_video）。YouTube の動画・動画のないドリルなら null */
     videoId: text().references(() => drillVideo.id),
+    /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
+    youtubeVideoId: text(),
+    youtubeStartSec: integer(),
+    /** YouTube の Shorts（縦の動画）か */
+    youtubeVertical: integer({ mode: 'boolean' }),
+    /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
+    instagramPostKind: text(),
+    instagramShortcode: text(),
   },
   (t) => [primaryKey({ columns: [t.replyId, t.sortOrder] })]
 )
@@ -226,8 +234,15 @@ export const chatMessage = sqliteTable(
       .default('none'),
     drillTitle: text(),
     drillDescription: text(),
-    /** 送った時点のドリルの動画（drill_video）。動画のないドリルなら null */
+    /** 送った時点のドリルの動画（drill_video）。YouTube の動画・動画のないドリルなら null */
     drillVideoId: text().references(() => drillVideo.id),
+    /** 送った時点のドリルの YouTube の動画 ID と開始の秒。上げた動画・動画のないドリルなら null */
+    drillYoutubeVideoId: text(),
+    drillYoutubeStartSec: integer(),
+    drillYoutubeVertical: integer({ mode: 'boolean' }),
+    /** 送った時点のドリルの Instagram の投稿（種類と shortcode）。それ以外なら null */
+    drillInstagramPostKind: text(),
+    drillInstagramShortcode: text(),
     videoId: text().references(() => video.id),
     /** 引用（domain の chatQuoteSchema で検証した JSON）。引用していなければ null */
     quote: text({ mode: 'json' }),
@@ -312,8 +327,16 @@ export const drill = sqliteTable(
       .references(() => coachProfile.userId, { onDelete: 'cascade' }),
     title: text().notNull(),
     description: text().notNull(),
-    /** お手本の動画。動画が必須になる前に登録したドリルは null */
+    /** お手本の動画（上げた動画）。YouTube の動画・動画が必須になる前に登録したドリルは null */
     videoId: text().references(() => drillVideo.id),
+    /** お手本の YouTube の動画 ID と、再生を始める秒。上げた動画なら null */
+    youtubeVideoId: text(),
+    youtubeStartSec: integer(),
+    /** YouTube の Shorts（縦の動画）か */
+    youtubeVertical: integer({ mode: 'boolean' }),
+    /** お手本の Instagram の投稿（種類と shortcode）。それ以外なら null */
+    instagramPostKind: text(),
+    instagramShortcode: text(),
     ...timestamps,
   },
   (t) => [index('drill_coach_idx').on(t.coachUserId)]

@@ -19,9 +19,9 @@
 | 名前 | 値 | 使ってよいところ |
 | --- | --- | --- |
 | `mint` | #3fbf87 | ボタンの背景・線・枠・アイコン・フォーカスの枠。**文字には使わない** |
-| `mint-soft` | #e6f8ef | ミントの薄い面（お知らせ・札・選んでいるもの） |
+| `mint-soft` | #e6f8ef | ミントの薄い面（お知らせ・札・選んでいるもの・選んでいる切り替え） |
 | `mint-text` | #18794e | **ミント色の文字**（小さな見出し・★・リンク・「ここから新着」など） |
-| `ink` | #0b3d2c | 見出し・ボタンの文字・選んでいる切り替え（`bg-ink text-white`） |
+| `ink` | #0b3d2c | 見出し・ボタンの文字 |
 | `body` | #3a3d3c | 本文 |
 | `muted` | #626866 | 補足（説明・日付・件数・注記） |
 | `subtle` | #9aa09d | 入力の見本（placeholder）と、使えない状態だけ。**読ませたい文字には使わない** |
@@ -83,6 +83,11 @@
 | 読み込み中 | `Skeleton`・`PageSkeleton`（`loading.tsx`） |
 | 404・エラーの画面 | `StatusScreen` |
 | Stripe などほかのサイトへ移るフォーム | `useLeavingPage`（移るまでボタンを押せないままにする） |
+| ドリルのお手本・チャットの動画 | `DrillVideoPlayer`（上げた動画・YouTube・Instagram）・`YoutubePlayer`（YouTube。サムネイルを押してから埋め込みを読み込む。Shorts は縦の枠） |
+| YouTube・Instagram の URL を貼る欄（ドリルのお手本） | `VideoLinkField`（どちらかは URL から判別し、中身と注意をその場で出す。読めない URL も知らせる） |
+| URL で添えた動画を出す | `VideoLinkPreview`（YouTube は `YoutubePlayer`、Instagram は `InstagramLink`） |
+| チャットの本文 | `MessageText`（URL をリンクにし、YouTube・Instagram の URL は本文の下に `VideoLinkPreview` で出す） |
+| Instagram の投稿を開くリンク | `InstagramLink`（動画の枠の代わりに置く。スマホなら Instagram のアプリで開く） |
 
 ### 形
 
