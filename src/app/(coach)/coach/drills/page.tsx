@@ -31,7 +31,7 @@ const DrillsPage = async () => {
       {drills.length === 0 && (
         <EmptyState
           title="まだドリルはありません"
-          description="上のフォームから、よく使う練習方法をお手本の動画（撮った動画か YouTube）つきで登録しましょう。"
+          description="上のフォームから、よく使う練習方法をお手本の動画（アップロードした動画・YouTube・Instagram）つきで登録しましょう。"
         />
       )}
       <ul className="space-y-3">

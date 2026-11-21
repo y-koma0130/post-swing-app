@@ -32,7 +32,7 @@ const IDLE_SLOT: VideoSlotStatus = { selected: false, ready: false, busy: false 
 type VideoKind = 'upload' | 'youtube' | 'instagram'
 
 const VIDEO_KIND_LABEL = {
-  upload: '撮った動画',
+  upload: 'アップロード',
   youtube: 'YouTube',
   instagram: 'Instagram',
 } satisfies Record<VideoKind, string>
@@ -41,7 +41,7 @@ const VIDEO_KINDS: VideoKind[] = ['upload', 'youtube', 'instagram']
 
 /**
  * ドリルの登録（名前・やり方・お手本の動画）。
- * お手本は、撮った動画（先に上げてから、その ID を付けて登録する）か、YouTube の動画・Instagram の投稿の URL
+ * お手本は、アップロードした動画（先に上げてから、その ID を付けて登録する）か、YouTube の動画・Instagram の投稿の URL
  */
 export const DrillForm = () => {
   const [state, action, pending] = useActionState(createDrillAction, IDLE_ACTION_STATE)
@@ -147,7 +147,7 @@ export const DrillForm = () => {
             }}
             uploadUrl="/api/drill-videos"
             chooseAngle={false}
-            label="撮った動画"
+            label="アップロードする動画"
             defaultAngle="other"
             maxBytes={VIDEO_RULES.maxBytes}
             maxSeconds={VIDEO_RULES.maxDurationSeconds}
