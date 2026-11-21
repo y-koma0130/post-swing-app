@@ -1,3 +1,4 @@
+import type { DrillVideo } from '@/server/features/drill/domain/values/DrillVideo'
 import type { Actor } from '@/server/utils/actor'
 import { err, ok, type Result } from '@/server/utils/result'
 import {
@@ -22,8 +23,8 @@ export type NewReply = Readonly<{
     drillId: string
     title: string
     description: string
-    /** ドリルのお手本の動画（drill_video）。動画のないドリルなら null */
-    videoId: string | null
+    /** ドリルのお手本の動画（上げた動画か YouTube）。動画のないドリルなら null */
+    video: DrillVideo | null
   }>
   cards: ReadonlyArray<
     ReviewCard & { id: string; videoId: string; sortOrder: number; imageR2Key: string }
@@ -49,7 +50,7 @@ type Dependencies = Readonly<{
   findOwnDrills: (
     coachUserId: string,
     drillIds: string[]
-  ) => Promise<Array<{ id: string; title: string; description: string; videoId: string | null }>>
+  ) => Promise<Array<{ id: string; title: string; description: string; video: DrillVideo | null }>>
   /** index 番目のカード画像を保存する */
   storeCardImage: (r2Key: string, index: number) => Promise<void>
   saveReply: (reply: NewReply) => Promise<void>
@@ -123,7 +124,7 @@ export const sendReply: SendReply = async (params, deps) => {
               drillId: drill.id,
               title: drill.title,
               description: drill.description,
-              videoId: drill.videoId,
+              video: drill.video,
             },
           ]
         : []

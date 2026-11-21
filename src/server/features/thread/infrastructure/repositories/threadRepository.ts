@@ -14,6 +14,11 @@ import {
   threadRead,
   video,
 } from '@/server/db/schema'
+import {
+  type DrillVideo,
+  drillVideoFromColumns,
+  toDrillVideoColumns,
+} from '@/server/features/drill/domain/values/DrillVideo'
 import type { ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import type { StoredVideo } from '../../application/usecases/authorizeVideo.usecase'
 import type { ThreadDecline } from '../../application/usecases/declineApplication.usecase'
@@ -77,6 +82,26 @@ export const findThread: FindThread = async (threadId) => {
   })
 }
 
+/** 添削に写すドリルの動画の列（reply_drill） */
+const drillVideoInsert = (video: DrillVideo | null) => {
+  const c = toDrillVideoColumns(video)
+  return {
+    videoId: c.uploadVideoId,
+    youtubeVideoId: c.youtubeVideoId,
+    youtubeStartSec: c.youtubeStartSec,
+  }
+}
+
+/** チャットに写すドリルの動画の列（chat_message） */
+const chatDrillVideoInsert = (video: DrillVideo | null) => {
+  const c = toDrillVideoColumns(video)
+  return {
+    drillVideoId: c.uploadVideoId,
+    drillYoutubeVideoId: c.youtubeVideoId,
+    drillYoutubeStartSec: c.youtubeStartSec,
+  }
+}
+
 /** 保存したチャットの行を domain の形にする（引用の JSON はここで検証する） */
 const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
   chatMessageSchema.parse({
@@ -90,7 +115,11 @@ const toChatMessage = (m: typeof chatMessage.$inferSelect): ChatMessage =>
             kind: 'drill',
             title: m.drillTitle ?? '',
             description: m.drillDescription ?? '',
-            videoId: m.drillVideoId,
+            video: drillVideoFromColumns({
+              uploadVideoId: m.drillVideoId,
+              youtubeVideoId: m.drillYoutubeVideoId,
+              youtubeStartSec: m.drillYoutubeStartSec,
+            }),
           }
         : m.attachmentKind === 'video' && m.videoId
           ? { kind: 'video', videoId: m.videoId }
@@ -255,7 +284,7 @@ export const saveReply: SaveReply = async (r) => {
         drillId: d.drillId,
         title: d.title,
         description: d.description,
-        videoId: d.videoId,
+        ...drillVideoInsert(d.video),
       })
     ),
     firstCard,
@@ -285,7 +314,7 @@ export const saveChatMessage: SaveChatMessage = async (m) => {
       attachmentKind: m.attachment.kind,
       drillTitle: m.attachment.kind === 'drill' ? m.attachment.title : null,
       drillDescription: m.attachment.kind === 'drill' ? m.attachment.description : null,
-      drillVideoId: m.attachment.kind === 'drill' ? m.attachment.videoId : null,
+      ...chatDrillVideoInsert(m.attachment.kind === 'drill' ? m.attachment.video : null),
       videoId: m.attachment.kind === 'video' ? m.attachment.videoId : null,
       quote: m.quote,
       sentAt: m.sentAt,

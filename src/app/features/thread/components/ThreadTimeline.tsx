@@ -149,7 +149,7 @@ const MessageBubble = ({
         <DrillDetails
           title={attachment.title}
           description={attachment.description}
-          videoUrl={attachment.videoUrl}
+          video={attachment.video}
         />
       )}
       {attachment.kind === 'video' && (

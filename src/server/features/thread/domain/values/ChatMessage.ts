@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { drillVideoSchema } from '@/server/features/drill/domain/values/DrillVideo'
 import { keyPositionSchema } from './KeyPosition'
 import { videoAngleSchema } from './VideoAngle'
 
@@ -15,8 +16,8 @@ export const chatAttachmentSchema = z.discriminatedUnion('kind', [
     kind: z.literal('drill'),
     title: z.string(),
     description: z.string(),
-    /** ドリルのお手本の動画（drill_video）。動画のないドリルなら null */
-    videoId: z.string().nullable(),
+    /** ドリルのお手本の動画（上げた動画か YouTube）。動画のないドリルなら null */
+    video: drillVideoSchema.nullable(),
   }),
   z.object({ kind: z.literal('video'), videoId: z.string().min(1) }),
 ])

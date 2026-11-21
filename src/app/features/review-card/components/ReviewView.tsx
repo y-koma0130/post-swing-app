@@ -71,7 +71,7 @@ export const ReviewView = ({ reply, videoLabel, renderAction, wrapCard }: Props)
             key={drill.title}
             title={drill.title}
             description={drill.description}
-            videoUrl={drill.videoUrl}
+            video={drill.video}
           />
         ))}
       </div>

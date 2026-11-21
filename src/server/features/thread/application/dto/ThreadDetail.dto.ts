@@ -1,5 +1,6 @@
 import type { CoachAvailabilityDto } from '@/server/features/coach/application/dto/CoachAvailability.dto'
 import type { PlanKind } from '@/server/features/coach/domain/values/Plan'
+import type { DrillVideoDto } from '@/server/features/drill/application/dto/Drill.dto'
 import type { ShareConsentDto } from '@/server/features/share/application/dto/ShareConsent.dto'
 import type { ChatBlocker } from '../../domain/services/checkChatMessage.service'
 import type { StudentCloseBlocker } from '../../domain/services/checkStudentClose.service'
@@ -121,9 +122,8 @@ export type ThreadDetailDto = {
       sentAt: Date
       /** 全体の説明（以前の添削では空） */
       comment: string
-      /** おすすめのドリル */
-      /** おすすめのドリル。videoUrl はお手本の動画（動画のないドリルなら null） */
-      drills: Array<{ title: string; description: string; videoUrl: string | null }>
+      /** おすすめのドリル。video はお手本の動画（動画のないドリルなら null） */
+      drills: Array<{ title: string; description: string; video: DrillVideoDto | null }>
       /** 画像（キャプチャ）と、それぞれの一言 */
       cards: Array<{
         id: string
@@ -144,7 +144,7 @@ export type ThreadDetailDto = {
     sentAt: Date
     attachment:
       | { kind: 'none' }
-      | { kind: 'drill'; title: string; description: string; videoUrl: string | null }
+      | { kind: 'drill'; title: string; description: string; video: DrillVideoDto | null }
       | { kind: 'video'; videoId: string; url: string; frameRate: number | null }
     quote: ChatQuote | null
   }>

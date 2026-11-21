@@ -22,6 +22,8 @@ import {
   toAvailabilityDto,
   toAvatarUrl,
 } from '@/server/features/coach/public'
+import { drillVideoFromColumns } from '@/server/features/drill/domain/values/DrillVideo'
+import { toDrillVideoDto } from '@/server/features/drill/public'
 import { isShareConsentLocked } from '@/server/features/share/public'
 import type { ThreadDetailDto, ThreadMembers } from '../../application/dto/ThreadDetail.dto'
 import { THREAD_RULES, VIDEO_RULES } from '../../domain/rules'
@@ -36,10 +38,6 @@ import { decideSendGuard } from '../../domain/services/decideSendGuard.service'
 import { annotationSchema } from '../../domain/values/Annotation'
 import { findRetakeRequests } from '../repositories/retakeRepository'
 import { findThread } from '../repositories/threadRepository'
-
-/** ドリルのお手本の動画の URL（見てよいかは drill の Route Handler が確かめる） */
-const drillVideoUrl = (videoId: string | null): string | null =>
-  videoId === null ? null : `/api/drill-videos/${videoId}`
 
 export type FindThreadDetail = (
   threadId: string
@@ -131,6 +129,8 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
             title: replyDrill.title,
             description: replyDrill.description,
             videoId: replyDrill.videoId,
+            youtubeVideoId: replyDrill.youtubeVideoId,
+            youtubeStartSec: replyDrill.youtubeStartSec,
           })
           .from(replyDrill)
           .innerJoin(reply, eq(reply.id, replyDrill.replyId))
@@ -253,10 +253,16 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
               comment: r.comment,
               drills: replyDrills
                 .filter((d) => d.replyId === r.id)
-                .map(({ title, description, videoId }) => ({
+                .map(({ title, description, videoId, youtubeVideoId, youtubeStartSec }) => ({
                   title,
                   description,
-                  videoUrl: drillVideoUrl(videoId),
+                  video: toDrillVideoDto(
+                    drillVideoFromColumns({
+                      uploadVideoId: videoId,
+                      youtubeVideoId,
+                      youtubeStartSec,
+                    })
+                  ),
                 })),
               cards: cards
                 .filter((c) => c.submissionId === s.id)
@@ -287,7 +293,7 @@ export const findThreadDetail: FindThreadDetail = async (threadId) => {
                 kind: 'drill',
                 title: attachment.title,
                 description: attachment.description,
-                videoUrl: drillVideoUrl(attachment.videoId),
+                video: toDrillVideoDto(attachment.video),
               }
             : attachment,
     })),
